@@ -194,30 +194,44 @@ server.router.get("/matches", async (ctx) => {
 server.router.get("/matches/:matchId", async (ctx) => {
   const userId = ctx.state.auth.userId;
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("active_user_matches")
     .select("match_id, player_id, credentials")
     .eq("user_id", userId)
     .eq("match_id", ctx.params.matchId)
     .single();
-  if (error) {
+
+  // Return match credentials if the user is in the match actively.
+  if (data) {
+    const match = {
+      id: data?.match_id || "",
+      playerId: data?.player_id,
+      credentials: data?.credentials,
+    };
+
+    ctx.body = JSON.stringify(match);
+    return;
+  }
+
+  // Otherwise return general match info
+  const { data: matchData, error: matchError } = await supabase
+    .from("matches")
+    .select(
+      "id, player0_id, player1_id, player0_elo, player1_elo, winner_id, status"
+    )
+    .eq("id", ctx.params.matchId)
+    .single();
+
+  if (matchError) {
     console.log({
-      message: "Error fetching active user match",
-      userId,
-      matchId: ctx.params.matchId,
-      error,
+      message: "Error fetching match",
+      matchError,
     });
     ctx.body = JSON.stringify({});
     return;
   }
 
-  const match = {
-    id: data?.match_id || "",
-    playerId: data?.player_id,
-    credentials: data?.credentials,
-  };
-
-  ctx.body = JSON.stringify(match);
+  ctx.body = JSON.stringify(matchData);
 });
 
 server.router.delete("/matches/:matchId", async (ctx) => {

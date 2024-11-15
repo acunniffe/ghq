@@ -6,7 +6,7 @@ import { getGameoverState } from "./gameover-logic";
 const R_HQ = Red.HQ;
 const B_HQ = Blue.HQ;
 
-describe.only("gameover", () => {
+describe("gameover", () => {
   it("not gameover when hq is on board", () => {
     const board: GHQState["board"] = [
       [R_HQ, null, null, null, null, null, null, null],

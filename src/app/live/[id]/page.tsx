@@ -26,6 +26,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const [matchId, setMatchId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | undefined>();
   const [credentials, setCredentials] = useState<string>("");
+  const [disableReplays, setDisableReplays] = useState<boolean>(true);
   const { isSignedIn, getToken } = useAuth();
 
   const getMatchInfo = useCallback(
@@ -38,6 +39,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         if (data?.credentials && data?.playerId) {
           setCredentials(data.credentials);
           setPlayerId(data.playerId);
+        } else if (data?.status) {
+          setDisableReplays(false);
         }
       } catch (error) {
         console.error("Error polling matchmaking API:", error);
@@ -70,6 +73,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               offlineClient={offlineClient}
               onlineClient={onlineClient}
               setUseOnlineGameClient={setUseOnlineGameClient}
+              disableReplays={disableReplays}
             />
           )}
           <div className={useOnlineGameClient ? "" : "hidden"}>

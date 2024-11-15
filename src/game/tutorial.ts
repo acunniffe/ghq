@@ -1,7 +1,8 @@
 import type { Game } from "boardgame.io";
 
-import { GHQGame, GHQState, Square } from "./engine";
+import { GHQGame, GHQState, ReserveFleet, Square } from "./engine";
 import { BoardArrowType } from "./BoardArrow";
+import { BoardState, FENtoBoardState } from "./notation";
 
 const B: Record<string, Square> = {
   HQ: { type: "HQ", player: "BLUE" },
@@ -28,136 +29,181 @@ const R: Record<string, Square> = {
   H1: { type: "HEAVY_ARTILLERY", player: "RED", orientation: 315 },
 };
 
+const emptyReserveFleet: ReserveFleet = {
+  INFANTRY: 0,
+  ARMORED_INFANTRY: 0,
+  AIRBORNE_INFANTRY: 0,
+  ARTILLERY: 0,
+  ARMORED_ARTILLERY: 0,
+  HEAVY_ARTILLERY: 0,
+};
+
 export interface TutorialSetupData {
-  board: GHQState["board"];
+  boardState: BoardState;
   isPuzzle: boolean;
   boardArrows: BoardArrowType[];
 }
 
 export const boards: Record<string, TutorialSetupData> = {
   "Infantry capture infantry": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, B.IN, null, null, null, null],
-      [null, null, null, R.IN, R.IN, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, B.IN, null, null, null, null],
+        [null, null, null, R.IN, R.IN, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [{ from: [4, 4], to: [3, 4] }],
   },
   "Armored infantry capture infantry": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, B.IN, null, null, null, null],
-      [null, null, null, R.IN, B.IN, null, null, null],
-      [null, null, R.AI, null, R.IN, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, B.IN, null, null, null, null],
+        [null, null, null, R.IN, B.IN, null, null, null],
+        [null, null, R.AI, null, R.IN, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [{ from: [5, 2], to: [3, 2] }],
   },
   "Infantry capture artillery": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, B.AR, null, R.IN, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, B.AR, null, R.IN, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [{ from: [3, 5], to: [3, 4] }],
   },
   "Infantry capture defended artillery": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, R.IN, null, null, null, null],
-      [null, null, null, null, B.IN, null, null, null],
-      [null, null, null, B.AR, R.IN, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, R.IN, null, null, null, null],
+        [null, null, null, null, B.IN, null, null, null],
+        [null, null, null, B.AR, R.IN, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [{ from: [1, 3], to: [2, 3] }],
   },
   "Artillery capture infantry": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, B.IN, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, R.AR, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, B.IN, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, R.AR, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [{ from: [6, 4], to: [5, 4] }],
   },
   "Artillery capture artillery": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, B.AR, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, R.HA, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, B.AR, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, R.HA, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [{ from: [6, 4], to: [5, 4] }],
   },
   "Airborne capture artillery": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, B.HA, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, R.AB, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, B.HA, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, R.AB, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [{ from: [7, 3], to: [2, 3] }],
   },
   "Airborne capture infantry": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, B.IN, null, null, null],
-      [null, null, null, null, R.IN, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, R.AB, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, B.IN, null, null, null],
+        [null, null, null, null, R.IN, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, R.AB, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [{ from: [7, 3], to: [2, 3] }],
   },
   "Infantry capture HQ": {
-    board: [
-      [B.HQ, null, R.IN, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, R.IN, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, R.IN, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, R.IN, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [
       { from: [2, 1], to: [1, 0] },
@@ -165,114 +211,146 @@ export const boards: Record<string, TutorialSetupData> = {
     ],
   },
   "Infantry capture defended HQ": {
-    board: [
-      [B.HQ, null, R.IN, R.IN, null, null, null, null],
-      [null, B.IN, null, null, null, null, null, null],
-      [null, R.IN, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, R.IN, R.IN, null, null, null, null],
+        [null, B.IN, null, null, null, null, null, null],
+        [null, R.IN, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: false,
     boardArrows: [],
   },
   "Capture an artillery": {
-    board: [
-      [B.HQ, null, null, B.H1, null, B.AR, null, null],
-      [B.IN, B.IN, null, null, null, B.IN, null, null],
-      [null, null, B.IN, B.AR, null, B.IN, null, null],
-      [null, null, B.AI, null, B.IN, null, R.IN, null],
-      [null, null, R.IN, null, R.AI, R.IN, null, null],
-      [null, null, null, R.AA, null, null, null, null],
-      [null, null, null, null, null, R.IN, R.IN, R.IN],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, B.H1, null, B.AR, null, null],
+        [B.IN, B.IN, null, null, null, B.IN, null, null],
+        [null, null, B.IN, B.AR, null, B.IN, null, null],
+        [null, null, B.AI, null, B.IN, null, R.IN, null],
+        [null, null, R.IN, null, R.AI, R.IN, null, null],
+        [null, null, null, R.AA, null, null, null, null],
+        [null, null, null, null, null, R.IN, R.IN, R.IN],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: true,
     boardArrows: [],
   },
   "Capture two infantry": {
-    board: [
-      [B.HQ, null, null, null, B.IN, null, null, null],
-      [null, null, null, B.IN, R.IN, null, null, null],
-      [null, null, B.IN, R.IN, null, R.IN, null, null],
-      [null, B.IN, R.IN, null, null, null, null, null],
-      [B.IN, R.IN, null, null, null, null, null, null],
-      [R.IN, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, B.IN, null, null, null],
+        [null, null, null, B.IN, R.IN, null, null, null],
+        [null, null, B.IN, R.IN, null, R.IN, null, null],
+        [null, B.IN, R.IN, null, null, null, null, null],
+        [B.IN, R.IN, null, null, null, null, null, null],
+        [R.IN, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: true,
     boardArrows: [],
   },
   "Capture HQ!": {
-    board: [
-      [B.HQ, null, B.IN, null, null, null, null, null],
-      [B.IN, null, null, null, null, null, null, null],
-      [R.IN, null, B.IN, null, null, null, null, null],
-      [null, R.AI, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, R.AB, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, B.IN, null, null, null, null, null],
+        [B.IN, null, null, null, null, null, null, null],
+        [R.IN, null, B.IN, null, null, null, null, null],
+        [null, R.AI, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, R.AB, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: true,
     boardArrows: [],
   },
   "Collapse the center line": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, B.IN, null, null, null, null, null, null],
-      [null, null, B.AI, B.AI, B.AI, null, null, null],
-      [null, null, R.IN, R.IN, R.IN, null, null, null],
-      [null, null, null, null, null, R.AI, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, B.IN, null, null, null, null, null, null],
+        [null, null, B.AI, B.AI, B.AI, null, null, null],
+        [null, null, R.IN, R.IN, R.IN, null, null, null],
+        [null, null, null, null, null, R.AI, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: true,
     boardArrows: [],
   },
   "Avoid being captured next turn": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [null, B.AI, B.A1, B.IN, B.IN, B.A2, null, null],
-      [null, null, B.AI, null, null, B.IN, B.IN, null],
-      [null, null, null, R.IN, R.AR, R.IN, null, null],
-      [null, null, null, null, R.AI, null, null, null],
-      [null, null, null, null, R.AI, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [null, B.AI, B.A1, B.IN, B.IN, B.A2, null, null],
+        [null, null, B.AI, null, null, B.IN, B.IN, null],
+        [null, null, null, R.IN, R.AR, R.IN, null, null],
+        [null, null, null, null, R.AI, null, null, null],
+        [null, null, null, null, R.AI, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: true,
     boardArrows: [],
   },
   "Take back the advantage": {
-    board: [
-      [B.HQ, null, null, null, null, null, null, null],
-      [B.H1, null, null, null, null, null, null, null],
-      [null, null, null, B.A2, B.AI, null, null, null],
-      [null, null, B.IN, null, null, R.AI, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, R.IN, R.AI, null, null, null, null],
-      [null, null, null, null, null, null, null, null],
-      [null, null, null, null, null, null, null, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, null, null, null, null, null, null, null],
+        [B.H1, null, null, null, null, null, null, null],
+        [null, null, null, B.A2, B.AI, null, null, null],
+        [null, null, B.IN, null, null, R.AI, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, R.IN, R.AI, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: true,
     boardArrows: [],
   },
   "Defend the attack": {
-    board: [
-      [B.HQ, B.AR, B.AB, B.AI, null, null, B.AR, null],
-      [B.IN, B.IN, null, null, null, null, null, null],
-      [null, null, null, null, B.AI, null, null, null],
-      [null, null, null, B.IN, B.AA, B.IN, null, null],
-      [null, null, null, null, B.H1, null, null, null],
-      [null, null, R.AI, null, null, null, R.IN, null],
-      [null, R.AI, null, R.A1, null, R.IN, null, R.IN],
-      [R.AA, R.AB, R.AI, R.AR, R.IN, R.H1, R.AR, R.HQ],
-    ],
+    boardState: {
+      board: [
+        [B.HQ, B.AR, B.AB, B.AI, null, null, B.AR, null],
+        [B.IN, B.IN, null, null, null, null, null, null],
+        [null, null, null, null, B.AI, null, null, null],
+        [null, null, null, B.IN, B.AA, B.IN, null, null],
+        [null, null, null, null, B.H1, null, null, null],
+        [null, null, R.AI, null, null, null, R.IN, null],
+        [null, R.AI, null, R.A1, null, R.IN, null, R.IN],
+        [R.AA, R.AB, R.AI, R.AR, R.IN, R.H1, R.AR, R.HQ],
+      ],
+      redReserve: emptyReserveFleet,
+      blueReserve: emptyReserveFleet,
+    },
     isPuzzle: true,
     boardArrows: [],
   },
@@ -281,9 +359,9 @@ export const boards: Record<string, TutorialSetupData> = {
 export type BoardType = keyof typeof boards;
 
 export function newTutorialGHQGame({
-  boardType,
+  boardState: { board, redReserve, blueReserve },
 }: {
-  boardType: BoardType;
+  boardState: BoardState;
 }): Game<GHQState> {
   const game = { ...GHQGame };
 
@@ -296,27 +374,13 @@ export function newTutorialGHQGame({
       bonusTime: 5 * 1000,
       timeControl: 100 * 60 * 1000,
       lastPlayerMoves: [],
-      redTurnStartBoard: boards[boardType].board,
-      blueTurnStartBoard: boards[boardType].board,
-      board: boards[boardType].board,
+      redTurnStartBoard: board,
+      blueTurnStartBoard: board,
+      board: board,
       thisTurnMoves: [],
       eval: 0,
-      redReserve: {
-        INFANTRY: 0,
-        ARMORED_INFANTRY: 0,
-        AIRBORNE_INFANTRY: 0,
-        ARTILLERY: 0,
-        ARMORED_ARTILLERY: 0,
-        HEAVY_ARTILLERY: 0,
-      },
-      blueReserve: {
-        INFANTRY: 0,
-        ARMORED_INFANTRY: 0,
-        AIRBORNE_INFANTRY: 0,
-        ARTILLERY: 0,
-        ARMORED_ARTILLERY: 0,
-        HEAVY_ARTILLERY: 0,
-      },
+      redReserve,
+      blueReserve,
       userIds: {
         "0": setupData?.players?.["0"] || "Player 1",
         "1": setupData?.players?.["1"] || "Player 2",
@@ -338,4 +402,20 @@ export function newTutorialGHQGame({
   };
 
   return game;
+}
+
+export function getBoardInfo(
+  boardType?: BoardType,
+  fen?: string
+): TutorialSetupData | null {
+  if (fen) {
+    const boardState = FENtoBoardState(fen);
+    return { boardState, isPuzzle: false, boardArrows: [] };
+  }
+
+  if (boardType) {
+    return boards[boardType];
+  }
+
+  return null;
 }

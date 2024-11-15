@@ -4,12 +4,17 @@ import { Client } from "boardgame.io/react";
 import { useEffect, useState } from "react";
 import { GHQBoard } from "@/game/board";
 import ReplayCapability from "@/game/ReplayCapability";
-import { BoardType, newTutorialGHQGame } from "@/game/tutorial";
-import { useSearchParams } from "next/navigation";
+import { BoardType, getBoardInfo, newTutorialGHQGame } from "@/game/tutorial";
+import { useRouter, useSearchParams } from "next/navigation";
 import { boards } from "@/game/tutorial";
 import Header from "@/components/Header";
-import { Loader2 } from "lucide-react";
+import { Import, ImportIcon, Loader2 } from "lucide-react";
 import { useBoardArrow } from "@/game/BoardArrowProvider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { boardToFEN } from "@/game/notation";
+import { defaultBoard, defaultReserveFleet } from "@/game/engine";
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
   const searchParams = useSearchParams();
@@ -19,10 +24,12 @@ export default function Page() {
   const { setBoardArrows } = useBoardArrow();
 
   useEffect(() => {
-    const boardType = searchParams.get("boardType") as BoardType;
+    const boardType = searchParams.get("boardType") as BoardType | undefined;
+    const jfen = searchParams.get("jfen") as string | undefined;
 
-    const boardInfo = boards[boardType];
+    const boardInfo = getBoardInfo(boardType, jfen);
     if (!boardInfo) {
+      setApp(null);
       setLoading(false);
       return;
     }
@@ -33,7 +40,7 @@ export default function Page() {
     }, 500);
 
     const DynamicApp = Client({
-      game: newTutorialGHQGame({ boardType }),
+      game: newTutorialGHQGame({ boardState: boardInfo.boardState }),
       board: GHQBoard,
     });
     setApp(() => {
@@ -72,6 +79,7 @@ export default function Page() {
                   ))}
               </div>
             </div>
+
             <div className="flex flex-col gap-2 border rounded p-4 bg-slate-50">
               <div className="text-2xl">Puzzles</div>
               <div className="flex flex-wrap gap-1">
@@ -90,6 +98,13 @@ export default function Page() {
                   ))}
               </div>
             </div>
+
+            <div className="flex flex-col gap-2 border rounded p-4 bg-slate-50">
+              <div className="text-2xl">Analysis</div>
+              <div className="flex flex-wrap gap-1">
+                <ImportGame />
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -100,6 +115,42 @@ export default function Page() {
     <div>
       {client && <ReplayCapability client={client} />}
       {App && <App ref={(ref: any) => setClient(ref?.client)} />}
+    </div>
+  );
+}
+
+function ImportGame() {
+  const router = useRouter();
+  const [jfen, setJfen] = useState(
+    boardToFEN({
+      board: defaultBoard,
+      redReserve: defaultReserveFleet,
+      blueReserve: defaultReserveFleet,
+    })
+  );
+
+  function onClick() {
+    router.push(`/learn?jfen=${jfen}`);
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <Label htmlFor="jfen">JFEN</Label>
+      <Input
+        spellCheck={false}
+        className="font-mono bg-white w-96"
+        type="jfen"
+        id="jfen"
+        placeholder=""
+        onChange={(e) => setJfen(e.target.value)}
+        value={jfen}
+      />
+
+      <div>
+        <Button onClick={onClick}>
+          <ImportIcon /> Import
+        </Button>
+      </div>
     </div>
   );
 }

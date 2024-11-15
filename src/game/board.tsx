@@ -49,6 +49,7 @@ import {
   pieceSizes,
   squareSizes,
 } from "@/game/constants";
+import ShareGameDialog from "./ExportGameDialog";
 
 //coordinate string x,y
 type Annotations = {
@@ -888,6 +889,7 @@ export function GHQBoard({
             </h2>
             {ctx.gameover.reason && ctx.gameover.reason}
             <Button onClick={async () => router.push("/")}>🏠 Home</Button>
+            <ShareGameDialog G={G} />
           </div>
         ) : (
           <div
@@ -913,21 +915,29 @@ export function GHQBoard({
                     />
                   )}
                   <ResignButton resign={() => moves.Resign()} />
+                  <ShareGameDialog G={G} />
                 </>
               ) : (
-                <AbortGameButton matchId={G.matchId} />
+                <>
+                  <AbortGameButton matchId={G.matchId} />
+                  <ShareGameDialog G={G} />
+                </>
               )}
               {!G.isOnline && (
-                <button
-                  className="bg-blue-500 text-white py-1 px-2 text-sm rounded hover:bg-blue-600 flex gap-1 items-center"
-                  onClick={() => router.push("/")}
-                >
-                  🏠 Home
-                </button>
+                <>
+                  <button
+                    className="bg-blue-500 text-white py-1 px-2 text-sm rounded hover:bg-blue-600 flex gap-1 items-center"
+                    onClick={() => router.push("/")}
+                  >
+                    🏠 Home
+                  </button>
+                </>
               )}
             </div>
           </div>
         )}
+
+        <div className="flex justify-center mt-2"></div>
       </div>
 
       <div

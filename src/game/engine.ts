@@ -438,6 +438,15 @@ export const defaultBoard: GHQState["board"] = [
   ],
 ];
 
+export const defaultReserveFleet: ReserveFleet = {
+  INFANTRY: 5,
+  ARMORED_INFANTRY: 3,
+  AIRBORNE_INFANTRY: 1,
+  ARTILLERY: 2,
+  ARMORED_ARTILLERY: 1,
+  HEAVY_ARTILLERY: 1,
+};
+
 export const GHQGame: Game<GHQState> = {
   plugins: [HistoryPlugin],
   setup: ({ ctx, ...plugins }, setupData) => {
@@ -454,22 +463,8 @@ export const GHQGame: Game<GHQState> = {
       board: defaultBoard,
       thisTurnMoves: [],
       eval: 0,
-      redReserve: {
-        INFANTRY: 5,
-        ARMORED_INFANTRY: 3,
-        AIRBORNE_INFANTRY: 1,
-        ARTILLERY: 2,
-        ARMORED_ARTILLERY: 1,
-        HEAVY_ARTILLERY: 1,
-      },
-      blueReserve: {
-        INFANTRY: 5,
-        ARMORED_INFANTRY: 3,
-        AIRBORNE_INFANTRY: 1,
-        ARTILLERY: 2,
-        ARMORED_ARTILLERY: 1,
-        HEAVY_ARTILLERY: 1,
-      },
+      redReserve: structuredClone(defaultReserveFleet),
+      blueReserve: structuredClone(defaultReserveFleet),
       userIds: {
         "0": setupData?.players?.["0"] || "Player 1",
         "1": setupData?.players?.["1"] || "Player 2",

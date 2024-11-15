@@ -16,6 +16,8 @@
     "@clerk/nextjs": "^6.2.1",
     "@koa/cors": "^5.0.0",
     "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-slot": "^1.1.0",
     "@supabase/supabase-js": "^2.46.1",
     "@uidotdev/usehooks": "^2.4.1",
     "@xstate/react": "^4.1.3",
