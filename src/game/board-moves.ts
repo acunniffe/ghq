@@ -62,11 +62,30 @@ export function getAllowedMoves({
       continue;
     }
 
+    const type = unitType as keyof ReserveFleet;
+
     for (const spawnPosition of spawnPositions) {
       allMoves.push({
         name: "Reinforce",
-        args: [unitType as keyof ReserveFleet, spawnPosition],
+        args: [type, spawnPosition],
       });
+
+      const piece: NonNullSquare = {
+        type,
+        player: currentPlayerTurn,
+      };
+      const captures = captureCandidatesV2({
+        attacker: piece,
+        attackerFrom: null,
+        attackerTo: spawnPosition,
+        board,
+      });
+      for (const capture of captures) {
+        allMoves.push({
+          name: "Reinforce",
+          args: [type, spawnPosition, capture],
+        });
+      }
     }
   }
 
@@ -170,7 +189,9 @@ function moveToNotation(move: AllowedMove): string {
     case "MoveAndOrient":
       return `${move.args[0]} -> ${move.args[1]} facing ${move.args[2]}`;
     case "Reinforce":
-      return `Reinforce ${move.args[0]} at ${move.args[1]}`;
+      return `Reinforce ${move.args[0]} -> ${move.args[1]}${
+        move.args[2] ? ` x ${move.args[2]}` : ""
+      }`;
     case "Skip":
       return "Skip";
   }

@@ -465,7 +465,7 @@ export function getCapturedPieces({
 
 export interface CaptureCandidatesArgs {
   attacker: NonNullSquare;
-  attackerFrom: Coordinate;
+  attackerFrom: Coordinate | null; // attackFrom is null if the piece was deployed from the reserve
   attackerTo: Coordinate;
   board: GHQState["board"];
 }
@@ -511,7 +511,7 @@ export function captureCandidatesV2({
 function maximizeEngagementV2(
   board: GHQState["board"],
   attacker: NonNullSquare,
-  attackerFrom: Coordinate,
+  attackerFrom: Coordinate | null,
   attackerTo: Coordinate
 ): Record<Player, Coordinate>[] {
   const N = 8; // Size of the board
@@ -531,7 +531,7 @@ function maximizeEngagementV2(
   for (let i = 0; i < N; i++) {
     for (let j = 0; j < N; j++) {
       // Skip the last moved piece, we want to calculate engagement as if they weren't there
-      if (attackerFrom[0] === i && attackerFrom[1] === j) {
+      if (attackerFrom && attackerFrom[0] === i && attackerFrom[1] === j) {
         continue;
       }
 
