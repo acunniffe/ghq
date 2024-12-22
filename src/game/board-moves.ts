@@ -47,7 +47,7 @@ export function getAllowedMoves({
   blueReserve: ReserveFleet;
   currentPlayerTurn: Player;
 }): AllowedMove[] {
-  const allMoves: AllowedMove[] = [{ name: "Skip", args: [] }];
+  const allMoves: AllowedMove[] = [];
 
   const thisTurnMoveCoordinates = new Set(
     coordsForThisTurnMoves(thisTurnMoves).map(
@@ -139,7 +139,18 @@ export function getAllowedMoves({
     }
   }
 
+  // Shuffle the moves to randomize the order of the moves
+  shuffleArray(allMoves);
+
   return allMoves;
+}
+
+// Simple Fisher-Yates shuffle algorithm
+function shuffleArray<T>(array: T[]): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+  }
 }
 
 function getPlayerPieces(

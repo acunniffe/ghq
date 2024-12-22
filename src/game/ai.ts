@@ -15,8 +15,18 @@ export const ai: Game<GHQState>["ai"] = {
       currentPlayerTurn: ctx.currentPlayer === "0" ? "RED" : "BLUE",
       thisTurnMoves: G.thisTurnMoves,
     });
-    return allowedMoves.map(({ name, args }) => ({ move: name, args }));
+
+     // Ensure the AI makes exactly 3 moves
+    const movesToMake = allowedMoves.slice(0, 3);
+
+    // If there are fewer than 3 moves, pad with "Skip" moves
+    while (movesToMake.length < 3) {
+      movesToMake.push({ name: "Skip", args: [] });
+    }
+  
+    return movesToMake.map(({ name, args }) => ({ move: name, args }));
   },
+  
   objectives: () => {
     let lastEval = 0;
 
