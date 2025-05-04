@@ -17,6 +17,9 @@ import { useMeasure } from "@uidotdev/usehooks";
 import { ReserveBankV2 } from "./ReserveBankV2";
 import BoardContainer from "./BoardContainer";
 import ReserveBankButton from "./ReserveBankButton";
+import { Label } from "@radix-ui/react-label";
+import { Input } from "../ui/input";
+import { boardToFEN } from "@/game/notation";
 
 export function Editor() {
   const { measureRef, squareSize, pieceSize } = useBoardDimensions();
@@ -30,6 +33,8 @@ export function Editor() {
   >("MOVE");
   const [selectedFrom, setSelectedFrom] = useState<Coordinate | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
+  const [fen, setFen] = useState<string>("");
+  const [analysisUrl, setAnalysisUrl] = useState<string>("");
 
   const board = defaultBoard;
   const redReserve = defaultReserveFleet;
@@ -75,6 +80,17 @@ export function Editor() {
       selectedSquare,
     ]
   );
+
+  useEffect(() => {
+    setFen(boardToFEN({ board, redReserve, blueReserve }));
+    const url = new URL(window.location.toString());
+    url.pathname = "/learn";
+    url.searchParams.set(
+      "jfen",
+      boardToFEN({ board, redReserve, blueReserve })
+    );
+    setAnalysisUrl(url.toString());
+  }, [board, redReserve, blueReserve]);
 
   const handleMouseOver = () => {};
 
@@ -225,6 +241,33 @@ export function Editor() {
             setSelectedAction("TRASH");
           }}
         />
+      </div>
+
+      <div className="flex flex-col gap-2 mt-8 w-[360px] lg:w-[600px]">
+        <div className="flex items-center gap-2 w-full">
+          <Label htmlFor="jfen">FEN</Label>
+          <Input
+            readOnly
+            spellCheck={false}
+            className="font-mono flex-1"
+            type="fen"
+            id="fen"
+            placeholder=""
+            value={fen}
+          />
+        </div>
+        <div className="flex items-center gap-2 w-full">
+          <Label htmlFor="jfen">URL</Label>
+          <Input
+            readOnly
+            spellCheck={false}
+            className="font-mono flex-1"
+            type="url"
+            id="analysis"
+            placeholder=""
+            value={analysisUrl}
+          />
+        </div>
       </div>
     </div>
   );
