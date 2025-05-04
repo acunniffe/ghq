@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import {
   Coordinate,
   defaultBoard,
@@ -25,8 +26,9 @@ export function Editor() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [selectedAction, setSelectedAction] = useState<
-    "MOVE" | "TRASH" | "PLACE" | undefined
-  >();
+    "MOVE" | "TRASH" | "PLACE"
+  >("MOVE");
+  const [selectedFrom, setSelectedFrom] = useState<Coordinate | null>(null);
 
   const board = defaultBoard;
   const redReserve = defaultReserveFleet;
@@ -42,7 +44,7 @@ export function Editor() {
   }, []);
 
   const handleLeftClick = useCallback(
-    ([rowIndex, colIndex]: Coordinate) => {
+    ([rowIndex, colIndex]: Coordinate, isMouseDown: boolean) => {
       if (selectedAction === "PLACE") {
         board[rowIndex][colIndex] = {
           type: selectedReserve as keyof ReserveFleet,
@@ -51,32 +53,66 @@ export function Editor() {
         };
       } else if (selectedAction === "TRASH") {
         board[rowIndex][colIndex] = null;
+      } else if (selectedAction === "MOVE") {
+        if (isMouseDown) {
+          setSelectedFrom([rowIndex, colIndex]);
+        } else if (selectedFrom) {
+          const square = board[selectedFrom[0]][selectedFrom[1]];
+          if (square) {
+            board[selectedFrom[0]][selectedFrom[1]] = null;
+            board[rowIndex][colIndex] = square;
+          }
+        }
       }
     },
-    [board, selectedReserve, selectedPlayer, selectedAction]
+    [board, selectedReserve, selectedPlayer, selectedAction, selectedFrom]
   );
 
   const handleMouseOver = () => {};
 
   return (
     <div className="flex flex-col items-center justify-center gap-2">
-      <ReserveBankV2
-        player="BLUE"
-        reserve={blueReserve}
-        selectable={true}
-        selectedKind={selectedPlayer === "BLUE" ? selectedReserve : undefined}
-        selectReserve={(kind) => {
-          setSelectedReserve(kind);
-          setSelectedPlayer("BLUE");
-          setSelectedAction("PLACE");
-        }}
-        squareSize={squareSize}
-      />
+      <div className="flex items-center justify-center gap-1">
+        <ReserveBankButton
+          squareSize={squareSize}
+          selected={selectedAction === "MOVE"}
+          value="MOVE"
+          imageUrl={`pointer.svg`}
+          selectable={true}
+          onSelect={() => {
+            setSelectedReserve(undefined);
+            setSelectedAction("MOVE");
+          }}
+        />
+        <ReserveBankV2
+          player="BLUE"
+          reserve={blueReserve}
+          selectable={true}
+          selectedKind={selectedPlayer === "BLUE" ? selectedReserve : undefined}
+          selectReserve={(kind) => {
+            setSelectedReserve(kind);
+            setSelectedPlayer("BLUE");
+            setSelectedAction("PLACE");
+          }}
+          squareSize={squareSize}
+        />
+        <ReserveBankButton
+          squareSize={squareSize}
+          selected={selectedAction === "TRASH"}
+          value="TRASH"
+          imageUrl={`trash-2.svg`}
+          selectable={true}
+          onSelect={() => {
+            setSelectedReserve(undefined);
+            setSelectedAction("TRASH");
+          }}
+        />
+      </div>
       <BoardContainer
         ref={measureRef}
         onRightClickDrag={() => {}}
-        onLeftClickDown={handleLeftClick}
-        onLeftClickUp={handleLeftClick}
+        onLeftClickDown={(coord) => handleLeftClick(coord, true)}
+        onLeftClickUp={(coord) => handleLeftClick(coord, false)}
         onMouseOver={handleMouseOver}
         flipped={false}
         isTutorial={false}
@@ -109,6 +145,7 @@ export function Editor() {
         >
           {selectedAction === "PLACE" && selectedReserve && (
             <img
+              className={cn(selectedPlayer === "BLUE" && "rotate-180")}
               src={`/${Units[selectedReserve].imagePathPrefix}-${selectedPlayer}.png`}
               width={pieceSize * 0.7}
               height={pieceSize * 0.7}
