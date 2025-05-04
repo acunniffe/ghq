@@ -93,6 +93,12 @@ server.router.post("/matchmaking", async (ctx) => {
   }
   const timeControl = TIME_CONTROLS[mode as keyof typeof TIME_CONTROLS];
 
+  // default to true if its not specified for now (we'll change this later)
+  const rated =
+    ctx.request.query.rated === undefined
+      ? true
+      : (ctx.request.query.rated as string) === "true";
+
   // If user is already in a match, return the match id
   const activeMatch = await getActiveMatch(userId);
   if (activeMatch) {
@@ -144,6 +150,7 @@ server.router.post("/matchmaking", async (ctx) => {
         timeControl: timeControl.time,
         bonusTime: timeControl.bonus,
         variant: timeControl?.variant,
+        rated,
       },
       unlisted: false,
       game: ghqGame as SrcGame,
@@ -159,6 +166,7 @@ server.router.post("/matchmaking", async (ctx) => {
       player0Creds,
       player1Creds,
       isCorrespondence: false,
+      rated,
     });
 
     ctx.body = JSON.stringify({});
@@ -204,7 +212,7 @@ async function listMatches({
   let query = supabase
     .from("matches")
     .select(
-      "id, created_at, player0_id, player1_id, player0_elo, player1_elo, winner_id, status, current_turn_player_id"
+      "id, created_at, player0_id, player1_id, player0_elo, player1_elo, winner_id, status, current_turn_player_id, rated"
     );
 
   if (userId) {
@@ -265,6 +273,7 @@ async function listMatches({
         isYourTurn: isCorrespondence
           ? match.current_turn_player_id === userId
           : undefined,
+        rated: match.rated,
       });
     }
   }
@@ -274,6 +283,24 @@ async function listMatches({
 
 server.router.get("/matches/:matchId", async (ctx) => {
   const userId = ctx.state.auth.userId;
+
+  // Fetch general match info
+  const { data: matchData, error: matchError } = await supabase
+    .from("matches")
+    .select(
+      "id, player0_id, player1_id, player0_elo, player1_elo, winner_id, status, rated"
+    )
+    .eq("id", ctx.params.matchId)
+    .single();
+
+  if (matchError) {
+    console.log({
+      message: "Error fetching match",
+      matchError,
+    });
+    ctx.body = JSON.stringify({});
+    return;
+  }
 
   const { data } = await supabase
     .from("active_user_matches")
@@ -285,30 +312,13 @@ server.router.get("/matches/:matchId", async (ctx) => {
   // Return match credentials if the user is in the match actively.
   if (data) {
     const match = {
+      ...matchData,
       id: data?.match_id || "",
       playerId: data?.player_id,
       credentials: data?.credentials,
     };
 
     ctx.body = JSON.stringify(match);
-    return;
-  }
-
-  // Otherwise return general match info
-  const { data: matchData, error: matchError } = await supabase
-    .from("matches")
-    .select(
-      "id, player0_id, player1_id, player0_elo, player1_elo, winner_id, status"
-    )
-    .eq("id", ctx.params.matchId)
-    .single();
-
-  if (matchError) {
-    console.log({
-      message: "Error fetching match",
-      matchError,
-    });
-    ctx.body = JSON.stringify({});
     return;
   }
 
@@ -433,6 +443,7 @@ async function createActiveMatches({
   user1,
   player0Creds,
   player1Creds,
+  rated,
   isCorrespondence = false,
 }: {
   matchId: string;
@@ -440,6 +451,7 @@ async function createActiveMatches({
   user1: User;
   player0Creds: string;
   player1Creds: string;
+  rated: boolean;
   isCorrespondence: boolean;
 }): Promise<void> {
   const { error } = await supabase.from("active_user_matches").insert([
@@ -468,6 +480,7 @@ async function createActiveMatches({
       player0_elo: user0.elo,
       player1_elo: user1.elo,
       is_correspondence: isCorrespondence,
+      rated,
     },
   ]);
   if (matchError) throw matchError;
@@ -732,7 +745,10 @@ server.router.post("/correspondence/challenge", async (ctx) => {
     throw new Error("userId is required");
   }
 
-  const { targetUserId } = ctx.request.body as { targetUserId: string };
+  const { targetUserId, rated } = ctx.request.body as {
+    targetUserId: string;
+    rated?: boolean;
+  };
   if (!targetUserId) {
     ctx.throw(400, "targetUserId is required");
   }
@@ -743,6 +759,7 @@ server.router.post("/correspondence/challenge", async (ctx) => {
       challenger_user_id: userId,
       target_user_id: targetUserId,
       status: "sent",
+      rated: rated ?? true, // default to true if its not specified for now (we'll change this later)
     })
     .select()
     .single();
@@ -802,7 +819,7 @@ server.router.post("/correspondence/accept", async (ctx) => {
 
   const { data: challenge, error: challengeError } = await supabase
     .from("correspondence_challenges")
-    .select("challenger_user_id, target_user_id")
+    .select("challenger_user_id, target_user_id, rated")
     .eq("challenger_user_id", challengerUserId)
     .eq("target_user_id", userId)
     .eq("status", "sent")
@@ -858,6 +875,7 @@ server.router.post("/correspondence/accept", async (ctx) => {
     player0Creds,
     player1Creds,
     isCorrespondence: true,
+    rated: challenge.rated,
   });
 
   const { error: updateError } = await supabase

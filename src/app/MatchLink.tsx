@@ -4,6 +4,7 @@ import { DateTime } from "luxon";
 import classNames from "classnames";
 import Link from "next/link";
 import { MatchModel } from "@/lib/types";
+import RatedBadge from "@/components/RatedBadge";
 
 export function MatchLink({ game }: { game: MatchModel }) {
   return (
@@ -12,6 +13,7 @@ export function MatchLink({ game }: { game: MatchModel }) {
       className="p-1 px-2 bg-white border border-white hover:border-blue-700 flex justify-between hover:bg-blue-100 rounded flex-col sm:flex-row"
     >
       <div className="flex gap-1 items-center flex-wrap">
+        <RatedBadge rated={game.rated ?? false} />
         <div
           className={classNames(
             game.player1 === game.winner && "text-blue-800"

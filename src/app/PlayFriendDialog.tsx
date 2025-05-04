@@ -68,7 +68,7 @@ export function PlayFriendDialog() {
       url: `${API_URL}/correspondence/challenge`,
       getToken,
       method: "POST",
-      body: JSON.stringify({ targetUserId: selectedUser.id }),
+      body: JSON.stringify({ targetUserId: selectedUser.id, rated: true }),
     });
 
     toast(

@@ -8,6 +8,7 @@ export interface MatchModel {
   status: string;
   createdAt: string;
   isYourTurn?: boolean;
+  rated?: boolean;
 }
 
 export interface User {
