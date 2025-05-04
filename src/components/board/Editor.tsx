@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMeasure } from "@uidotdev/usehooks";
 import { ReserveBankV2 } from "./ReserveBankV2";
 import BoardContainer from "./BoardContainer";
+import ReserveBankButton from "./ReserveBankButton";
 
 export function Editor() {
   const { measureRef, squareSize, pieceSize } = useBoardDimensions();
@@ -23,6 +24,9 @@ export function Editor() {
   >();
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [selectedAction, setSelectedAction] = useState<
+    "MOVE" | "TRASH" | "PLACE" | undefined
+  >();
 
   const board = defaultBoard;
   const redReserve = defaultReserveFleet;
@@ -39,13 +43,17 @@ export function Editor() {
 
   const handleLeftClick = useCallback(
     ([rowIndex, colIndex]: Coordinate) => {
-      board[rowIndex][colIndex] = {
-        type: selectedReserve as keyof ReserveFleet,
-        player: selectedPlayer as Player,
-        orientation: 0,
-      };
+      if (selectedAction === "PLACE") {
+        board[rowIndex][colIndex] = {
+          type: selectedReserve as keyof ReserveFleet,
+          player: selectedPlayer as Player,
+          orientation: selectedPlayer === "RED" ? 0 : 180,
+        };
+      } else if (selectedAction === "TRASH") {
+        board[rowIndex][colIndex] = null;
+      }
     },
-    [board, selectedReserve, selectedPlayer]
+    [board, selectedReserve, selectedPlayer, selectedAction]
   );
 
   const handleMouseOver = () => {};
@@ -60,6 +68,7 @@ export function Editor() {
         selectReserve={(kind) => {
           setSelectedReserve(kind);
           setSelectedPlayer("BLUE");
+          setSelectedAction("PLACE");
         }}
         squareSize={squareSize}
       />
@@ -87,7 +96,7 @@ export function Editor() {
           </div>
         ))}
       </BoardContainer>
-      {selectedReserve && (
+      {(selectedAction === "PLACE" || selectedAction === "TRASH") && (
         <div
           className="fixed pointer-events-none z-50"
           style={{
@@ -98,26 +107,64 @@ export function Editor() {
             transform: "translate(-50%, -50%)",
           }}
         >
-          <img
-            src={`/${Units[selectedReserve].imagePathPrefix}-${selectedPlayer}.png`}
-            width={pieceSize * 0.7}
-            height={pieceSize * 0.7}
-            draggable="false"
-            alt={Units[selectedReserve].imagePathPrefix}
-          />
+          {selectedAction === "PLACE" && selectedReserve && (
+            <img
+              src={`/${Units[selectedReserve].imagePathPrefix}-${selectedPlayer}.png`}
+              width={pieceSize * 0.7}
+              height={pieceSize * 0.7}
+              draggable="false"
+              alt={Units[selectedReserve].imagePathPrefix}
+            />
+          )}
+          {selectedAction === "TRASH" && (
+            <img
+              className="bg-white/80 rounded-lg p-0.5"
+              src={`trash-2.svg`}
+              width={pieceSize * 0.7}
+              height={pieceSize * 0.7}
+              draggable="false"
+              alt="trash"
+            />
+          )}
         </div>
       )}
-      <ReserveBankV2
-        player="RED"
-        reserve={redReserve}
-        selectable={true}
-        selectedKind={selectedPlayer === "RED" ? selectedReserve : undefined}
-        selectReserve={(kind) => {
-          setSelectedReserve(kind);
-          setSelectedPlayer("RED");
-        }}
-        squareSize={squareSize}
-      />
+
+      <div className="flex items-center justify-center gap-1">
+        <ReserveBankButton
+          squareSize={squareSize}
+          selected={selectedAction === "MOVE"}
+          value="MOVE"
+          imageUrl={`pointer.svg`}
+          selectable={true}
+          onSelect={() => {
+            setSelectedReserve(undefined);
+            setSelectedAction("MOVE");
+          }}
+        />
+        <ReserveBankV2
+          player="RED"
+          reserve={redReserve}
+          selectable={true}
+          selectedKind={selectedPlayer === "RED" ? selectedReserve : undefined}
+          selectReserve={(kind) => {
+            setSelectedReserve(kind);
+            setSelectedPlayer("RED");
+            setSelectedAction("PLACE");
+          }}
+          squareSize={squareSize}
+        />
+        <ReserveBankButton
+          squareSize={squareSize}
+          selected={selectedAction === "TRASH"}
+          value="TRASH"
+          imageUrl={`trash-2.svg`}
+          selectable={true}
+          onSelect={() => {
+            setSelectedReserve(undefined);
+            setSelectedAction("TRASH");
+          }}
+        />
+      </div>
     </div>
   );
 }
