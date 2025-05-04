@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import {
+  Board,
   Coordinate,
   defaultBoard,
   defaultReserveFleet,
@@ -36,8 +37,8 @@ export function Editor() {
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [fen, setFen] = useState<string>("");
   const [analysisUrl, setAnalysisUrl] = useState<string>("");
+  const [board, setBoard] = useState<Board>(defaultBoard);
 
-  const board = defaultBoard;
   const redReserve = defaultReserveFleet;
   const blueReserve = defaultReserveFleet;
 
@@ -52,25 +53,29 @@ export function Editor() {
 
   const handleLeftClick = useCallback(
     ([rowIndex, colIndex]: Coordinate, isMouseDown: boolean) => {
+      const newBoard = structuredClone(board);
+
       if (selectedAction === "PLACE") {
-        board[rowIndex][colIndex] = {
+        newBoard[rowIndex][colIndex] = {
           type: selectedReserve as keyof ReserveFleet,
           player: selectedPlayer as Player,
           orientation: selectedPlayer === "RED" ? 0 : 180,
         };
       } else if (selectedAction === "TRASH") {
-        board[rowIndex][colIndex] = null;
+        newBoard[rowIndex][colIndex] = null;
       } else if (selectedAction === "MOVE") {
         if (isMouseDown) {
           setSelectedFrom([rowIndex, colIndex]);
-          setSelectedSquare(board[rowIndex][colIndex]);
+          setSelectedSquare(newBoard[rowIndex][colIndex]);
         } else if (selectedFrom && selectedSquare) {
-          board[selectedFrom[0]][selectedFrom[1]] = null;
-          board[rowIndex][colIndex] = selectedSquare;
+          newBoard[selectedFrom[0]][selectedFrom[1]] = null;
+          newBoard[rowIndex][colIndex] = selectedSquare;
           setSelectedFrom(null);
           setSelectedSquare(null);
         }
       }
+
+      setBoard(newBoard);
     },
     [
       board,
@@ -201,7 +206,7 @@ export function Editor() {
         )}
         {selectedAction === "TRASH" && (
           <img
-            className="bg-white/80 rounded-lg p-0.5"
+            className="bg-white/50 rounded-lg"
             src={`trash-2.svg`}
             width={pieceSize * 0.7}
             height={pieceSize * 0.7}

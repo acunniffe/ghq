@@ -7,7 +7,7 @@ import { BoardType, getBoardInfo, newTutorialGHQGame } from "@/game/tutorial";
 import { useRouter, useSearchParams } from "next/navigation";
 import { boards } from "@/game/tutorial";
 import Header from "@/components/Header";
-import { Import, ImportIcon, Loader2 } from "lucide-react";
+import { ImportIcon, Loader2, Pencil } from "lucide-react";
 import { useBoardArrow } from "@/game/BoardArrowProvider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,7 +60,7 @@ export default function Page() {
 
   if (!App) {
     return (
-      <div className="p-2 flex flex-col gap-4 lg:px-48">
+      <div className="p-2 flex flex-col gap-4 lg:px-48 mb-20">
         <Header />
         {loading && (
           <div className="flex gap-1">
@@ -130,6 +130,7 @@ export default function Page() {
 
             <Section heading="Analysis">
               <ImportGame />
+              <Editor />
             </Section>
           </div>
         )}
@@ -160,7 +161,7 @@ function ImportGame() {
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex items-center gap-2">
       <Label htmlFor="jfen">FEN</Label>
       <Input
         spellCheck={false}
@@ -177,6 +178,22 @@ function ImportGame() {
           <ImportIcon /> Import
         </Button>
       </div>
+    </div>
+  );
+}
+
+function Editor() {
+  const router = useRouter();
+
+  function onClick() {
+    router.push(`/editor`);
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Button onClick={onClick}>
+        <Pencil /> Board Editor
+      </Button>
     </div>
   );
 }
