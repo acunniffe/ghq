@@ -1,30 +1,54 @@
 "use client";
 
 import {
+  Coordinate,
   defaultBoard,
   defaultReserveFleet,
+  Player,
   ReserveFleet,
   Square,
+  Units,
 } from "@/game/engine";
-import { cn } from "@/lib/utils";
 import SquareComponent, { SquareState } from "./Square";
 import { pieceSizes, squareSizes } from "@/game/constants";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMeasure } from "@uidotdev/usehooks";
 import { ReserveBankV2 } from "./ReserveBankV2";
+import BoardContainer from "./BoardContainer";
 
 export function Editor() {
   const { measureRef, squareSize, pieceSize } = useBoardDimensions();
-  const [blueSelectedReserve, setBlueSelectedReserve] = useState<
+  const [selectedReserve, setSelectedReserve] = useState<
     keyof ReserveFleet | undefined
   >();
-  const [redSelectedReserve, setRedSelectedReserve] = useState<
-    keyof ReserveFleet | undefined
-  >();
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const board = defaultBoard;
   const redReserve = defaultReserveFleet;
   const blueReserve = defaultReserveFleet;
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  const handleLeftClick = useCallback(
+    ([rowIndex, colIndex]: Coordinate) => {
+      board[rowIndex][colIndex] = {
+        type: selectedReserve as keyof ReserveFleet,
+        player: selectedPlayer as Player,
+        orientation: 0,
+      };
+    },
+    [board, selectedReserve, selectedPlayer]
+  );
+
+  const handleMouseOver = () => {};
 
   return (
     <div className="flex flex-col items-center justify-center gap-2">
@@ -32,15 +56,21 @@ export function Editor() {
         player="BLUE"
         reserve={blueReserve}
         selectable={true}
-        selectedKind={blueSelectedReserve}
-        selectReserve={setBlueSelectedReserve}
+        selectedKind={selectedPlayer === "BLUE" ? selectedReserve : undefined}
+        selectReserve={(kind) => {
+          setSelectedReserve(kind);
+          setSelectedPlayer("BLUE");
+        }}
         squareSize={squareSize}
       />
-      <div
+      <BoardContainer
         ref={measureRef}
-        className={cn(
-          "flex flex-col w-[360px] h-[360px] lg:w-[600px] lg:h-[600px] overflow-x-hidden overflow-y-auto m-auto"
-        )}
+        onRightClickDrag={() => {}}
+        onLeftClickDown={handleLeftClick}
+        onLeftClickUp={handleLeftClick}
+        onMouseOver={handleMouseOver}
+        flipped={false}
+        isTutorial={false}
       >
         {board.map((row, rowIndex) => (
           <div key={rowIndex} style={{ display: "flex" }}>
@@ -56,14 +86,36 @@ export function Editor() {
             ))}
           </div>
         ))}
-      </div>
-
+      </BoardContainer>
+      {selectedReserve && (
+        <div
+          className="fixed pointer-events-none z-50"
+          style={{
+            width: pieceSize * 0.7,
+            height: pieceSize * 0.7,
+            left: mousePosition.x,
+            top: mousePosition.y,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          <img
+            src={`/${Units[selectedReserve].imagePathPrefix}-${selectedPlayer}.png`}
+            width={pieceSize * 0.7}
+            height={pieceSize * 0.7}
+            draggable="false"
+            alt={Units[selectedReserve].imagePathPrefix}
+          />
+        </div>
+      )}
       <ReserveBankV2
         player="RED"
         reserve={redReserve}
         selectable={true}
-        selectedKind={redSelectedReserve}
-        selectReserve={setRedSelectedReserve}
+        selectedKind={selectedPlayer === "RED" ? selectedReserve : undefined}
+        selectReserve={(kind) => {
+          setSelectedReserve(kind);
+          setSelectedPlayer("RED");
+        }}
         squareSize={squareSize}
       />
     </div>
