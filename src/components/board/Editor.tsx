@@ -20,6 +20,7 @@ import ReserveBankButton from "./ReserveBankButton";
 import { Label } from "@radix-ui/react-label";
 import { Input } from "../ui/input";
 import { boardToFEN } from "@/game/notation";
+import Header from "../Header";
 
 export function Editor() {
   const { measureRef, squareSize, pieceSize } = useBoardDimensions();
@@ -95,7 +96,11 @@ export function Editor() {
   const handleMouseOver = () => {};
 
   return (
-    <div className="flex flex-col items-center justify-center gap-2">
+    <div className="flex flex-col items-center gap-2 px-2 lg:px-48">
+      <div className="w-full">
+        <Header />
+      </div>
+
       <div className="flex items-center justify-center gap-1">
         <ReserveBankButton
           squareSize={squareSize}

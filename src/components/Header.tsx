@@ -4,14 +4,14 @@ import { ClerkLoaded, ClerkLoading, useAuth, useClerk } from "@clerk/nextjs";
 import Image from "next/image";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { Loader2 } from "lucide-react";
-import { getUser, User } from "@/lib/supabase";
+import { getUser } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { config } from "@/lib/config";
 import { ghqFetch } from "@/lib/api";
 import { API_URL } from "@/app/live/config";
-import UserBadgeTag from "./UserBadgeTag";
 import Username from "./Username";
+
 export default function Header() {
   return (
     <div className="flex justify-between">
