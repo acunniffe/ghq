@@ -22,6 +22,7 @@ import { Label } from "@radix-ui/react-label";
 import { Input } from "../ui/input";
 import { boardToFEN } from "@/game/notation";
 import Header from "../Header";
+import { Button } from "../ui/button";
 
 export function Editor() {
   const { measureRef, squareSize, pieceSize } = useBoardDimensions();
@@ -101,7 +102,7 @@ export function Editor() {
   const handleMouseOver = () => {};
 
   return (
-    <div className="flex flex-col items-center gap-2 px-2 lg:px-48">
+    <div className="flex flex-col items-center gap-2 px-2 lg:px-48 mb-20">
       <div className="w-full">
         <Header />
       </div>
@@ -253,7 +254,13 @@ export function Editor() {
         />
       </div>
 
-      <div className="flex flex-col gap-2 mt-8 w-[360px] lg:w-[600px]">
+      <div className="flex gap-2 mt-2 w-[360px] lg:w-[600px]">
+        <Button variant="outline" onClick={() => setBoard(defaultBoard)}>
+          Reset to default
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-2 mt-2 w-[360px] lg:w-[600px]">
         <div className="flex items-center gap-2 w-full">
           <Label htmlFor="jfen">FEN</Label>
           <Input
