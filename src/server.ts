@@ -786,7 +786,8 @@ server.router.get("/correspondence/challenges", async (ctx) => {
     .select(
       `
       challenger:users!challenger_user_id(id, username, elo),
-      target:users!target_user_id(id, username, elo)
+      target:users!target_user_id(id, username, elo),
+      rated
     `
     )
     .or(`challenger_user_id.eq.${userId},target_user_id.eq.${userId}`)

@@ -7,6 +7,7 @@ import { PlayFriendDialog } from "./PlayFriendDialog";
 import { Button } from "@/components/ui/button";
 import { MatchLink } from "./MatchLink";
 import { MatchModel } from "@/lib/types";
+import RatedBadge from "@/components/RatedBadge";
 
 export default function CorrespondenceView() {
   const { isSignedIn, getToken, userId } = useAuth();
@@ -133,11 +134,12 @@ function ReceivedChallengeRow({
       className="p-1 bg-white rounded-lg flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center"
     >
       <div className="flex items-center gap-1 px-2">
-        <Mail className="h-4 w-4 mr-1" /> Challenge from{" "}
+        <Mail className="h-4 w-4 mr-1" />
+        Challenge from{" "}
         <span className="font-bold text-gray-700">
           {challenge.challenger.username}
         </span>
-        !
+        <RatedBadge rated={challenge.rated} />
       </div>
       <div className="flex items-center gap-1 justify-end">
         <Button
@@ -170,6 +172,7 @@ function SentChallengeRow({ challenge }: { challenge: any }) {
         <span className="font-bold text-gray-700">
           {challenge.target.username}
         </span>
+        <RatedBadge rated={challenge.rated} />
       </div>
       <div className="flex items-center text-sm text-gray-500 justify-end">
         Awaiting response...
