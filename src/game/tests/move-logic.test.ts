@@ -22,6 +22,7 @@ const O = true; // square that can be moved to
 const Q: Square = { type: "HQ", player: "RED" };
 const I: Square = { type: "INFANTRY", player: "RED" };
 const F: Square = { type: "ARMORED_INFANTRY", player: "RED" };
+const R: Square = { type: "ARTILLERY", player: "RED", orientation: 180 };
 
 // Blue pieces (indicated by lowercase)
 const q: Square = { type: "HQ", player: "BLUE" };
@@ -646,6 +647,38 @@ describe("computing allowed moves", () => {
         [_, _, _, _, _, _, _, _],
       ],
       [2, 0]
+    );
+  });
+
+  it("HQ should not be affected by a zone of control.", () => {
+    expectMoves(
+      [
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, O, O, O],
+        [_, _, _, _, _, i, Q, O],
+      ],
+      [7, 6]
+    );
+  });
+
+  it("Artillery should not be affected by a zone of control.", () => {
+    expectMoves(
+      [
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, _, _, _],
+        [_, _, _, _, _, O, O, O],
+        [_, _, _, _, _, i, R, O],
+      ],
+      [7, 6]
     );
   });
 });

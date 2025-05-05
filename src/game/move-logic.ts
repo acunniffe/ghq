@@ -1,4 +1,10 @@
-import { Coordinate, GHQState, Player, Units } from "@/game/engine";
+import {
+  Coordinate,
+  GHQState,
+  NonNullSquare,
+  Player,
+  Units,
+} from "@/game/engine";
 import { getOpponent } from "./board-moves";
 import { PlayerPiece } from "./board-moves";
 import { isInfantry } from "./capture-logic";
@@ -58,6 +64,7 @@ export function movesForActivePieceV2(
 
   return getMoves(
     coordinate,
+    piece,
     unitType.mobility,
     board,
     allowedSquares,
@@ -67,6 +74,7 @@ export function movesForActivePieceV2(
 
 function getMoves(
   coordinate: Coordinate,
+  movingPiece: NonNullSquare,
   mobility: 1 | 2,
   board: GHQState["board"],
   allowedSquares: Record<string, boolean>,
@@ -96,6 +104,7 @@ function getMoves(
       // must not have a piece and must be an allowed square (not bombarded or adjacent to enemy infantry)
       if (!piece && allowedSquares[`${newX},${newY}`]) {
         if (
+          isInfantry(movingPiece) &&
           squaresWithAdjacentEnemyInfantry[
             `${coordinate[0]},${coordinate[1]}`
           ] &&
