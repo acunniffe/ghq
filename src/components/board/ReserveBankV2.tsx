@@ -20,8 +20,6 @@ export function ReserveBankV2(props: {
 
   const reserves = kinds.flatMap((kind) => {
     const count = props.reserve[kind as keyof ReserveFleet];
-    if (count === 0) return null;
-
     return (
       <ReserveBankButton
         key={kind}

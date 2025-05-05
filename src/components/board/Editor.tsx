@@ -5,7 +5,6 @@ import {
   Board,
   Coordinate,
   defaultBoard,
-  defaultReserveFleet,
   Player,
   ReserveFleet,
   Square,
@@ -24,6 +23,15 @@ import { boardToFEN } from "@/game/notation";
 import Header from "../Header";
 import { Button } from "../ui/button";
 import EditReservesDialog from "./EditReservesDialog";
+
+const defaultReserveFleet: ReserveFleet = {
+  INFANTRY: 0,
+  ARMORED_INFANTRY: 0,
+  AIRBORNE_INFANTRY: 0,
+  ARTILLERY: 0,
+  ARMORED_ARTILLERY: 0,
+  HEAVY_ARTILLERY: 0,
+};
 
 export function Editor() {
   const { measureRef, squareSize, pieceSize } = useBoardDimensions();

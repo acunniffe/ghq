@@ -47,6 +47,12 @@ export default function EditReservesDialog({
     setOpen(false);
   };
 
+  const handleCancel = () => {
+    setLocalRedReserve(redReserve);
+    setLocalBlueReserve(blueReserve);
+    setOpen(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -107,7 +113,7 @@ export default function EditReservesDialog({
           ))}
         </div>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
           <Button onClick={handleSave}>Save</Button>
