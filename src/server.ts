@@ -556,6 +556,7 @@ function onGameEnd({ ctx, G }: { ctx: any; G: GHQState }): void | GHQState {
     status,
     winner,
     winnerId,
+    matchId,
   }).catch((error) => {
     console.log({
       message: "Error updating user elos",
@@ -570,13 +571,35 @@ async function updateUserElos({
   status,
   winner,
   winnerId,
+  matchId,
 }: {
   player0Id: string;
   player1Id: string;
   status: string;
   winner: Player | undefined;
   winnerId: string | null;
+  matchId: string;
 }): Promise<void> {
+  const { data: match, error: matchError } = await supabase
+    .from("matches")
+    .select("id, rated")
+    .eq("id", matchId)
+    .single();
+
+  if (matchError) {
+    console.log({
+      message: "Error fetching match",
+      matchId,
+      matchError,
+    });
+    return;
+  }
+
+  if (!match.rated) {
+    console.log("Unrated match, skipping elo update");
+    return;
+  }
+
   const [player0, player1] = await Promise.all([
     getUser(player0Id),
     getUser(player1Id),
@@ -745,9 +768,10 @@ server.router.post("/correspondence/challenge", async (ctx) => {
     throw new Error("userId is required");
   }
 
-  const { targetUserId, rated } = ctx.request.body as {
+  const { targetUserId, rated, fen } = ctx.request.body as {
     targetUserId: string;
     rated?: boolean;
+    fen?: string;
   };
   if (!targetUserId) {
     ctx.throw(400, "targetUserId is required");
@@ -760,6 +784,7 @@ server.router.post("/correspondence/challenge", async (ctx) => {
       target_user_id: targetUserId,
       status: "sent",
       rated: rated ?? true, // default to true if its not specified for now (we'll change this later)
+      fen,
     })
     .select()
     .single();
@@ -787,7 +812,8 @@ server.router.get("/correspondence/challenges", async (ctx) => {
       `
       challenger:users!challenger_user_id(id, username, elo),
       target:users!target_user_id(id, username, elo),
-      rated
+      rated,
+      fen
     `
     )
     .or(`challenger_user_id.eq.${userId},target_user_id.eq.${userId}`)
@@ -820,7 +846,7 @@ server.router.post("/correspondence/accept", async (ctx) => {
 
   const { data: challenge, error: challengeError } = await supabase
     .from("correspondence_challenges")
-    .select("challenger_user_id, target_user_id, rated")
+    .select("challenger_user_id, target_user_id, rated, fen")
     .eq("challenger_user_id", challengerUserId)
     .eq("target_user_id", userId)
     .eq("status", "sent")
@@ -857,6 +883,7 @@ server.router.post("/correspondence/accept", async (ctx) => {
       },
       timeControl: TIME_CONTROLS.correspondence.time,
       bonusTime: TIME_CONTROLS.correspondence.bonus,
+      fen: challenge.fen,
     },
     unlisted: false,
     game: ghqGame as SrcGame,

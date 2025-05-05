@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MatchLink } from "./MatchLink";
 import { MatchModel } from "@/lib/types";
 import RatedBadge from "@/components/RatedBadge";
+import Link from "next/link";
 
 export default function CorrespondenceView() {
   const { isSignedIn, getToken, userId } = useAuth();
@@ -140,6 +141,7 @@ function ReceivedChallengeRow({
           {challenge.challenger.username}
         </span>
         <RatedBadge rated={challenge.rated} />
+        <CustomGameLink challenge={challenge} />
       </div>
       <div className="flex items-center gap-1 justify-end">
         <Button
@@ -173,10 +175,34 @@ function SentChallengeRow({ challenge }: { challenge: any }) {
           {challenge.target.username}
         </span>
         <RatedBadge rated={challenge.rated} />
+        <CustomGameLink challenge={challenge} />
       </div>
       <div className="flex items-center text-sm text-gray-500 justify-end">
         Awaiting response...
       </div>
     </div>
+  );
+}
+
+function CustomGameLink({ challenge }: { challenge: any }) {
+  if (!challenge?.fen) {
+    return null;
+  }
+
+  const url = new URL(window.location.toString());
+  url.pathname = "/learn";
+  if (challenge?.fen) {
+    url.searchParams.set("jfen", challenge.fen);
+  }
+  const learnUrl = url.toString();
+
+  return (
+    <Link
+      href={learnUrl}
+      className="text-sm text-gray-500 hover:text-gray-700"
+      target="_blank"
+    >
+      Custom Game
+    </Link>
   );
 }

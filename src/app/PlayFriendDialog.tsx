@@ -18,11 +18,87 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import ButtonV2 from "./live/ButtonV2";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { FENtoBoardState } from "@/game/notation";
 
 interface User {
   id: string;
   username: string;
   elo: number;
+}
+
+interface AdvancedSettingsProps {
+  rated: boolean;
+  setRated: (rated: boolean) => void;
+  fen: string;
+  setFen: (fen: string) => void;
+}
+
+function AdvancedSettings({
+  rated,
+  setRated,
+  fen,
+  setFen,
+}: AdvancedSettingsProps) {
+  const [invalidFenError, setInvalidFenError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (fen) {
+      try {
+        FENtoBoardState(fen);
+        setInvalidFenError(null);
+      } catch (error: any) {
+        setInvalidFenError(error?.message ?? "Invalid FEN");
+      }
+    }
+  }, [fen]);
+
+  return (
+    <Accordion type="single" collapsible>
+      <AccordionItem value="advanced">
+        <AccordionTrigger>Advanced</AccordionTrigger>
+        <AccordionContent>
+          <div className="flex flex-col gap-4 px-1">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="fen" className="text-sm font-medium">
+                Custom position (FEN)
+              </label>
+              <Input
+                id="fen"
+                placeholder="Enter FEN (optional)"
+                value={fen}
+                onChange={(e) => setFen(e.target.value)}
+              />
+              {invalidFenError && (
+                <div className="text-red-500 text-sm">{invalidFenError}</div>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="rated"
+                checked={rated}
+                onCheckedChange={(checked) =>
+                  setRated(checked === "indeterminate" ? true : checked)
+                }
+              />
+              <label
+                htmlFor="rated"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Rated game
+              </label>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
 }
 
 export function PlayFriendDialog() {
@@ -32,6 +108,8 @@ export function PlayFriendDialog() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [open, setOpen] = useState<boolean>(false);
   const [search, setSearch] = useState<string>("");
+  const [rated, setRated] = useState<boolean>(true);
+  const [fen, setFen] = useState<string>("");
 
   useEffect(() => {
     if (open) {
@@ -68,7 +146,7 @@ export function PlayFriendDialog() {
       url: `${API_URL}/correspondence/challenge`,
       getToken,
       method: "POST",
-      body: JSON.stringify({ targetUserId: selectedUser.id, rated: true }),
+      body: JSON.stringify({ targetUserId: selectedUser.id, rated, fen }),
     });
 
     toast(
@@ -132,6 +210,12 @@ export function PlayFriendDialog() {
               ))}
           </div>
         </div>
+        <AdvancedSettings
+          rated={rated}
+          setRated={setRated}
+          fen={fen}
+          setFen={setFen}
+        />
         <DialogFooter className="sm:justify-start">
           <DialogClose asChild>
             <Button

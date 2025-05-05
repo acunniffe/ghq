@@ -11,6 +11,7 @@ import { calculateEval } from "./eval";
 import { ai } from "./ai";
 import { TIME_CONTROLS } from "./constants";
 import { variants } from "./variants";
+import { FENtoBoardState } from "./notation";
 
 export const Units: {
   [key: string]: {
@@ -542,11 +543,20 @@ export const emptyReserveFleet: ReserveFleet = {
 export const GHQGame: Game<GHQState> = {
   setup: ({ ctx, ...plugins }, setupData) => {
     const variant = variants[setupData?.variant];
-    const redReserve =
+    let redReserve =
       variant?.redReserve ?? structuredClone(defaultReserveFleet);
-    const blueReserve =
+    let blueReserve =
       variant?.blueReserve ?? structuredClone(defaultReserveFleet);
-    const board = variant?.board ?? defaultBoard;
+    let board = variant?.board ?? defaultBoard;
+
+    // Override using FEN if provided
+    if (setupData?.fen) {
+      const boardState = FENtoBoardState(setupData.fen);
+      board = boardState.board;
+      redReserve = boardState.redReserve;
+      blueReserve = boardState.blueReserve;
+    }
+
     return {
       isTutorial: false,
       startTime: Date.now(),
@@ -719,6 +729,9 @@ export function newOnlineGHQGame({
       }
       if (setupData?.variant && !TIME_CONTROLS[setupData.variant]) {
         return "Invalid variant";
+      }
+      if (setupData?.fen && !FENtoBoardState(setupData.fen)) {
+        return "Invalid FEN";
       }
     }
   };

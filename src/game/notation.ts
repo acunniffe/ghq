@@ -1,11 +1,4 @@
-import {
-  AllowedMove,
-  GHQState,
-  NonNullSquare,
-  Orientation,
-  ReserveFleet,
-  Square,
-} from "./engine";
+import { GHQState, NonNullSquare, Orientation, ReserveFleet } from "./engine";
 
 export function rowIndexToRank(index: number): number {
   if (index < 0 || index > 7) {
