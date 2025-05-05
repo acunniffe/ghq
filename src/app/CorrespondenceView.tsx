@@ -70,7 +70,7 @@ export default function CorrespondenceView() {
     <div className="flex flex-col">
       <div className="flex justify-between items-center mb-3">
         <div className="text-lg font-bold">Correspondence</div>
-        <PlayFriendDialog />
+        {isSignedIn && <PlayFriendDialog />}
       </div>
 
       {loading && (
