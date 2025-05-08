@@ -22,7 +22,7 @@ export function coordinateToAlgebraic([x, y]: [number, number]): string {
   return `${file}${rank}`;
 }
 
-const CARDINAL_DIRECTIONS = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
+export const CARDINAL_DIRECTIONS = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"];
 
 export function degreesToCardinal(degrees: Orientation): string {
   if (degrees < 0 || degrees >= 360) {
@@ -190,7 +190,7 @@ const symbolToUnit = {
   H: "HEAVY_ARTILLERY",
 };
 
-const unitToSymbol = Object.fromEntries(
+export const unitToSymbol = Object.fromEntries(
   Object.entries(symbolToUnit).map(([key, value]) => [value, key])
 );
 
@@ -208,7 +208,7 @@ function pieceToString(piece: NonNullSquare): string {
   return `${unit}${rotation}`;
 }
 
-function charToPiece(str: string): NonNullSquare | undefined {
+export function charToPiece(str: string): NonNullSquare | undefined {
   if (str.length !== 1) {
     return undefined;
   }
