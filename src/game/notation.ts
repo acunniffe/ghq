@@ -64,6 +64,7 @@ export function boardToFEN({
   board,
   redReserve,
   blueReserve,
+  currentPlayerTurn,
 }: BoardState): string {
   let fen = "";
 
@@ -91,15 +92,21 @@ export function boardToFEN({
 
   fen += " ";
 
-  fen += Object.entries(redReserve)
-    .map(([unit, count]) => unitToSymbol[unit].repeat(count))
-    .join("");
+  fen +=
+    Object.entries(redReserve)
+      .map(([unit, count]) => unitToSymbol[unit].repeat(count))
+      .join("") || "-";
 
   fen += " ";
 
-  fen += Object.entries(blueReserve)
-    .map(([unit, count]) => unitToSymbol[unit].repeat(count))
-    .join("");
+  fen +=
+    Object.entries(blueReserve)
+      .map(([unit, count]) => unitToSymbol[unit].toLowerCase().repeat(count))
+      .join("") || "-";
+
+  fen += " ";
+
+  fen += (currentPlayerTurn ?? "RED") === "RED" ? "r" : "b";
 
   return fen;
 }
