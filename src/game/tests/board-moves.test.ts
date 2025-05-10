@@ -218,6 +218,17 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     description: "can't move a piece that's already been moved this turn",
     expectedMovesUCI: "h1g2 h1h2 h1g1 skip",
   },
+  {
+    description: "armored infantry can't move through your own pieces",
+    boardFEN: "q7/8/8/8/8/8/I↑7/F6Q - - r -",
+    expectedMovesUCI: "a2a3 a2b3 a2b2 a2b1 a1b2 a1c3 a1b1 a1c1 h1g2 h1h2 h1g1",
+  },
+  {
+    description: "armored artillery can't move through your own pieces",
+    boardFEN: "q7/8/8/8/8/8/I↑7/T↑6Q - - r -",
+    expectedMovesUCI:
+      "a2a3 a2b3 a2b2 a2b1 a1b2↑ a1b2↗ a1b2→ a1b2↘ a1b2↓ a1b2↙ a1b2← a1b2↖ a1c3↑ a1c3↗ a1c3→ a1c3↘ a1c3↓ a1c3↙ a1c3← a1c3↖ a1b1↑ a1b1↗ a1b1→ a1b1↘ a1b1↓ a1b1↙ a1b1← a1b1↖ a1c1↑ a1c1↗ a1c1→ a1c1↘ a1c1↓ a1c1↙ a1c1← a1c1↖ a1a1↗ a1a1→ a1a1↘ a1a1↓ a1a1↙ a1a1← a1a1↖ h1g2 h1h2 h1g1",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [

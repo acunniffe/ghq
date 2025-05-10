@@ -32,6 +32,7 @@ export default function useBoard({
   const [mostRecentMove, setMostRecentMove] = useState<
     AllowedMove | undefined
   >();
+  const skipAnimations = G.isReplayMode; // || G.isPassAndPlayMode;
 
   const animateOpponentsTurnToLatestBoardState = useCallback(() => {
     // Only animate when it's our turn (opponent's move has ended)
@@ -62,7 +63,7 @@ export default function useBoard({
 
   // Change the board state when the current turn changes or it's game over.
   useEffect(() => {
-    if (G.isReplayMode) {
+    if (skipAnimations) {
       return;
     }
 
@@ -84,14 +85,14 @@ export default function useBoard({
 
   // In replay mode, don't animate the board state when the game state changes, just set it immediately.
   useEffect(() => {
-    if (G.isReplayMode) {
+    if (skipAnimations) {
       setBoard(G.board);
     }
   }, [G.board]);
 
   // In replay mode, don't animate the board state when the game state changes, just set it immediately.
   useEffect(() => {
-    if (G.isReplayMode) {
+    if (skipAnimations) {
       const lastMove = G.thisTurnMoves[G.thisTurnMoves.length - 1];
       if (!lastMove) {
         return;
