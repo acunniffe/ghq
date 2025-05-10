@@ -90,6 +90,30 @@ export function allowedMoveToUci(move: AllowedMove): string {
     return result;
   }
 
+  if (move.name === "AutoCapture") {
+    const [autoCaptureType, from, capturePreference] = move.args;
+    let result = "s";
+    if (autoCaptureType === "bombard") {
+      if (!capturePreference) {
+        throw new Error("capturePreference is required for auto-capture");
+      }
+      result += "bx" + coordinateToSquare(capturePreference);
+    } else if (autoCaptureType === "free") {
+      if (!capturePreference) {
+        throw new Error("capturePreference is required for auto-capture");
+      }
+      if (!from) {
+        throw new Error("from is required for auto-capture");
+      }
+      result +=
+        "f" +
+        coordinateToSquare(from) +
+        "x" +
+        coordinateToSquare(capturePreference);
+    }
+    return result;
+  }
+
   return "";
 }
 
@@ -139,6 +163,39 @@ export function allowedMoveFromUci(uci: string): AllowedMove {
       name: "Reinforce",
       args: [unitType!, to!, capturePreference],
     };
+  }
+
+  if (uci.startsWith("s")) {
+    if (uci.length < 3) {
+      throw new Error("invalid auto-capture move: too short");
+    }
+
+    if (uci[1] === "b" && uci[2] === "x" && uci.length >= 5) {
+      try {
+        const capturePreference = squareToCoordinate(uci.slice(3, 5));
+        return {
+          name: "AutoCapture",
+          args: ["bombard", undefined, capturePreference],
+        };
+      } catch (e) {
+        throw new Error(`invalid capture square: ${uci.slice(3, 5)}`);
+      }
+    } else if (uci[1] === "f" && uci.length >= 6) {
+      try {
+        const from = squareToCoordinate(uci.slice(2, 4));
+        const capturePreference = squareToCoordinate(uci.slice(5, 7));
+        return {
+          name: "AutoCapture",
+          args: ["free", from, capturePreference],
+        };
+      } catch (e) {
+        throw new Error(
+          `invalid squares: ${uci.slice(2, 4)} or ${uci.slice(5, 7)}`
+        );
+      }
+    } else {
+      throw new Error(`invalid auto-capture type: ${uci[1]}`);
+    }
   }
 
   if (uci.length >= 4) {
