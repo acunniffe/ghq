@@ -30,7 +30,7 @@ export function GHQBoardV2(props: BoardProps<GHQState>) {
   const [moveIndex, setMoveIndex] = useState(0);
 
   useHotkeys(
-    "space",
+    "f",
     (e) => {
       e.preventDefault();
       const move = movesUCI[moveIndex];
@@ -63,8 +63,12 @@ export function GHQBoardV2(props: BoardProps<GHQState>) {
         );
       }
       setMoveIndex(moveIndex + 1);
+
+      if (props.G.thisTurnMoves.length === 2 && moveUCI.name !== "Skip") {
+        props.moves.Skip();
+      }
     },
-    [props.moves, moveIndex]
+    [props.moves, moveIndex, props.G.thisTurnMoves]
   );
 
   return (

@@ -17,7 +17,6 @@ import { boardToFEN } from "./notation";
 import { Ctx } from "boardgame.io";
 
 export default function ShareGameDialog({ G, ctx }: { G: GHQState; ctx: Ctx }) {
-  console.log(G.thisTurnMoves);
   const url = new URL(window.location.toString());
   url.pathname = "/learn";
   url.searchParams.set(
