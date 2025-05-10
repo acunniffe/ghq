@@ -47,6 +47,167 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     expectedMovesUCI:
       "ria1 rib1 ric1 rid1 rie1 rif1 rig1 rfa1 rfb1 rfc1 rfd1 rfe1 rff1 rfg1 rpa1 rpb1 rpc1 rpd1 rpe1 rpf1 rpg1 rra1 rrb1 rrc1 rrd1 rre1 rrf1 rrg1 rta1 rtb1 rtc1 rtd1 rte1 rtf1 rtg1 rha1 rhb1 rhc1 rhd1 rhe1 rhf1 rhg1 b6a7 b6a7xb7 b6c7 b6c7xb7 b6a6 b6c6 b6a5 b6c5 h1g2 h1h2 h1g1",
   },
+  {
+    boardFEN: "8/8/1i6/2r↓5/1I6/8/8/8 - - r",
+    description: "capture scenario #1",
+    expectedMovesUCI: "b4a5 b4b5 b4a4 b4a3 b4b3",
+  },
+  {
+    boardFEN: "8/8/1i6/r↓1r↓5/8/8/8/1P6 - - r",
+    description: "capture scenario #2",
+    expectedMovesUCI:
+      "b1a8 b1b8 b1c8 b1d8 b1e8 b1f8 b1g8 b1h8 b1a7 b1b7 b1c7 b1d7 b1e7 b1f7 b1g7 b1h7 b1a6 b1c6 b1d6 b1e6 b1f6 b1g6 b1h6 b1b5 b1d5 b1d5xc5 b1e5 b1f5 b1g5 b1h5 b1b4 b1d4 b1e4 b1f4 b1g4 b1h4 b1b3 b1d3 b1e3 b1f3 b1g3 b1h3 b1a2 b1b2 b1c2 b1d2 b1e2 b1f2 b1g2 b1h2 b1a1 b1c1 b1d1 b1e1 b1f1 b1g1 b1h1",
+  },
+  {
+    boardFEN: "8/8/1i6/1Ii5/8/8/8/1P6 - - r",
+    description: "capture scenario #3",
+    expectedMovesUCI:
+      "b5a5 b5a4 b5b4 b1a8 b1b8 b1c8 b1d8 b1e8 b1f8 b1g8 b1h8 b1a7 b1b7 b1c7 b1d7 b1e7 b1f7 b1g7 b1h7 b1a6 b1c6 b1d6 b1e6 b1f6 b1g6 b1h6 b1a5 b1d5 b1e5 b1f5 b1g5 b1h5 b1a4 b1b4 b1c4 b1d4 b1e4 b1f4 b1g4 b1h4 b1a3 b1b3 b1c3 b1d3 b1e3 b1f3 b1g3 b1h3 b1a2 b1b2 b1c2 b1d2 b1e2 b1f2 b1g2 b1h2 b1a1 b1c1 b1d1 b1e1 b1f1 b1g1 b1h1",
+  },
+  {
+    boardFEN: "8/8/1i6/1Ir↓5/2I5/8/8/1P6 - - r",
+    description: "capture scenario #4",
+    expectedMovesUCI:
+      "b5a5 b5a4 b5b4 c4d5 c4d5xc5 c4b4 c4d4 c4b3 c4d3 b1a8 b1b8 b1c8 b1d8 b1e8 b1f8 b1g8 b1h8 b1a7 b1b7 b1b7xb6 b1c7 b1d7 b1e7 b1f7 b1g7 b1h7 b1a6 b1a6xb6 b1c6 b1c6xc5 b1c6xb6 b1d6 b1e6 b1f6 b1g6 b1h6 b1a5 b1d5 b1d5xc5 b1e5 b1f5 b1g5 b1h5 b1a4 b1b4 b1d4 b1e4 b1f4 b1g4 b1h4 b1a3 b1b3 b1d3 b1e3 b1f3 b1g3 b1h3 b1a2 b1b2 b1c2 b1d2 b1e2 b1f2 b1g2 b1h2 b1a1 b1c1 b1d1 b1e1 b1f1 b1g1 b1h1",
+  },
+  {
+    boardFEN: "qr↓6/iii5/8/8/8/8/5III/4P1R↑Q - - r",
+    description: "capture scenario #5",
+    expectedMovesUCI:
+      "f2e3 f2f3 f2g3 f2e2 f2f1 g2f3 g2g3 g2h3 g2f1 h2g3 h2h3 e1c8 e1d8 e1e8 e1f8 e1g8 e1h8 e1d7 e1e7 e1f7 e1g7 e1h7 e1a6 e1c6 e1d6 e1e6 e1f6 e1g6 e1h6 e1a5 e1b5 e1c5 e1d5 e1e5 e1f5 e1g5 e1h5 e1a4 e1b4 e1c4 e1d4 e1e4 e1f4 e1g4 e1h4 e1a3 e1b3 e1c3 e1d3 e1e3 e1f3 e1g3 e1h3 e1a2 e1b2 e1c2 e1d2 e1e2 e1a1 e1b1 e1c1 e1d1 e1f1 g1f1↑ g1f1↗ g1f1→ g1f1↘ g1f1↓ g1f1↙ g1f1← g1f1↖ g1g1↗ g1g1→ g1g1↘ g1g1↓ g1g1↙ g1g1← g1g1↖",
+  },
+  {
+    boardFEN: "qr↓1p4/iii5/8/8/8/8/5III/6R↑Q - - r",
+    description: "capture scenario #6",
+    expectedMovesUCI:
+      "f2e3 f2f3 f2g3 f2e2 f2e1 f2f1 g2f3 g2g3 g2h3 g2f1 h2g3 h2h3 g1f1↑ g1f1↗ g1f1→ g1f1↘ g1f1↓ g1f1↙ g1f1← g1f1↖ g1g1↗ g1g1→ g1g1↘ g1g1↓ g1g1↙ g1g1← g1g1↖",
+  },
+  {
+    boardFEN: "8/1iI5/1I1I4/8/8/8/8/8 - - r",
+    description: "capture scenario #7",
+    expectedMovesUCI:
+      "c7c8 c7d8 c7d7 c7c6 b6a6 b6c6 b6a5 b6b5 b6c5 d6d7 d6e7 d6c6 d6e6 d6c5 d6d5 d6e5",
+  },
+  {
+    boardFEN: "8/1i6/8/1Ii5/8/8/8/8 - - r",
+    description: "capture scenario #8",
+    expectedMovesUCI: "b5a6 b5a5 b5a4 b5b4",
+  },
+  {
+    boardFEN: "8/8/1iI5/1Ii1iI2/Ii1I4/8/8/8 - - r",
+    description: "capture scenario #9",
+    expectedMovesUCI:
+      "c6c7 c6d7 c6d6 b5a5 f5f6 f5g6 f5g5 f5f4 f5g4 a4a5 a4a3 d4d5 d4d5xc5 d4d5xe5 d4c4 d4c4xc5 d4c4xb4 d4e4 d4e4xe5 d4c3 d4d3 d4e3",
+  },
+  {
+    boardFEN: "8/8/1iI5/1IiI4/I1Ii4/1ii5/8/8 - - r",
+    description: "capture scenario #10",
+    expectedMovesUCI: "c6c7 c6d7 c6d6 b5a5 d5d6 d5e6 d5e5 a4a5 a4b4 a4a3",
+  },
+  {
+    boardFEN: "8/2R↑5/1R↑6/3i4/8/8/8/8 - - r",
+    description: "capture scenario #11",
+    expectedMovesUCI:
+      "c7b8↑ c7b8↗ c7b8→ c7b8↘ c7b8↓ c7b8↙ c7b8← c7b8↖ c7c8↑ c7c8↗ c7c8→ c7c8↘ c7c8↓ c7c8↙ c7c8← c7c8↖ c7d8↑ c7d8↗ c7d8→ c7d8↘ c7d8↓ c7d8↙ c7d8← c7d8↖ c7b7↑ c7b7↗ c7b7→ c7b7↘ c7b7↓ c7b7↙ c7b7← c7b7↖ c7d7↑ c7d7↗ c7d7→ c7d7↘ c7d7↓ c7d7↙ c7d7← c7d7↖ c7c6↑ c7c6↗ c7c6→ c7c6↘ c7c6↓ c7c6↙ c7c6← c7c6↖ c7d6↑ c7d6↗ c7d6→ c7d6↘ c7d6↓ c7d6↙ c7d6← c7d6↖ c7c7↗ c7c7→ c7c7↘ c7c7↓ c7c7↙ c7c7← c7c7↖ b6a7↑ b6a7↗ b6a7→ b6a7↘ b6a7↓ b6a7↙ b6a7← b6a7↖ b6b7↑ b6b7↗ b6b7→ b6b7↘ b6b7↓ b6b7↙ b6b7← b6b7↖ b6a6↑ b6a6↗ b6a6→ b6a6↘ b6a6↓ b6a6↙ b6a6← b6a6↖ b6c6↑ b6c6↗ b6c6→ b6c6↘ b6c6↓ b6c6↙ b6c6← b6c6↖ b6a5↑ b6a5↗ b6a5→ b6a5↘ b6a5↓ b6a5↙ b6a5← b6a5↖ b6b5↑ b6b5↗ b6b5→ b6b5↘ b6b5↓ b6b5↙ b6b5← b6b5↖ b6c5↑ b6c5↗ b6c5→ b6c5↘ b6c5↓ b6c5↙ b6c5← b6c5↖ b6b6↗ b6b6→ b6b6↘ b6b6↓ b6b6↙ b6b6← b6b6↖",
+  },
+  {
+    boardFEN: "1p6/8/8/1Ii5/8/8/8/8 - - r",
+    description: "capture scenario #12",
+    expectedMovesUCI: "b5a6 b5b6 b5a5 b5a4 b5b4",
+  },
+  {
+    boardFEN: "1f6/8/8/1Ii5/8/8/8/8 - - r",
+    description: "capture scenario #13",
+    expectedMovesUCI: "b5a6 b5b6 b5a5 b5a4 b5b4",
+  },
+  {
+    boardFEN: "1f6/8/8/1Qi5/8/8/8/8 - - r",
+    description: "capture scenario #14",
+    expectedMovesUCI: "b5a6 b5b6 b5c6 b5a5 b5a4 b5b4 b5c4",
+  },
+  {
+    boardFEN: "8/1i6/8/1Q6/8/8/8/8 - - r",
+    description: "capture scenario #15",
+    expectedMovesUCI: "b5a6 b5b6 b5c6 b5a5 b5c5 b5a4 b5b4 b5c4",
+  },
+  {
+    boardFEN: "p7/8/8/8/8/8/6R↑1/7Q - - r",
+    description: "capture scenario #16",
+    expectedMovesUCI:
+      "g2f3↑ g2f3↗ g2f3→ g2f3↘ g2f3↓ g2f3↙ g2f3← g2f3↖ g2g3↑ g2g3↗ g2g3→ g2g3↘ g2g3↓ g2g3↙ g2g3← g2g3↖ g2h3↑ g2h3↗ g2h3→ g2h3↘ g2h3↓ g2h3↙ g2h3← g2h3↖ g2f2↑ g2f2↗ g2f2→ g2f2↘ g2f2↓ g2f2↙ g2f2← g2f2↖ g2h2↑ g2h2↗ g2h2→ g2h2↘ g2h2↓ g2h2↙ g2h2← g2h2↖ g2f1↑ g2f1↗ g2f1→ g2f1↘ g2f1↓ g2f1↙ g2f1← g2f1↖ g2g1↑ g2g1↗ g2g1→ g2g1↘ g2g1↓ g2g1↙ g2g1← g2g1↖ g2g2↗ g2g2→ g2g2↘ g2g2↓ g2g2↙ g2g2← g2g2↖ h1h2 h1g1",
+  },
+  {
+    boardFEN: "8/8/8/8/7i/6i1/7P/7q - - r",
+    description: "capture scenario #17",
+    expectedMovesUCI: "h2h3 h2g2 h2g1",
+  },
+  {
+    boardFEN: "8/8/8/8/8/8/6iq/6I1 - - r",
+    description: "capture scenario #18",
+    expectedMovesUCI: "g1f1 g1h1",
+  },
+  {
+    boardFEN: "8/8/8/8/8/8/7R↑/5I1q - - r",
+    description: "capture scenario #19",
+    expectedMovesUCI:
+      "h2g3↑ h2g3↗ h2g3→ h2g3↘ h2g3↓ h2g3↙ h2g3← h2g3↖ h2h3↑ h2h3↗ h2h3→ h2h3↘ h2h3↓ h2h3↙ h2h3← h2h3↖ h2g2↑ h2g2↗ h2g2→ h2g2↘ h2g2↓ h2g2↙ h2g2← h2g2↖ h2g1↑ h2g1↗ h2g1→ h2g1↘ h2g1↓ h2g1↙ h2g1← h2g1↖ h2h2↗ h2h2→ h2h2↘ h2h2↓ h2h2↙ h2h2← h2h2↖ f1e2 f1f2 f1g2 f1e1 f1g1",
+  },
+  {
+    boardFEN: "I7/1p6/1If5/8/8/8/8/8 - - r",
+    description: "capture scenario #20",
+    expectedMovesUCI: "a8b8 a8a7 b6a6 b6a5 b6b5",
+  },
+  {
+    boardFEN: "8/8/8/8/4r←3/4I3/8/8 - - r",
+    description: "capture scenario #21",
+    expectedMovesUCI: "e3f4 e3f4xe4 e3d3 e3f3 e3d2 e3e2 e3f2",
+  },
+  {
+    boardFEN: "8/8/8/8/4r←3/4I3/8/8 - - r",
+    description: "capture scenario #22",
+    expectedMovesUCI: "e3f4 e3f4xe4 e3d3 e3f3 e3d2 e3e2 e3f2",
+  },
+  {
+    boardFEN: "8/8/8/8/4r→3/4I3/8/8 - - r",
+    description: "capture scenario #23",
+    expectedMovesUCI: "e3d4 e3d4xe4 e3d3 e3f3 e3d2 e3e2 e3f2",
+  },
+  {
+    boardFEN: "8/8/8/8/4r→3/4I3/8/8 - - r",
+    description: "capture scenario #24",
+    expectedMovesUCI: "e3d4 e3d4xe4 e3d3 e3f3 e3d2 e3e2 e3f2",
+  },
+  {
+    boardFEN: "8/8/8/8/3Ir↑3/8/8/8 - - r",
+    description: "capture scenario #25",
+    expectedMovesUCI: "d4c5 d4d5 d4c4 d4c3 d4d3 d4e3 d4e3xe4",
+  },
+  {
+    boardFEN: "8/8/8/8/3Ir↑3/8/8/8 - - r",
+    description: "capture scenario #26",
+    expectedMovesUCI: "d4c5 d4d5 d4c4 d4c3 d4d3 d4e3 d4e3xe4",
+  },
+  {
+    boardFEN: "8/8/8/8/3Ir↓3/8/8/8 - - r",
+    description: "capture scenario #27",
+    expectedMovesUCI: "d4c5 d4d5 d4e5 d4e5xe4 d4c4 d4c3 d4d3",
+  },
+  {
+    boardFEN: "8/8/8/8/3Ir↓3/8/8/8 - - r",
+    description: "capture scenario #28",
+    expectedMovesUCI: "d4c5 d4d5 d4e5 d4e5xe4 d4c4 d4c3 d4d3",
+  },
+  {
+    boardFEN: "8/8/8/8/3Iq3/8/8/8 - - r",
+    description: "capture scenario #29",
+    expectedMovesUCI: "d4c5 d4d5 d4e5 d4c4 d4c3 d4d3 d4e3",
+  },
+  {
+    boardFEN: "8/8/5i2/6R↑i/5IiI/8/8/8 - - r",
+    description: "capture scenario #30",
+    expectedMovesUCI:
+      "g5g6↑ g5g6↗ g5g6→ g5g6↘ g5g6↓ g5g6↙ g5g6← g5g6↖ g5h6↑ g5h6↗ g5h6→ g5h6↘ g5h6↓ g5h6↙ g5h6← g5h6↖ g5f5↑ g5f5↗ g5f5→ g5f5↘ g5f5↓ g5f5↙ g5f5← g5f5↖ g5g5↗ g5g5→ g5g5↘ g5g5↓ g5g5↙ g5g5← g5g5↖ f4e5 f4e4 f4e3 f4f3 h4h3",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [
