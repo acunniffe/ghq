@@ -1,10 +1,12 @@
 import {
+  AllowedMove,
   GHQState,
   NonNullSquare,
   Orientation,
   Player,
   ReserveFleet,
 } from "./engine";
+import { allowedMoveToUci, allowedMoveFromUci } from "./notation-uci";
 
 export function rowIndexToRank(index: number): number {
   if (index < 0 || index > 7) {
@@ -56,6 +58,7 @@ export interface BoardState {
   redReserve: ReserveFleet;
   blueReserve: ReserveFleet;
   currentPlayerTurn?: Player;
+  thisTurnMoves?: AllowedMove[];
 }
 
 // Inspired by https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
@@ -64,6 +67,8 @@ export function boardToFEN({
   board,
   redReserve,
   blueReserve,
+  currentPlayerTurn,
+  thisTurnMoves,
 }: BoardState): string {
   let fen = "";
 
@@ -91,15 +96,29 @@ export function boardToFEN({
 
   fen += " ";
 
-  fen += Object.entries(redReserve)
-    .map(([unit, count]) => unitToSymbol[unit].repeat(count))
-    .join("");
+  fen +=
+    Object.entries(redReserve)
+      .map(([unit, count]) => unitToSymbol[unit].repeat(count))
+      .join("") || "-";
 
   fen += " ";
 
-  fen += Object.entries(blueReserve)
-    .map(([unit, count]) => unitToSymbol[unit].repeat(count))
-    .join("");
+  fen +=
+    Object.entries(blueReserve)
+      .map(([unit, count]) => unitToSymbol[unit].toLowerCase().repeat(count))
+      .join("") || "-";
+
+  fen += " ";
+
+  fen += (currentPlayerTurn ?? "RED") === "RED" ? "r" : "b";
+
+  fen += " ";
+
+  if (thisTurnMoves && thisTurnMoves.length > 0) {
+    fen += thisTurnMoves.map(allowedMoveToUci).join(",");
+  } else {
+    fen += "-";
+  }
 
   return fen;
 }
@@ -134,7 +153,8 @@ export function FENtoBoardState(fen: string): BoardState {
     HEAVY_ARTILLERY: 0,
   };
 
-  const [boardFen, redReserveFen, blueReserveFen] = fen.split(" ");
+  const [boardFen, redReserveFen, blueReserveFen, currentPlayerFen, movesFen] =
+    fen.split(" ");
 
   let i = 0;
   let j = 0;
@@ -175,7 +195,16 @@ export function FENtoBoardState(fen: string): BoardState {
     }
   }
 
-  return { board, redReserve, blueReserve };
+  const currentPlayerTurn = currentPlayerFen === "r" ? "RED" : "BLUE";
+
+  const thisTurnMoves: AllowedMove[] = [];
+  if (movesFen && movesFen !== "-") {
+    for (const moveUci of movesFen.split(",")) {
+      thisTurnMoves.push(allowedMoveFromUci(moveUci));
+    }
+  }
+
+  return { board, redReserve, blueReserve, currentPlayerTurn, thisTurnMoves };
 }
 
 function parseFENChar(char: string): {

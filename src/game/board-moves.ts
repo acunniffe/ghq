@@ -207,6 +207,10 @@ export function moveToNotation(move: AllowedMove): string {
       return `${move.args[0]} -> ${move.args[1]} facing ${move.args[2]}`;
     case "Reinforce":
       return `Reinforce ${move.args[0]} at ${move.args[1]}`;
+    case "AutoCapture":
+      return `AutoCapture ${move.args[0]}${
+        move.args[1] ? ` from ${move.args[1]}` : ""
+      }${move.args[2] ? ` x ${move.args[2]}` : ""}`;
     case "Skip":
       return "Skip";
   }

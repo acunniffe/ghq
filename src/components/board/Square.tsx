@@ -354,7 +354,9 @@ function getMoveDestination(move: AllowedMove): Coordinate | undefined {
   if (["Move", "MoveAndOrient", "Reinforce"].includes(move.name)) {
     return move.args[1];
   }
-
+  if (move.name === "AutoCapture" && move.args[0] === "free") {
+    return move.args[2];
+  }
   return undefined;
 }
 
@@ -408,7 +410,9 @@ function getMoveOrigin(move: AllowedMove): Coordinate | undefined {
   if (move.name === "Move" || move.name === "MoveAndOrient") {
     return move.args[0];
   }
-
+  if (move.name === "AutoCapture" && move.args[0] === "free") {
+    return move.args[1];
+  }
   return undefined;
 }
 

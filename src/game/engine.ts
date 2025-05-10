@@ -88,6 +88,7 @@ export type AllowedMove =
   | ReinforceMove
   | MoveMove
   | MoveAndOrientMove
+  | AutoCaptureMove
   | SkipMove;
 
 export interface ReinforceMove {
@@ -107,6 +108,15 @@ export interface MoveMove {
 export interface MoveAndOrientMove {
   name: "MoveAndOrient";
   args: [from: Coordinate, to: Coordinate, orientation?: Orientation];
+}
+
+export interface AutoCaptureMove {
+  name: "AutoCapture";
+  args: [
+    autoCaptureType: "bombard" | "free",
+    from?: Coordinate,
+    capturePreference?: Coordinate
+  ];
 }
 
 export interface SkipMove {

@@ -15,6 +15,7 @@ import ResignButton from "./ResignButton";
 import AbandonButton from "./AbandonButton";
 import SettingsMenu, { Settings } from "./SettingsMenu";
 import { Swords } from "lucide-react";
+import { Ctx } from "boardgame.io";
 
 export default function Sidebar({
   G,
@@ -29,6 +30,7 @@ export default function Sidebar({
   className: string;
   settings: Settings;
   setSettings: (settings: Settings) => void;
+  ctx: Ctx;
 }) {
   const currentPlayerTurn = useMemo(
     () => playerIdToPlayer(ctx.currentPlayer),
@@ -75,7 +77,7 @@ export default function Sidebar({
           </h2>
           {ctx.gameover.reason && ctx.gameover.reason}
           <div className="flex gap-1">
-            <ShareGameDialog G={G} />
+            <ShareGameDialog G={G} ctx={ctx} />
             <HomeButton />
           </div>
         </div>
@@ -109,13 +111,13 @@ export default function Sidebar({
                   />
                 )} */}
                 <ResignButton resign={() => moves.Resign()} />
-                <ShareGameDialog G={G} />
+                <ShareGameDialog G={G} ctx={ctx} />
                 <SettingsMenu settings={settings} setSettings={setSettings} />
               </>
             ) : (
               <>
                 <AbandonButton matchId={G.matchId} />
-                <ShareGameDialog G={G} />
+                <ShareGameDialog G={G} ctx={ctx} />
                 <SettingsMenu settings={settings} setSettings={setSettings} />
               </>
             )}

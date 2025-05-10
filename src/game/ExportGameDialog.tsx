@@ -14,8 +14,9 @@ import { GHQState } from "./engine";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import { Label } from "@/components/ui/label";
 import { boardToFEN } from "./notation";
+import { Ctx } from "boardgame.io";
 
-export default function ShareGameDialog({ G }: { G: GHQState }) {
+export default function ShareGameDialog({ G, ctx }: { G: GHQState; ctx: Ctx }) {
   const url = new URL(window.location.toString());
   url.pathname = "/learn";
   url.searchParams.set(
@@ -24,6 +25,8 @@ export default function ShareGameDialog({ G }: { G: GHQState }) {
       board: G.board,
       redReserve: G.redReserve,
       blueReserve: G.blueReserve,
+      thisTurnMoves: G.thisTurnMoves,
+      currentPlayerTurn: ctx.currentPlayer === "0" ? "RED" : "BLUE",
     })
   );
   const learnUrl = url.toString();
@@ -53,6 +56,8 @@ export default function ShareGameDialog({ G }: { G: GHQState }) {
                   board: G.board,
                   redReserve: G.redReserve,
                   blueReserve: G.blueReserve,
+                  thisTurnMoves: G.thisTurnMoves,
+                  currentPlayerTurn: ctx.currentPlayer === "0" ? "RED" : "BLUE",
                 })}
               />
             </div>

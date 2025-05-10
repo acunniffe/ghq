@@ -20,7 +20,7 @@ describe("fen", () => {
     };
     const fen = boardToFEN(boardState);
     expect(fen).toEqual(
-      "qr↓6/iii5/8/8/8/8/5III/6R↑Q IIIIIFFFPRRTH IIIIIFFFPRRTH"
+      "qr↓6/iii5/8/8/8/8/5III/6R↑Q IIIIIFFFPRRTH iiiiifffprrth r"
     );
     const newBoard = FENtoBoardState(fen);
     expect(newBoard).toEqual(boardState);
