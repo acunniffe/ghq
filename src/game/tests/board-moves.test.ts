@@ -208,6 +208,16 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     expectedMovesUCI:
       "g5g6↑ g5g6↗ g5g6→ g5g6↘ g5g6↓ g5g6↙ g5g6← g5g6↖ g5h6↑ g5h6↗ g5h6→ g5h6↘ g5h6↓ g5h6↙ g5h6← g5h6↖ g5f5↑ g5f5↗ g5f5→ g5f5↘ g5f5↓ g5f5↙ g5f5← g5f5↖ g5g5↗ g5g5→ g5g5↘ g5g5↓ g5g5↙ g5g5← g5g5↖ f4e5 f4e4 f4e3 f4f3 h4h3",
   },
+  {
+    boardFEN: "q↓7/8/8/8/8/8/8/1I5Q↑ - - r rib1",
+    description: "can't move a piece that was just reinforced",
+    expectedMovesUCI: "h1g2 h1h2 h1g1 skip",
+  },
+  {
+    boardFEN: "q↓7/8/8/8/8/8/I7/7Q↑ - - r a1a2",
+    description: "can't move a piece that's already been moved this turn",
+    expectedMovesUCI: "h1g2 h1h2 h1g1 skip",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [
@@ -228,7 +238,7 @@ describe("legal moves", () => {
         redReserve: board.redReserve,
         blueReserve: board.blueReserve,
         currentPlayerTurn: board.currentPlayerTurn ?? "RED", // TODO(tyler): this should come from the FEN
-        thisTurnMoves: [],
+        thisTurnMoves: board.thisTurnMoves ?? [],
       });
 
       const expectedMoves = test.expectedMovesUCI.split(" ");
