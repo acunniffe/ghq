@@ -9,13 +9,16 @@ import { GameoverState, GHQState } from "@/game/engine";
 import { useEffect, useState } from "react";
 import HomeButton from "./HomeButton";
 import ShareGameDialog from "@/game/ExportGameDialog";
+import { Ctx } from "boardgame.io";
 
 export default function GameoverDialog({
   gameover,
   G,
+  ctx,
 }: {
   G: GHQState;
   gameover?: GameoverState;
+  ctx: Ctx;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -36,7 +39,7 @@ export default function GameoverDialog({
             </div>
 
             <div className="flex gap-1">
-              <ShareGameDialog G={G} />
+              <ShareGameDialog G={G} ctx={ctx} />
               <HomeButton />
             </div>
           </div>

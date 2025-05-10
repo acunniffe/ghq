@@ -10,7 +10,6 @@ import {
   playNextTurnSound,
 } from "@/game/audio";
 import { Ctx } from "boardgame.io";
-import { allowedMoveToUci } from "@/game/notation-uci";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
