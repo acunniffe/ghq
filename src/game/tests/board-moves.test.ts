@@ -229,6 +229,17 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     expectedMovesUCI:
       "a2a3 a2b3 a2b2 a2b1 a1b2↑ a1b2↗ a1b2→ a1b2↘ a1b2↓ a1b2↙ a1b2← a1b2↖ a1c3↑ a1c3↗ a1c3→ a1c3↘ a1c3↓ a1c3↙ a1c3← a1c3↖ a1b1↑ a1b1↗ a1b1→ a1b1↘ a1b1↓ a1b1↙ a1b1← a1b1↖ a1c1↑ a1c1↗ a1c1→ a1c1↘ a1c1↓ a1c1↙ a1c1← a1c1↖ a1a1↗ a1a1→ a1a1↘ a1a1↓ a1a1↙ a1a1← a1a1↖ h1g2 h1h2 h1g1",
   },
+  {
+    description: "armored infantry can't move through bombardment 1",
+    boardFEN: "qr↓6/F↑7/8/8/8/8/8/7Q↑ - - r -",
+    expectedMovesUCI: "a7a6 a7a5 h1g2 h1h2 h1g1",
+  },
+  {
+    description: "armored infantry can't move through bombardment 1",
+    boardFEN: "1r↘6/q7/1F↑6/8/8/8/8/7Q↑ - - r -",
+    expectedMovesUCI:
+      "b6b7 b6b7xb8 b6a6 b6c6 b6a5 b6b5 b6b4 b6c5 b6d4 h1g2 h1h2 h1g1",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [
@@ -255,7 +266,7 @@ describe("legal moves", () => {
       const expectedMoves = test.expectedMovesUCI.split(" ");
       const actualMoves = moves.map(allowedMoveToUci);
 
-      // console.log(actualMoves.join(" "));
+      console.log(actualMoves.join(" "));
 
       expect(actualMoves.length).toEqual(expectedMoves.length);
       expect(actualMoves).toEqual(expect.arrayContaining(expectedMoves));
