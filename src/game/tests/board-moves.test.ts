@@ -240,6 +240,11 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     expectedMovesUCI:
       "b6b7 b6b7xb8 b6a6 b6c6 b6a5 b6b5 b6b4 b6c5 b6d4 h1g2 h1h2 h1g1",
   },
+  {
+    description: "can't deploy reserves onto bombarded squares",
+    boardFEN: "q7/8/8/8/8/r↓7/8/7Q I - r -",
+    expectedMovesUCI: "rib1 ric1 rid1 rie1 rif1 rig1 h1g2 h1h2 h1g1",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [
