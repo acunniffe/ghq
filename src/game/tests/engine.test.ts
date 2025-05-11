@@ -33,7 +33,7 @@ describe("engine", () => {
       } else if (move.name === "AutoCapture") {
         // pass
       } else {
-        throw new Error(`Unknown move: ${move.name}`);
+        throw new Error(`Unknown move: ${m}`);
       }
 
       // free auto captures are going to be a huge problem cross-engine

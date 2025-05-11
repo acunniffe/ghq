@@ -13,6 +13,9 @@ import { TIME_CONTROLS } from "./constants";
 import { variants } from "./variants";
 import { FENtoBoardState } from "./notation";
 
+const deepCopy =
+  window.structuredClone ?? ((obj) => JSON.parse(JSON.stringify(obj)));
+
 export const Units: {
   [key: string]: {
     mobility: 1 | 2;
@@ -517,10 +520,8 @@ export const emptyReserveFleet: ReserveFleet = {
 export const GHQGame: Game<GHQState> = {
   setup: ({ ctx, ...plugins }, setupData) => {
     const variant = variants[setupData?.variant];
-    let redReserve =
-      variant?.redReserve ?? structuredClone(defaultReserveFleet);
-    let blueReserve =
-      variant?.blueReserve ?? structuredClone(defaultReserveFleet);
+    let redReserve = variant?.redReserve ?? deepCopy(defaultReserveFleet);
+    let blueReserve = variant?.blueReserve ?? deepCopy(defaultReserveFleet);
     let board = variant?.board ?? defaultBoard;
 
     // Override using FEN if provided
