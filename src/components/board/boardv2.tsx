@@ -9,9 +9,6 @@ import GameoverDialog from "./GameoverDialog";
 import { useEffect, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import { useLatestMoveContext } from "@/components/LatestMoveContext";
-import { useHotkeys } from "react-hotkeys-hook";
-import { allowedMoveFromUci } from "@/game/notation-uci";
-import movesUCI from "@/game/test-game-moves.json";
 
 export function GHQBoardV2(props: BoardProps<GHQState>) {
   const [settings, setSettings] = useState<Settings>({
@@ -26,50 +23,6 @@ export function GHQBoardV2(props: BoardProps<GHQState>) {
     setBoard(props.G.board);
     setMoves(props.log || []);
   }, [props.G.board, props.log]);
-
-  const [moveIndex, setMoveIndex] = useState(0);
-
-  useHotkeys(
-    "f",
-    (e) => {
-      e.preventDefault();
-      const move = movesUCI[moveIndex];
-      const moveUCI = allowedMoveFromUci(move);
-
-      console.log(move, moveUCI);
-
-      if (moveUCI.name === "Move") {
-        props.moves.Move(moveUCI.args[0], moveUCI.args[1]);
-      } else if (moveUCI.name === "MoveAndOrient") {
-        props.moves.MoveAndOrient(
-          moveUCI.args[0],
-          moveUCI.args[1],
-          moveUCI.args[2]
-        );
-      } else if (moveUCI.name === "Reinforce") {
-        props.moves.Reinforce(
-          moveUCI.args[0],
-          moveUCI.args[1],
-          moveUCI.args[2]
-        );
-      } else if (moveUCI.name === "Skip") {
-        props.moves.Skip();
-      } else if (moveUCI.name === "AutoCapture") {
-        console.log(
-          "auto capture",
-          moveUCI.args[0],
-          moveUCI.args[1],
-          moveUCI.args[2]
-        );
-      }
-      setMoveIndex(moveIndex + 1);
-
-      if (props.G.thisTurnMoves.length === 2 && moveUCI.name !== "Skip") {
-        props.moves.Skip();
-      }
-    },
-    [props.moves, moveIndex, props.G.thisTurnMoves]
-  );
 
   return (
     <div className="flex flex-col md:flex-row">
