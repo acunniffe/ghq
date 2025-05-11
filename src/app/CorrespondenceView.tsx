@@ -10,12 +10,29 @@ import { MatchModel } from "@/lib/types";
 import RatedBadge from "@/components/RatedBadge";
 import Link from "next/link";
 
+interface Challenge {
+  challenger: {
+    id: string;
+    username: string;
+  };
+  target: {
+    id: string;
+    username: string;
+  };
+  status: "sent" | "accepted" | "declined";
+  fen: string;
+  rated: boolean;
+  created_at?: string;
+}
+
 export default function CorrespondenceView() {
   const { isSignedIn, getToken, userId } = useAuth();
   const [matches, setMatches] = useState<MatchModel[]>([]);
-  const [sentChallenges, setSentChallenges] = useState<any[]>([]);
-  const [receivedChallenges, setReceivedChallenges] = useState<any[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [sentChallenges, setSentChallenges] = useState<Challenge[]>([]);
+  const [receivedChallenges, setReceivedChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showActive, setShowActive] = useState<boolean>(true);
 
   useEffect(() => {
     fetchMatchesAndChallenges();
@@ -51,21 +68,36 @@ export default function CorrespondenceView() {
       })
       .finally(() => setLoading(false));
 
-    ghqFetch<{ challenges: any[] }>({
+    ghqFetch<{ challenges: Challenge[] }>({
       url: `${API_URL}/correspondence/challenges`,
       getToken,
       method: "GET",
     })
       .then((data) => {
-        setSentChallenges(
-          data.challenges.filter((c) => c.challenger.id === userId)
-        );
-        setReceivedChallenges(
-          data.challenges.filter((c) => c.target.id === userId)
-        );
+        setChallenges(data.challenges);
       })
       .finally(() => setLoading(false));
   }
+
+  function filterActive(challenge: Challenge) {
+    const thirtyDaysAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
+    return (
+      challenge.created_at && new Date(challenge.created_at) > thirtyDaysAgo
+    );
+  }
+
+  useEffect(() => {
+    setSentChallenges(
+      challenges
+        .filter((c) => c.challenger.id === userId)
+        .filter((c) => (showActive ? filterActive(c) : true))
+    );
+    setReceivedChallenges(
+      challenges
+        .filter((c) => c.target.id === userId)
+        .filter((c) => (showActive ? filterActive(c) : true))
+    );
+  }, [challenges, showActive]);
 
   async function acceptChallenge(challengerUserId: string) {
     await ghqFetch({
@@ -81,7 +113,17 @@ export default function CorrespondenceView() {
   return (
     <div className="flex flex-col">
       <div className="flex justify-between items-center mb-3">
-        <div className="text-lg font-bold">Correspondence</div>
+        <div className="text-lg font-bold flex items-center gap-2">
+          Correspondence
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 text-gray-500"
+            onClick={() => setShowActive(!showActive)}
+          >
+            {showActive ? "Showing active" : "Showing all"}
+          </Button>
+        </div>
         <PlayFriendDialog />
       </div>
 
