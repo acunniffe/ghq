@@ -390,41 +390,6 @@ const MoveAndOrient: Move<GHQState> = (
   });
 };
 
-const ChangeOrientation: Move<GHQState> = (
-  { G, ctx, log },
-  on: Coordinate,
-  orientation: Orientation
-) => {
-  if (hasMoveLimitReached(ctx)) {
-    return INVALID_MOVE;
-  }
-
-  const piece = G.board[on[0]][on[1]];
-  if (
-    !G.isReplayMode &&
-    !isMoveAllowed(G, ctx, {
-      name: "MoveAndOrient",
-      args: [on, on, orientation],
-    })
-  ) {
-    return INVALID_MOVE;
-  }
-  G.thisTurnBoards.push(JSON.parse(JSON.stringify(G.board)));
-
-  piece!.orientation = orientation;
-  G.board[on[0]][on[1]] = piece;
-  G.lastTurnMoves[ctx.currentPlayer as "0" | "1"].push(on);
-  G.thisTurnMoves.push({
-    name: "MoveAndOrient",
-    args: [on, on, orientation],
-  });
-  log.setMetadata({ pieceType: piece?.type });
-  G.eval = calculateEval({
-    ...G,
-    currentPlayerTurn: ctx.currentPlayer === "0" ? "RED" : "BLUE",
-  });
-};
-
 const Skip: Move<GHQState> = {
   noLimit: true,
   move: ({ G, events }) => {
@@ -475,7 +440,6 @@ const AcceptDraw: Move<GHQState> = {
 export const GameMoves = {
   Reinforce,
   Move,
-  ChangeOrientation,
   MoveAndOrient,
   Skip,
   Resign,
