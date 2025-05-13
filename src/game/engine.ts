@@ -13,8 +13,7 @@ import { TIME_CONTROLS } from "./constants";
 import { variants } from "./variants";
 import { FENtoBoardState } from "./notation";
 
-const deepCopy =
-  window.structuredClone ?? ((obj) => JSON.parse(JSON.stringify(obj)));
+const deepCopy = (obj: any) => JSON.parse(JSON.stringify(obj));
 
 export const Units: {
   [key: string]: {

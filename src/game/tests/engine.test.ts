@@ -32,6 +32,9 @@ describe("engine", () => {
         client.moves.Skip();
       } else if (move.name === "AutoCapture") {
         // pass
+        // TODO(tyler): we should keep bombard in the onBegin phase (or add it immediately after the third move)
+        // TODO(tyler): then we should have a client.moves.AutoCapture() to process auto captures
+        // TODO(tyler): and the UI should automatically call client.moves.AutoCapture() at the start of a turn, if the situation is unambiguous
       } else {
         throw new Error(`Unknown move: ${m}`);
       }
