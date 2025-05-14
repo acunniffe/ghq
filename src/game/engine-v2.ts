@@ -88,6 +88,7 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
 
     updateMoveShim(ctx, G, log, move);
     const boardFen = board.push(G.v2state, move);
+    log.setMetadata({ uci: allowedMoveToUci(move) });
     updateStateFromFen(G, boardFen);
   }
 
@@ -120,6 +121,8 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
       G.lastTurnMoves[ctx.currentPlayer as "0" | "1"].push(to);
     }
 
+    G.thisTurnBoards.push(JSON.parse(JSON.stringify(G.board)));
+
     log.setMetadata({
       pieceType,
       capturePreference,
@@ -132,7 +135,6 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
     G.board = boardState.board;
     G.redReserve = boardState.redReserve;
     G.blueReserve = boardState.blueReserve;
-    G.thisTurnMoves = boardState.thisTurnMoves ?? [];
     G.v2state = fen;
 
     G.eval = calculateEval({
@@ -154,12 +156,6 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
         ...state,
         isV2: true,
       };
-    },
-    turn: {
-      minMoves: 1,
-      maxMoves: 4,
-      onBegin: ({ ctx, G }) => {},
-      onEnd: ({ ctx, G }) => {},
     },
     endIf: ({ G, ctx }) => {},
     minPlayers: 2,
@@ -204,6 +200,95 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
 
           return INVALID_MOVE;
         },
+      },
+    },
+    turn: {
+      minMoves: 1,
+      maxMoves: 4,
+      onBegin: ({ ctx, G }) => {
+        G.lastPlayerMoves = G.thisTurnMoves;
+        G.thisTurnMoves = [];
+        G.lastTurnBoards = G.thisTurnBoards;
+        G.thisTurnBoards = [];
+        G.lastTurnMoves[ctx.currentPlayer as "0" | "1"] = [];
+        G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"] = [];
+
+        // const bombardCaptured = clearBombardedSquares(G, ctx);
+        // if (bombardCaptured.length > 0) {
+        //   const clearedSquares = bombardCaptured.map(
+        //     ({ coordinate }) => coordinate
+        //   );
+        //   G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"].push(
+        //     ...clearedSquares
+        //   );
+
+        //   G.historyLog?.push({
+        //     isCapture: true,
+        //     turn: ctx.turn,
+        //     playerId: ctx.currentPlayer,
+        //     captured: JSON.parse(JSON.stringify(bombardCaptured)), // deep copy for boardgame.io engine reasons
+        //   });
+        // }
+
+        // const freeCaptured = freeInfantryCaptures(
+        //   G.board,
+        //   ctx.currentPlayer === "0" ? "RED" : "BLUE"
+        // );
+        // if (freeCaptured.length > 0) {
+        //   const clearedSquares = freeCaptured.map(
+        //     ({ capture }) => capture.coordinate
+        //   ) as Coordinate[];
+        //   G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"].push(
+        //     ...clearedSquares
+        //   );
+
+        //   for (const {
+        //     capture: { coordinate },
+        //   } of freeCaptured) {
+        //     G.board[coordinate[0]][coordinate[1]] = null;
+        //   }
+
+        //   const freeCapturedRes = freeCaptured.map(
+        //     ({ capture: { coordinate, piece } }) => ({
+        //       coordinate,
+        //       square: piece,
+        //     })
+        //   );
+        //   G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"].push(
+        //     ...clearedSquares
+        //   );
+
+        //   const capturedByInfantry = freeCaptured.map(({ attacker }) => attacker);
+
+        //   G.historyLog?.push({
+        //     isCapture: true,
+        //     turn: ctx.turn,
+        //     playerId: ctx.currentPlayer,
+        //     captured: JSON.parse(JSON.stringify(freeCapturedRes)), // deep copy for boardgame.io engine reasons
+        //     capturedByInfantry: JSON.parse(JSON.stringify(capturedByInfantry)), // deep copy for boardgame.io engine reasons
+        //   });
+        // }
+
+        G.turnStartTime = Date.now();
+        G.eval = calculateEval({
+          ...G,
+          currentPlayerTurn: ctx.currentPlayer === "0" ? "RED" : "BLUE",
+        });
+      },
+      onEnd: ({ ctx, G }) => {
+        const elapsed = Date.now() - G.turnStartTime;
+
+        if (ctx.currentPlayer === "0") {
+          G.redTurnStartBoard = JSON.parse(JSON.stringify(G.board));
+        } else {
+          G.blueTurnStartBoard = JSON.parse(JSON.stringify(G.board));
+        }
+
+        if (ctx.currentPlayer === "0") {
+          G.redElapsed = G.redElapsed + elapsed - G.bonusTime;
+        } else {
+          G.blueElapsed = G.blueElapsed + elapsed - G.bonusTime;
+        }
       },
     },
     plugins: [enginePlugin],
