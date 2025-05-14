@@ -2,24 +2,41 @@
 
 import { Client } from "boardgame.io/react";
 import { newLocalGHQGame } from "@/game/engine";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReplayCapability from "@/game/ReplayCapability";
 import { GHQBoardV2 } from "@/components/board/boardv2";
-import { shouldUseBoardV2 } from "@/components/board/board-switcher";
-import { GHQBoard } from "@/game/board";
-
-const App = Client({
-  game: newLocalGHQGame(),
-  board: shouldUseBoardV2() ? GHQBoardV2 : GHQBoard,
-});
+import { newGHQGameV2, useEngine } from "@/game/engine-v2";
+import { Loader2 } from "lucide-react";
 
 export default function Page() {
   const [client, setClient] = useState<any | null>(null);
+  const [App, setApp] = useState<any | null>(null);
+  const { engine } = useEngine();
+
+  useEffect(() => {
+    if (!engine) {
+      return;
+    }
+
+    const AppComponent = Client({
+      game: newGHQGameV2(engine),
+      board: GHQBoardV2,
+    });
+    setApp(() => AppComponent);
+  }, [engine]);
+
+  if (!App) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div>
       {client && <ReplayCapability client={client} />}
-      <App ref={(ref) => setClient(ref?.client)} />
+      <App ref={(ref: any) => setClient(ref?.client)} />
     </div>
   );
 }

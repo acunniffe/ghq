@@ -16,6 +16,8 @@ import {
   movesForActivePieceV2,
   spawnPositionsForPlayer,
 } from "./move-logic";
+import { GameV2 } from "./engine-v2";
+import { allowedMoveFromUci } from "./notation-uci";
 
 export interface PlayerPiece {
   piece: NonNullSquare;
@@ -38,7 +40,29 @@ export function coordsForThisTurnMoves(
     });
 }
 
-export function getAllowedMoves({
+export interface GetAllowedMovesV2Args extends GetAllowedMovesArgs {
+  v2state?: string;
+  engine?: GameV2;
+}
+
+export function getAllowedMoves(args: GetAllowedMovesV2Args): AllowedMove[] {
+  if (args.v2state) {
+    const moves = args.engine?.generateLegalMoves(args.v2state) ?? [];
+    return moves;
+  }
+  return getAllowedMovesV1(args);
+}
+
+export interface GetAllowedMovesArgs {
+  board: GHQState["board"];
+  redReserve: ReserveFleet;
+  blueReserve: ReserveFleet;
+  currentPlayerTurn: Player;
+  thisTurnMoves: AllowedMove[];
+  enforceZoneOfControl?: boolean;
+}
+
+export function getAllowedMovesV1({
   board,
   redReserve,
   blueReserve,
@@ -176,7 +200,12 @@ export function isPieceArtillery(piece: NonNullSquare) {
   );
 }
 
-export function isMoveAllowed(G: GHQState, ctx: Ctx, move: AllowedMove) {
+export function isMoveAllowed(
+  G: GHQState,
+  ctx: Ctx,
+  move: AllowedMove,
+  engine?: GameV2
+) {
   const allowedMoves = getAllowedMoves({
     board: G.board,
     redReserve: G.redReserve,
@@ -184,6 +213,7 @@ export function isMoveAllowed(G: GHQState, ctx: Ctx, move: AllowedMove) {
     currentPlayerTurn: ctx.currentPlayer === "0" ? "RED" : "BLUE",
     thisTurnMoves: G.thisTurnMoves,
     enforceZoneOfControl: G.enforceZoneOfControl,
+    engine,
   });
 
   const candidateMove = moveToNotation(move);

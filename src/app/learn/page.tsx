@@ -17,8 +17,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import LearnBasics from "./LearnBasics";
 import { GHQBoardV2 } from "@/components/board/boardv2";
-import { shouldUseBoardV2 } from "@/components/board/board-switcher";
-import { GHQBoard } from "@/game/board";
+import { newGHQGameV2, useEngine } from "@/game/engine-v2";
 
 export default function Page() {
   const searchParams = useSearchParams();
@@ -26,10 +25,13 @@ export default function Page() {
   const [App, setApp] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { setBoardArrows } = useBoardArrow();
-
-  const playerId = "0"; // default to player 0, so that board doesn't flip unexpectedly
+  const { engine } = useEngine();
 
   useEffect(() => {
+    if (!engine) {
+      return;
+    }
+
     const boardType = searchParams.get("boardType") as BoardType | undefined;
     const jfen = searchParams.get("jfen") as string | undefined;
 
@@ -46,17 +48,14 @@ export default function Page() {
     }, 500);
 
     const DynamicApp = Client({
-      game: newTutorialGHQGame({
-        boardState: boardInfo.boardState,
-        isTutorial: false,
-      }),
-      board: shouldUseBoardV2() ? GHQBoardV2 : GHQBoard,
+      game: newGHQGameV2(engine, boardInfo.fen),
+      board: GHQBoardV2,
     });
     setApp(() => {
       setLoading(false);
       return DynamicApp;
     });
-  }, [searchParams]);
+  }, [searchParams, engine]);
 
   if (!App) {
     return (

@@ -12,6 +12,7 @@ import { ai } from "./ai";
 import { TIME_CONTROLS } from "./constants";
 import { variants } from "./variants";
 import { FENtoBoardState } from "./notation";
+import { GameV2 } from "./engine-v2";
 
 const deepCopy = (obj: any) => JSON.parse(JSON.stringify(obj));
 
@@ -218,6 +219,9 @@ export interface GHQState {
   // Flag that indicates if this game engine has zone of control. This is used to determine if the player can move to a square that is adjacent to an enemy infantry.
   // This was added on 2025-05-02.
   enforceZoneOfControl?: boolean;
+
+  isV2?: boolean;
+  v2state?: string;
 }
 
 export interface GameoverState {
@@ -226,8 +230,8 @@ export interface GameoverState {
   reason: string;
 }
 
-const Reinforce: Move<GHQState> = (
-  { G, ctx, log },
+const Reinforce: Move<GHQState, any> = (
+  { G, ctx, log, engine },
   unitType: keyof ReserveFleet,
   to: Coordinate,
   capturePreference?: Coordinate
@@ -239,10 +243,15 @@ const Reinforce: Move<GHQState> = (
   const reserve = ctx.currentPlayer === "0" ? G.redReserve : G.blueReserve;
   if (
     !G.isReplayMode &&
-    !isMoveAllowed(G, ctx, {
-      name: "Reinforce",
-      args: [unitType, to, capturePreference],
-    })
+    !isMoveAllowed(
+      G,
+      ctx,
+      {
+        name: "Reinforce",
+        args: [unitType, to, capturePreference],
+      },
+      engine
+    )
   ) {
     return INVALID_MOVE;
   }
@@ -733,4 +742,8 @@ export function newLocalGHQGame(): Game<GHQState> {
 
 export function hasMoveLimitReached(ctx: Ctx) {
   return ctx.numMoves !== undefined && ctx.numMoves >= 3;
+}
+
+export function ctxPlayerToPlayer(ctx: Ctx) {
+  return ctx.currentPlayer === "0" ? "RED" : "BLUE";
 }

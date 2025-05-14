@@ -110,7 +110,12 @@ export default function useBoard({
   useEffect(() => {
     if (userActionState.chosenMove) {
       const { name, args } = userActionState.chosenMove;
-      moves[name](...args);
+
+      if (G.isV2) {
+        moves.push(userActionState.chosenMove);
+      } else {
+        moves[name](...args);
+      }
 
       if ((name === "Move" || name === "Reinforce") && args[2]) {
         playCaptureSound();

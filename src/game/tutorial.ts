@@ -2,7 +2,7 @@ import type { Game } from "boardgame.io";
 
 import { GHQGame, GHQState, ReserveFleet, Square } from "./engine";
 import { BoardArrowType } from "./BoardArrow";
-import { BoardState, FENtoBoardState } from "./notation";
+import { BoardState, FENtoBoardState, boardToFEN } from "./notation";
 import { endgame } from "./variants";
 
 export const B: Record<string, Square> = {
@@ -43,6 +43,7 @@ export interface TutorialSetupData {
   boardState: BoardState;
   category: "capturing" | "puzzles" | "endgames";
   boardArrows: BoardArrowType[];
+  fen?: string;
 }
 
 export const boards: Record<string, TutorialSetupData> = {
@@ -528,11 +529,13 @@ export function getBoardInfo(
 ): TutorialSetupData | null {
   if (fen) {
     const boardState = FENtoBoardState(fen);
-    return { boardState, category: "puzzles", boardArrows: [] };
+    return { boardState, category: "puzzles", boardArrows: [], fen };
   }
 
   if (boardType) {
-    return boards[boardType];
+    const data = boards[boardType];
+    const fen = boardToFEN(data.boardState);
+    return { ...data, fen };
   }
 
   return null;

@@ -245,6 +245,12 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     boardFEN: "q7/8/8/8/8/r↓7/8/7Q I - r -",
     expectedMovesUCI: "rib1 ric1 rid1 rie1 rif1 rig1 h1g2 h1h2 h1g1",
   },
+  {
+    description: "puzzle: collapse the center line",
+    boardFEN: "q7/8/1i6/2fff3/2III3/5F2/8/7Q - - r -",
+    expectedMovesUCI:
+      "c4b4 c4b3 c4c3 c4d3 d4c3 d4d3 d4e3 e4f4 e4d3 e4e3 f3f4 f3f5 f3f5xe5 f3g4 f3h5 f3e3 f3d3 f3g3 f3h3 f3e2 f3d1 f3f2 f3f1 f3g2 h1g2 h1h2 h1g1",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [

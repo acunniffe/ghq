@@ -74,7 +74,9 @@ const runMatchLifecycle = () => {
   });
 };
 
-runMatchLifecycle();
+if (process.env.NODE_ENV === "production") {
+  runMatchLifecycle();
+}
 
 setInterval(() => {
   userLifecycle({ supabase, db: server.db });
