@@ -1,6 +1,6 @@
 "use client";
 
-import type { Game, Plugin } from "boardgame.io";
+import type { Ctx, Game, Plugin } from "boardgame.io";
 import { useEffect, useState } from "react";
 import { useScript } from "usehooks-ts";
 import {
@@ -9,10 +9,14 @@ import {
   GHQGame,
   GHQState,
   SkipMove,
+  Square,
+  UnitType,
 } from "./engine";
 import { allowedMoveFromUci, allowedMoveToUci } from "./notation-uci";
 import { FENtoBoardState } from "./notation";
 import { INVALID_MOVE } from "boardgame.io/core";
+import { calculateEval } from "./eval";
+import { LogAPI } from "boardgame.io/src/plugins/plugin-log";
 
 export interface GameEngine {
   Move: {
@@ -72,13 +76,55 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
     },
   };
 
-  function pushAndUpdateState(G: GHQState, move: AllowedMove) {
+  function pushAndUpdateState(
+    ctx: Ctx,
+    G: GHQState,
+    log: LogAPI,
+    move: AllowedMove
+  ) {
     if (!G.v2state) {
       throw new Error("v2state is not defined");
     }
 
+    updateMoveShim(ctx, G, log, move);
     const boardFen = board.push(G.v2state, move);
     updateStateFromFen(G, boardFen);
+  }
+
+  function updateMoveShim(
+    ctx: Ctx,
+    G: GHQState,
+    log: LogAPI,
+    move: AllowedMove
+  ) {
+    let capturedPiece: Square = null;
+    const capturePreference =
+      move.name === "Move" || move.name === "Reinforce"
+        ? move.args[2]
+        : undefined;
+    if (capturePreference) {
+      const [x, y] = capturePreference;
+      capturedPiece = JSON.parse(JSON.stringify(G.board[x][y])); // deep copy for boardgame.io engine reasons
+    }
+    G.thisTurnMoves.push(move);
+
+    let pieceType: UnitType | undefined;
+    if (move.name === "Reinforce") {
+      pieceType = move.args[0] as UnitType;
+      const to = move.args[1];
+      G.lastTurnMoves[ctx.currentPlayer as "0" | "1"].push(to);
+    } else if (move.name === "Move" || move.name === "MoveAndOrient") {
+      const from = move.args[0];
+      const to = move.args[1];
+      pieceType = G.board[from[0]][from[1]]?.type;
+      G.lastTurnMoves[ctx.currentPlayer as "0" | "1"].push(to);
+    }
+
+    log.setMetadata({
+      pieceType,
+      capturePreference,
+      capturedPiece,
+    });
   }
 
   function updateStateFromFen(G: GHQState, fen: string) {
@@ -88,6 +134,11 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
     G.blueReserve = boardState.blueReserve;
     G.thisTurnMoves = boardState.thisTurnMoves ?? [];
     G.v2state = fen;
+
+    G.eval = calculateEval({
+      ...G,
+      currentPlayerTurn: boardState.currentPlayerTurn ?? "RED",
+    });
   }
 
   return {
@@ -123,11 +174,11 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
           return INVALID_MOVE;
         }
 
-        pushAndUpdateState(G, move);
+        pushAndUpdateState(ctx, G, log, move);
       },
       Skip: {
         noLimit: true,
-        move: ({ G, ctx, events }) => {
+        move: ({ G, ctx, events, log }) => {
           if (G.isReplayMode) {
             return;
           }
@@ -135,7 +186,6 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
           if (!G.v2state) {
             throw new Error("v2state is not defined");
           }
-          console.log("skipping", G.thisTurnMoves.length);
 
           // If it's already the next player's turn, end the turn without sending a move.
           const boardState = FENtoBoardState(G.v2state);
@@ -147,7 +197,7 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
           const move: SkipMove = { name: "Skip", args: [] };
 
           if (board.isLegalMove(G.v2state, move)) {
-            pushAndUpdateState(G, move);
+            pushAndUpdateState(ctx, G, log, move);
             events.endTurn();
             return;
           }
@@ -185,9 +235,9 @@ export function useEngine(): { engine: GameEngine } {
         with open("engine.py", "wb") as f:
             f.write(await response.bytes())
       `);
-    await pyodide.loadPackage("micropip");
-    const micropip = pyodide.pyimport("micropip");
-    await micropip.install("numpy");
+    // await pyodide.loadPackage("micropip");
+    // const micropip = pyodide.pyimport("micropip");
+    // await micropip.install("numpy");
 
     const enginePkg = pyodide.pyimport("engine");
     setEngine(enginePkg);

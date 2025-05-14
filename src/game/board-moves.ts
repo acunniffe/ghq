@@ -17,7 +17,7 @@ import {
   spawnPositionsForPlayer,
 } from "./move-logic";
 import { GameV2 } from "./engine-v2";
-import { allowedMoveFromUci } from "./notation-uci";
+import { allowedMoveFromUci, allowedMoveToUci } from "./notation-uci";
 
 export interface PlayerPiece {
   piece: NonNullSquare;
@@ -48,6 +48,9 @@ export interface GetAllowedMovesV2Args extends GetAllowedMovesArgs {
 export function getAllowedMoves(args: GetAllowedMovesV2Args): AllowedMove[] {
   if (args.v2state) {
     const moves = args.engine?.generateLegalMoves(args.v2state) ?? [];
+    // for (const move of moves) {
+    //   console.log(allowedMoveToUci(move));
+    // }
     return moves;
   }
   return getAllowedMovesV1(args);

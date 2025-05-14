@@ -1,4 +1,3 @@
-import numpy as np
 import typing
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, SupportsInt, Tuple, TypeAlias, Union
 from dataclasses import dataclass
@@ -746,55 +745,6 @@ class BaseBoard:
 
     # optional game state
     move_stack: List[Move]
-
-    @classmethod
-    def deserialize(cls, data: np.array) -> "BaseBoard":
-        board = cls()
-        board.occupied = int(data[0])
-        board.infantry = int(data[1])
-        board.armored_infantry = int(data[2])
-        board.airborne_infantry = int(data[3])
-        board.artillery = int(data[4])
-        board.armored_artillery = int(data[5])
-        board.heavy_artillery = int(data[6])
-        board.hq = int(data[7])
-        board.reserves = [ReserveFleet.from_ints(data[8:14]), ReserveFleet.from_ints(data[14:20])]
-        board.turn = bool(data[20])
-        board.turn_moves = int(data[21])
-        board.turn_pieces = int(data[22])
-        board.orientation_bit0 = int(data[23])
-        board.orientation_bit1 = int(data[24])
-        board.orientation_bit2 = int(data[25])
-        board.bombarded_co = [int(data[26]), int(data[27])]
-        board.adjacent_infantry_squares_co = [int(data[28]), int(data[29])]
-        board.free_capture_clusters = int(data[30])
-        board.free_capture_enemies = int(data[31])
-        board.free_capture_num_allowed = int(data[32])
-        return board
-
-    def serialize(self) -> np.array:
-        return np.array([
-            self.occupied,
-            self.infantry,
-            self.armored_infantry,
-            self.airborne_infantry,
-            self.artillery,
-            self.armored_artillery,
-            self.heavy_artillery,
-            self.hq,
-            *[*self.reserves[RED].to_ints(), *self.reserves[BLUE].to_ints()],
-            self.turn,
-            self.turn_moves,
-            self.turn_pieces,
-            self.orientation_bit0,
-            self.orientation_bit1,
-            self.orientation_bit2,
-            *self.bombarded_co,
-            *self.adjacent_infantry_squares_co,
-            self.free_capture_clusters,
-            self.free_capture_enemies,
-            self.free_capture_num_allowed,
-        ], dtype=np.int64)
 
     def __init__(self, board_fen: Optional[str] = STARTING_FEN) -> None:
         self._reset_board()
