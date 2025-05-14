@@ -12,7 +12,6 @@ import { ai } from "./ai";
 import { TIME_CONTROLS } from "./constants";
 import { variants } from "./variants";
 import { FENtoBoardState } from "./notation";
-import { GameV2 } from "./engine-v2";
 
 const deepCopy = (obj: any) => JSON.parse(JSON.stringify(obj));
 

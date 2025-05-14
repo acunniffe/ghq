@@ -17,12 +17,14 @@ import { FENtoBoardState } from "./notation";
 import { INVALID_MOVE } from "boardgame.io/core";
 import { calculateEval } from "./eval";
 import { LogAPI } from "boardgame.io/src/plugins/plugin-log";
+import { getGameoverState } from "./gameover-logic";
 
 export interface GameEngine {
   Move: {
     from_uci: (uci: string) => any;
   };
   BaseBoard: (fen?: string) => PythonBoard;
+  RandomPlayer: (board: PythonBoard) => PythonPlayer;
 }
 
 export class GameV2 {
@@ -50,6 +52,11 @@ export class GameV2 {
     return board.board_fen();
   }
 
+  lastBombardments(boardFen: string): [number, number][] {
+    // const board = this.engine.BaseBoard(boardFen); // TODO(tyler): this isn't going to include the move stack, we either need tog
+    return [];
+  }
+
   defaultBoardFen(): string {
     return this.engine.BaseBoard().board_fen();
   }
@@ -64,10 +71,26 @@ export interface PythonBoard {
   push: (move: PythonMove) => void;
   board_fen: () => string;
   is_legal: (move: PythonMove) => boolean;
+  is_red_turn: () => boolean;
+  is_blue_turn: () => boolean;
   // move_from_uci: (uci: string) => any;
 }
 
-export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
+export interface PythonPlayer {
+  get_next_move: () => PythonMove;
+}
+
+export interface NewGameOptions {
+  engine: GameEngine;
+  fen?: string;
+  type: "local" | "bot";
+}
+
+export function newGHQGameV2({
+  engine,
+  fen,
+  type,
+}: NewGameOptions): Game<GHQState> {
   const board = new GameV2(engine);
   const enginePlugin: Plugin<GameV2> = {
     name: "engine",
@@ -152,12 +175,19 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
 
       const state = { ...v1Game.setup({ ctx, ...plugins }, setupData) };
       updateStateFromFen(state, fen ?? board.defaultBoardFen());
+
+      if (type === "bot") {
+        applyBotOptions(state);
+      }
+
       return {
         ...state,
         isV2: true,
       };
     },
-    endIf: ({ G, ctx }) => {},
+    endIf: ({ G, ctx }) => {
+      return getGameoverState(G, ctx.currentPlayer === "0" ? "RED" : "BLUE");
+    },
     minPlayers: 2,
     maxPlayers: 2,
     moves: {
@@ -204,14 +234,31 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
     },
     turn: {
       minMoves: 1,
-      maxMoves: 4,
+      maxMoves: 0,
       onBegin: ({ ctx, G }) => {
+        if (!G.v2state) {
+          throw new Error("v2state is not defined");
+        }
+
         G.lastPlayerMoves = G.thisTurnMoves;
         G.thisTurnMoves = [];
         G.lastTurnBoards = G.thisTurnBoards;
         G.thisTurnBoards = [];
         G.lastTurnMoves[ctx.currentPlayer as "0" | "1"] = [];
         G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"] = [];
+
+        // TODO(tyler): update G.lastTurnCaptures with bombarded
+        for (const [x, y] of board.lastBombardments(G.v2state)) {
+          G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"].push([x, y]);
+          G.historyLog?.push({
+            isCapture: true,
+            turn: ctx.turn,
+            playerId: ctx.currentPlayer,
+            // captured: JSON.parse(JSON.stringify(bombardCaptured)), // deep copy for boardgame.io engine reasons
+          });
+        }
+
+        // TODO(tyler): add phase for pre-turn captures
 
         // const bombardCaptured = clearBombardedSquares(G, ctx);
         // if (bombardCaptured.length > 0) {
@@ -222,12 +269,6 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
         //     ...clearedSquares
         //   );
 
-        //   G.historyLog?.push({
-        //     isCapture: true,
-        //     turn: ctx.turn,
-        //     playerId: ctx.currentPlayer,
-        //     captured: JSON.parse(JSON.stringify(bombardCaptured)), // deep copy for boardgame.io engine reasons
-        //   });
         // }
 
         // const freeCaptured = freeInfantryCaptures(
@@ -292,6 +333,34 @@ export function newGHQGameV2(engine: GameEngine, fen?: string): Game<GHQState> {
       },
     },
     plugins: [enginePlugin],
+    ai: {
+      enumerate: (G) => {
+        if (!G.v2state) {
+          throw new Error("v2state is not defined");
+        }
+
+        const board = engine.BaseBoard(G.v2state);
+        if (board.is_red_turn()) {
+          return [
+            {
+              move: "Skip",
+              args: [],
+            },
+          ];
+        }
+
+        const player = engine.RandomPlayer(board);
+        const move = player.get_next_move();
+        const allowedMove = allowedMoveFromUci(move.uci());
+
+        return [
+          {
+            move: "push",
+            args: [allowedMove],
+          },
+        ];
+      },
+    },
   };
 }
 
@@ -337,4 +406,10 @@ export function useEngine(): { engine: GameEngine } {
   }, [status]);
 
   return { engine };
+}
+
+function applyBotOptions(state: GHQState) {
+  state.isOnline = true;
+  state.timeControl = 0;
+  state.bonusTime = 0;
 }

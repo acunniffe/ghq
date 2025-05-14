@@ -78,6 +78,7 @@ export function getSquareState({
   rightClicked: Set<string>;
   boardEngagements: BoardEngagements;
 }): SquareState {
+  // TODO(tyler): add allowed moves so we can check if there are start of turn free captures
   const coord: Coordinate = [rowIndex, colIndex];
   const hoveredCoord = userActionState?.hoveredCoordinate ?? [-1, -1];
   const { isMovable, isCaptureCandidate } = getMoveAndCaptureCandidates(

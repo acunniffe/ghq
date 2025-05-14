@@ -1,7 +1,6 @@
 "use client";
 
 import { Client } from "boardgame.io/react";
-import { newLocalGHQGame } from "@/game/engine";
 import { useEffect, useState } from "react";
 import ReplayCapability from "@/game/ReplayCapability";
 import { GHQBoardV2 } from "@/components/board/boardv2";
@@ -19,7 +18,7 @@ export default function Page() {
     }
 
     const AppComponent = Client({
-      game: newGHQGameV2(engine),
+      game: newGHQGameV2({ engine, type: "local" }),
       board: GHQBoardV2,
     });
     setApp(() => AppComponent);

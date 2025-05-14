@@ -1,4 +1,5 @@
 import typing
+import random
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, SupportsInt, Tuple, TypeAlias, Union
 from dataclasses import dataclass
 from typing import Optional, Union, Literal
@@ -855,6 +856,13 @@ class BaseBoard:
         for square in self.pieces(HQ, color):
             return square
         return None
+
+    def is_red_turn(self) -> bool:
+        return self.turn == RED
+
+    def is_blue_turn(self) -> bool:
+        return self.turn == BLUE
+
 
     def _remove_piece_at(self, square: Square) -> Optional[PieceType]:
         piece_type = self.piece_type_at(square)
@@ -2129,3 +2137,12 @@ def find_clusters(board: Bitboard):
 
         yield cluster
         all_units &= ~visited
+
+
+class RandomPlayer():
+    def __init__(self, board):
+        self.board = board
+
+    def get_next_move(self):
+        moves = list(self.board.generate_legal_moves())
+        return random.choice(moves)

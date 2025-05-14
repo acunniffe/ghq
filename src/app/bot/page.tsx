@@ -1,28 +1,45 @@
 "use client";
 
 import { Client } from "boardgame.io/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReplayCapability from "@/game/ReplayCapability";
 import { Local } from "boardgame.io/multiplayer";
-import { newBotGame } from "@/game/bot";
 import { GHQBoardV2 } from "@/components/board/boardv2";
-import { shouldUseBoardV2 } from "@/components/board/board-switcher";
-import { GHQBoard } from "@/game/board";
-import { WorkerBot } from "./worker-bot";
-
-const App = Client({
-  game: newBotGame(),
-  board: shouldUseBoardV2() ? GHQBoardV2 : GHQBoard,
-  multiplayer: Local({ bots: { "1": WorkerBot } }),
-});
+import { newGHQGameV2 } from "@/game/engine-v2";
+import { useEngine } from "@/game/engine-v2";
+import { Loader2 } from "lucide-react";
+import { RandomBot } from "boardgame.io/ai";
 
 export default function Page() {
   const [client, setClient] = useState<any | null>(null);
+  const [App, setApp] = useState<any | null>(null);
+  const { engine } = useEngine();
+
+  useEffect(() => {
+    if (!engine) {
+      return;
+    }
+
+    const AppComponent = Client({
+      game: newGHQGameV2({ engine, type: "bot" }),
+      board: GHQBoardV2,
+      multiplayer: Local({ bots: { "1": RandomBot } }),
+    });
+    setApp(() => AppComponent);
+  }, [engine]);
+
+  if (!App) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div>
       {client && <ReplayCapability client={client} />}
-      <App ref={(ref) => setClient(ref?.client)} playerID="0" />
+      <App ref={(ref: any) => setClient(ref?.client)} playerID="0" />
     </div>
   );
 }

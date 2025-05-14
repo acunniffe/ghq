@@ -48,7 +48,7 @@ export default function Page() {
     }, 500);
 
     const DynamicApp = Client({
-      game: newGHQGameV2(engine, boardInfo.fen),
+      game: newGHQGameV2({ engine, fen: boardInfo.fen, type: "local" }),
       board: GHQBoardV2,
     });
     setApp(() => {
