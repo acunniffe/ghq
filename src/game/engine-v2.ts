@@ -351,9 +351,9 @@ export function newGHQGameV2({
         }
 
         const player = engine.ValuePlayer(board);
-        const start = Date.now();
+        // const start = Date.now();
         const move = player.get_next_move();
-        console.log(`Took ${Date.now() - start}ms`);
+        // console.log(`Took ${Date.now() - start}ms`);
         const allowedMove = allowedMoveFromUci(move.uci());
 
         return [
@@ -373,8 +373,8 @@ declare global {
   }
 }
 
-export function useEngine(): { engine: GameEngine } {
-  const [engine, setEngine] = useState<any>(null);
+export function useEngine(): { engine: GameEngine | null } {
+  const [engine, setEngine] = useState<GameEngine | null>(null);
 
   const status = useScript(
     "https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js",
@@ -384,31 +384,27 @@ export function useEngine(): { engine: GameEngine } {
     }
   );
 
-  async function loadEngine() {
-    let pyodide = await window.loadPyodide();
-    await pyodide.runPythonAsync(`
-        from pyodide.http import pyfetch
-        response = await pyfetch("/engine.py")
-        with open("engine.py", "wb") as f:
-            f.write(await response.bytes())
-      `);
-    // await pyodide.loadPackage("micropip");
-    // const micropip = pyodide.pyimport("micropip");
-    // await micropip.install("numpy");
-
-    const enginePkg = pyodide.pyimport("engine");
-    setEngine(enginePkg);
-  }
-
   useEffect(() => {
     if (status !== "ready") {
       return;
     }
 
-    loadEngine();
+    loadEngine(window.loadPyodide).then(setEngine);
   }, [status]);
 
   return { engine };
+}
+
+export async function loadEngine(loadPyodide: () => Promise<any>) {
+  let pyodide = await loadPyodide();
+  await pyodide.runPythonAsync(`
+        from pyodide.http import pyfetch
+        response = await pyfetch("/engine.py")
+        with open("engine.py", "wb") as f:
+            f.write(await response.bytes())
+      `);
+  const enginePkg = pyodide.pyimport("engine");
+  return enginePkg;
 }
 
 function applyBotOptions(state: GHQState) {

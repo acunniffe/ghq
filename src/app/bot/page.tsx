@@ -8,7 +8,7 @@ import { GHQBoardV2 } from "@/components/board/boardv2";
 import { newGHQGameV2 } from "@/game/engine-v2";
 import { useEngine } from "@/game/engine-v2";
 import { Loader2 } from "lucide-react";
-import { WorkerBot } from "./worker-bot";
+import { WorkerBot } from "./worker-bot-v2";
 
 export default function Page() {
   const [client, setClient] = useState<any | null>(null);
