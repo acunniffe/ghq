@@ -43,6 +43,7 @@ export function GHQBoardV2(props: BoardProps<GHQState>) {
         G={props.G}
         ctx={props.ctx}
         gameover={props.ctx.gameover}
+        log={props.log}
       />
     </div>
   );

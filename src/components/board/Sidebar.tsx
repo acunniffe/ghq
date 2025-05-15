@@ -77,7 +77,7 @@ export default function Sidebar({
           </h2>
           {ctx.gameover.reason && ctx.gameover.reason}
           <div className="flex gap-1">
-            <ShareGameDialog G={G} ctx={ctx} />
+            <ShareGameDialog G={G} ctx={ctx} log={log} />
             <HomeButton />
           </div>
         </div>
@@ -111,13 +111,13 @@ export default function Sidebar({
                   />
                 )} */}
                 <ResignButton resign={() => moves.Resign()} />
-                <ShareGameDialog G={G} ctx={ctx} />
+                <ShareGameDialog G={G} ctx={ctx} log={log} />
                 <SettingsMenu settings={settings} setSettings={setSettings} />
               </>
             ) : (
               <>
                 <AbandonButton matchId={G.matchId} />
-                <ShareGameDialog G={G} ctx={ctx} />
+                <ShareGameDialog G={G} ctx={ctx} log={log} />
                 <SettingsMenu settings={settings} setSettings={setSettings} />
               </>
             )}
