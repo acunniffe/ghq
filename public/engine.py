@@ -1,4 +1,3 @@
-# import numpy as np
 import typing
 import random
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, SupportsInt, Tuple, TypeAlias, Union
@@ -1388,6 +1387,10 @@ class BaseBoard:
         if self.turn_moves > 0:
             yield Move.skip()
 
+    def generate_legal_captures(self, from_mask: Bitboard = BB_ALL, to_mask: Bitboard = BB_ALL) -> Iterator[Move]:
+        our_artillery = self.occupied_co[self.turn] & self._all_artillery()
+        return self.generate_legal_moves(from_mask & ~our_artillery, to_mask)
+
     def _generate_captures(self, move: Move) -> Iterator[Move]:
         color = self.turn
         free_capture_clusters, free_capture_enemies, free_capture_num_allowed = self._find_free_captures(color, move)
@@ -1400,6 +1403,10 @@ class BaseBoard:
         for cluster in find_clusters(free_capture_clusters):
             num_allowed = popcount(free_capture_num_allowed & cluster)
             if num_allowed == 0:
+                continue
+
+            # skip if we're not moving into this cluster
+            if not (cluster & BB_SQUARES[move.to_square]):
                 continue
 
             capturable_enemies = free_capture_enemies & cluster & self.occupied_co[not color]
@@ -1641,14 +1648,23 @@ class BaseBoard:
         occupied_co = self.occupied_co.copy()
 
         if move is not None:
+            to_square = move.to_square
+
+            # short circuit if the to_square isn't adjacent to any enemy pieces
+            if not (BB_ADJACENT_SQUARES[to_square] & occupied_co[not color]):
+                return BB_EMPTY, BB_EMPTY, BB_EMPTY
+
+            if move.name != "Move" and move.name != "Reinforce":
+                # short circuit if we're not making a move
+                return BB_EMPTY, BB_EMPTY, BB_EMPTY
             if move.name == "Move":
-                all_units |= BB_SQUARES[move.to_square]
+                # remove the piece from its original square square
                 all_units &= ~BB_SQUARES[move.from_square]
                 occupied_co[color] &= ~BB_SQUARES[move.from_square]
-                occupied_co[color] |= BB_SQUARES[move.to_square]
-            elif move.name == "Reinforce":
-                all_units |= BB_SQUARES[move.to_square]
-                occupied_co[color] |= BB_SQUARES[move.to_square]
+
+            all_units |= BB_SQUARES[to_square]
+            occupied_co[color] |= BB_SQUARES[to_square]
+
 
         for cluster in self._find_adjacency_clusters(occupied_co, all_units):
             [enemies, num_allowed] = self._find_free_captures_for_cluster(occupied_co, cluster, color)
@@ -2220,7 +2236,7 @@ def _get_color_score(board: BaseBoard, color: Color) -> float:
     if board.turn == color:
         board.push(Move.skip())
 
-    moves = board.generate_legal_moves()
+    moves = board.generate_legal_captures()
     has_captures = any(m.capture_preference is not None for m in moves)
     if has_captures:
         score -= 2

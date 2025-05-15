@@ -256,6 +256,18 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     boardFEN: "q7/8/8/8/8/3f↓4/3F↑4/7Q - - r -",
     expectedMovesUCI: "d2c2 d2b2 d2e2 d2f2 d2c1 d2d1 d2e1 h1g2 h1h2 h1g1",
   },
+  {
+    description: "capture scenario #31",
+    boardFEN: "q7/8/3i↓4/8/2I↑r↓f↓3/3I↑4/8/7Q - - r -",
+    expectedMovesUCI:
+      "c4b5 c4c5 c4d5 c4b4 c4b3 c4c3 d3c3 d3e3 d3c2 d3e2 h1g2 h1h2 h1g1",
+  },
+  {
+    description: "capture scenario #32",
+    boardFEN: "q7/8/8/2i↓5/3r↓I↑3/1I↑6/8/7Q - - r -",
+    expectedMovesUCI:
+      "e4d5 e4e5 e4f5 e4f4 e4e3 e4f3 b3a4 b3b4 b3c4 b3a3 b3c3 b3a2 b3b2 b3c2 h1g2 h1h2 h1g1",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [
