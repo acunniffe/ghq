@@ -243,7 +243,7 @@ export function moveToNotation(move: AllowedMove): string {
     case "AutoCapture":
       return `AutoCapture ${move.args[0]}${
         move.args[1] ? ` from ${move.args[1]}` : ""
-      }${move.args[2] ? ` x ${move.args[2]}` : ""}`;
+      }`;
     case "Skip":
       return "Skip";
   }

@@ -18,6 +18,7 @@ import ChatIcon from "./ChatIcon";
 import LatestChatMessage from "./LatestChatMessage";
 import { User } from "@/lib/types";
 import Username from "@/components/Username";
+import { numMovesThisTurn } from "@/game/engine-v2";
 
 export default function Reserve({
   G,
@@ -85,7 +86,7 @@ export default function Reserve({
                 <ChatIcon sendChatMessage={sendChatMessage} />
               )}
               <MoveCounter
-                numMoves={ctx.numMoves}
+                numMoves={numMovesThisTurn(G)}
                 active={currentPlayerTurn === player && !ctx.gameover}
               />
               <CountdownTimer

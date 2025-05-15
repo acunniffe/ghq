@@ -70,7 +70,6 @@ export interface PythonBoard {
   is_legal: (move: PythonMove) => boolean;
   is_red_turn: () => boolean;
   is_blue_turn: () => boolean;
-  // move_from_uci: (uci: string) => any;
 }
 
 export interface PythonPlayer {
@@ -108,7 +107,6 @@ export function newGHQGameV2({
 
     updateMoveShim(ctx, G, log, move);
     const boardFen = board.push(G.v2state, move);
-    log.setMetadata({ uci: allowedMoveToUci(move) });
     updateStateFromFen(G, boardFen);
   }
 
@@ -144,6 +142,7 @@ export function newGHQGameV2({
       pieceType,
       capturePreference,
       capturedPiece,
+      uci: allowedMoveToUci(move),
     });
 
     if (move.name === "AutoCapture" && move.args[0] === "bombard") {
@@ -154,6 +153,25 @@ export function newGHQGameV2({
         captured: JSON.parse(
           JSON.stringify([
             { coordinate: capturePreference, square: capturedPiece },
+          ])
+        ), // deep copy for boardgame.io engine reasons
+      });
+    } else if (move.name === "AutoCapture" && move.args[0] === "free") {
+      G.historyLog?.push({
+        isCapture: true,
+        turn: ctx.turn,
+        playerId: ctx.currentPlayer,
+        captured: JSON.parse(
+          JSON.stringify([
+            { coordinate: capturePreference, square: capturedPiece },
+          ])
+        ), // deep copy for boardgame.io engine reasons
+        capturedByInfantry: JSON.parse(
+          JSON.stringify([
+            {
+              piece: capturedPiece,
+              coordinate: capturePreference,
+            },
           ])
         ), // deep copy for boardgame.io engine reasons
       });
@@ -361,4 +379,14 @@ function applyBotOptions(state: GHQState) {
   state.isOnline = true;
   state.timeControl = 0;
   state.bonusTime = 0;
+}
+
+export function numMovesThisTurn(G: GHQState) {
+  return G.thisTurnMoves.filter(
+    (move) => move.name !== "Skip" && move.name !== "AutoCapture"
+  ).length;
+}
+
+export function hasMoveLimitReachedV2(G: GHQState) {
+  return numMovesThisTurn(G) >= 3;
 }
