@@ -268,6 +268,31 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     expectedMovesUCI:
       "e4d5 e4e5 e4f5 e4f4 e4e3 e4f3 b3a4 b3b4 b3c4 b3a3 b3c3 b3a2 b3b2 b3c2 h1g2 h1h2 h1g1",
   },
+  {
+    description: "infantry shouldn't block armored artillery movement",
+    boardFEN: "q7/8/8/8/8/1i6/8/T↑6Q - - r -",
+    expectedMovesUCI:
+      "a1a2↑ a1a2↗ a1a2→ a1a2↘ a1a2↓ a1a2↙ a1a2← a1a2↖ a1a3↑ a1a3↗ a1a3→ a1a3↘ a1a3↓ a1a3↙ a1a3← a1a3↖ a1b2↑ a1b2↗ a1b2→ a1b2↘ a1b2↓ a1b2↙ a1b2← a1b2↖ a1c3↑ a1c3↗ a1c3→ a1c3↘ a1c3↓ a1c3↙ a1c3← a1c3↖ a1b1↑ a1b1↗ a1b1→ a1b1↘ a1b1↓ a1b1↙ a1b1← a1b1↖ a1c1↑ a1c1↗ a1c1→ a1c1↘ a1c1↓ a1c1↙ a1c1← a1c1↖ a1a1↗ a1a1→ a1a1↘ a1a1↓ a1a1↙ a1a1← a1a1↖ h1g2 h1h2 h1g1",
+  },
+  {
+    description:
+      "artillery pointed off screen shouldn't bombard squares on the bombard",
+    boardFEN: "q5i1/8/7T↗/8/8/8/6Q1/8 - - b -",
+    expectedMovesUCI: "a8b8 a8a7 a8b7 g8f8 g8h8 g8f7 g8g7 g8h7 g8h7xh6",
+  },
+  {
+    description:
+      "artillery pointed off screen shouldn't bombard squares on the bombard 2",
+    boardFEN: "q5i1/8/6T↗1/8/8/8/6Q1/8 - - b -",
+    expectedMovesUCI: "a8b8 a8a7 a8b7 g8f8 g8h8 g8f7 g8g7 g8g7xg6",
+  },
+  {
+    description:
+      "artillery pointed off screen shouldn't bombard squares on the bombard 3",
+    boardFEN: "q5i1/5i2/8/5H↗2/8/8/8/7Q - - b -",
+    expectedMovesUCI:
+      "a8b8 a8a7 a8b7 g8f8 g8h8 g8g7 f7e8 f7f8 f7e7 f7g7 f7e6 f7f6 f7f6xf5",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [

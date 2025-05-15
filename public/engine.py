@@ -1,5 +1,4 @@
 import typing
-import random
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, SupportsInt, Tuple, TypeAlias, Union
 from dataclasses import dataclass
 from typing import Optional, Union, Literal
@@ -1217,28 +1216,40 @@ class BaseBoard:
         rank = square_rank(artillery_square)
         squares = n_squares
 
-        # Calculate target file and rank based on orientation
+        def clamp_to_board(value: int) -> int:
+            return max(0, min(7, value))
+
+        # If it's cardinal directions, we can just clamp the target file or rank
         if orientation == ORIENT_N:  # North
-            target_file, target_rank = file, rank + squares
-        elif orientation == ORIENT_NE:  # Northeast
-            target_file, target_rank = file + squares, rank + squares
+            return square(file, clamp_to_board(rank + squares))
         elif orientation == ORIENT_E:  # East
-            target_file, target_rank = file + squares, rank
-        elif orientation == ORIENT_SE:  # Southeast
-            target_file, target_rank = file + squares, rank - squares
+            return square(clamp_to_board(file + squares), rank)
         elif orientation == ORIENT_S:  # South
-            target_file, target_rank = file, rank - squares
-        elif orientation == ORIENT_SW:  # Southwest
-            target_file, target_rank = file - squares, rank - squares
+            return square(file, clamp_to_board(rank - squares))
         elif orientation == ORIENT_W:  # West
-            target_file, target_rank = file - squares, rank
+            return square(clamp_to_board(file - squares), rank)
+
+        # If it's diagonal directions, we need to work our way back from the target square
+        def find_valid_diagonal(file_delta: int, rank_delta: int, squares: int) -> Optional[Tuple[int, int]]:
+            target_file, target_rank = file + squares * file_delta, rank + squares * rank_delta
+            while (target_file < 0 or target_file > 7 or target_rank < 0 or target_rank > 7) and squares > 0:
+                squares -= 1
+                target_file, target_rank = file + squares * file_delta, rank + squares * rank_delta
+            return None if squares == 0 else (target_file, target_rank)
+
+        if orientation == ORIENT_NE:  # Northeast
+            result = find_valid_diagonal(1, 1, squares)
+        elif orientation == ORIENT_SE:  # Southeast
+            result = find_valid_diagonal(1, -1, squares)
+        elif orientation == ORIENT_SW:  # Southwest
+            result = find_valid_diagonal(-1, -1, squares)
         else:  # Northwest
-            target_file, target_rank = file - squares, rank + squares
+            result = find_valid_diagonal(-1, 1, squares)
 
-        # Clamp coordinates to stay within board bounds
-        target_file = max(0, min(7, target_file))
-        target_rank = max(0, min(7, target_rank))
+        if result is None:
+            return None
 
+        target_file, target_rank = result
         return square(target_file, target_rank)
 
     def set_orientation(self, square: Square, orientation: Optional[Orientation]) -> None:
@@ -1268,7 +1279,12 @@ class BaseBoard:
         moves = BB_ARMORED_MOVES[square]
 
         # from chess: include all queen moves that don't jump over pieces
-        impassable_squares = self.occupied | self.bombarded_co[not self.turn] | self.adjacent_infantry_squares_co[not self.turn]
+        impassable_squares = self.occupied | self.bombarded_co[not self.turn]
+
+        # if this is an armored infantry that is currently adjacent to enemy infantry, we can't move it to a square with adjacent enemy infantry
+        if BB_SQUARES[square] & self.adjacent_infantry_squares_co[not self.turn]:
+            impassable_squares |= self.adjacent_infantry_squares_co[not self.turn]
+
         moves &= (BB_RANK_ATTACKS[square][BB_RANK_MASKS[square] & impassable_squares] |
                     BB_DIAG_ATTACKS[square][BB_DIAG_MASKS[square] & impassable_squares] |
                     BB_FILE_ATTACKS[square][BB_FILE_MASKS[square] & impassable_squares])
@@ -2156,6 +2172,8 @@ def find_clusters(board: Bitboard):
         yield cluster
         all_units &= ~visited
 
+import random
+
 
 class RandomPlayer():
     def __init__(self, board):
@@ -2196,7 +2214,6 @@ PIECE_VALUES: Dict[PieceType, float] = {
     HEAVY_ARTILLERY: 5,
 }
 
-
 POSITION_GRADIENT = [
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.05, 0.07, 0.09, 0.1, 0.1, 0.09, 0.07, 0.05,
@@ -2209,7 +2226,6 @@ POSITION_GRADIENT = [
     0.75, 0.77, 0.79, 0.8, 0.8, 0.79, 0.77, 0.75,
 ]
 
-
 POSITION_GRADIENTS = {
     RED: POSITION_GRADIENT,
     BLUE: POSITION_GRADIENT[::-1],
@@ -2220,6 +2236,11 @@ def evaluate_board(board: BaseBoard) -> float:
 
 def _get_color_score(board: BaseBoard, color: Color) -> float:
     score = 0
+
+    # switch the turn to trigger bombardments and so we can evaluate captures
+    if board.turn == color:
+        board.push(Move.skip())
+
     for piece_type in PIECE_VALUES:
         pieces_mask = board.pieces_mask(piece_type, color)
         num_pieces = popcount(pieces_mask)
@@ -2232,9 +2253,6 @@ def _get_color_score(board: BaseBoard, color: Color) -> float:
 
     for square in scan_reversed(board.bombarded_co[color]):
         score += POSITION_GRADIENTS[color][square] * 1
-
-    if board.turn == color:
-        board.push(Move.skip())
 
     moves = board.generate_legal_captures()
     has_captures = any(m.capture_preference is not None for m in moves)
