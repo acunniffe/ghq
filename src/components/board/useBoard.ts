@@ -45,7 +45,7 @@ export default function useBoard({
           const lastMove = G.lastPlayerMoves[i];
           setMostRecentMove(lastMove);
 
-          if (lastMove.name === "Move" && lastMove.args[2]) {
+          if (isMoveCapture(lastMove)) {
             playCaptureSound();
           } else {
             playMoveSound();
@@ -98,7 +98,7 @@ export default function useBoard({
         return;
       }
 
-      if (lastMove.name === "Move" && lastMove.args[2]) {
+      if (isMoveCapture(lastMove)) {
         playCaptureSound();
       } else {
         playMoveSound();
@@ -117,7 +117,7 @@ export default function useBoard({
         moves[name](...args);
       }
 
-      if ((name === "Move" || name === "Reinforce") && args[2]) {
+      if (isMoveCapture(userActionState.chosenMove)) {
         playCaptureSound();
       } else {
         playMoveSound();
@@ -140,4 +140,18 @@ export default function useBoard({
     mostRecentMove,
     replay: () => animateOpponentsTurnToLatestBoardState(),
   };
+}
+
+function isMoveCapture(move: AllowedMove) {
+  if (move.name === "Move" && move.args[2]) {
+    return true;
+  }
+  if (move.name === "Reinforce" && move.args[2]) {
+    return true;
+  }
+  if (move.name === "AutoCapture" && move.args[0] === "free") {
+    return true;
+  }
+
+  return false;
 }
