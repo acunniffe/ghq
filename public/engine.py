@@ -1342,7 +1342,12 @@ class BaseBoard:
     def generate_legal_moves(self, from_mask: Bitboard = BB_ALL, to_mask: Bitboard = BB_ALL) -> Iterator[Move]:
         our_pieces = self.occupied_co[self.turn] & ~self.turn_pieces
 
-        # TODO(tyler): if self.turn_moves == 0, first look for all free captures, only return those if they exist
+        # First look for all free captures, only return those if they exist
+        if self.turn_moves == 0:
+            free_captures = list(set(self._generate_free_captures(self.turn)))
+            if len(free_captures) > 0:
+                yield from free_captures
+                return
 
         # Get all unoccupied squares and non-bombarded squares
         bombarded = self.bombarded_co[not self.turn]
@@ -1711,7 +1716,11 @@ class BaseBoard:
         capturable_enemies = BB_EMPTY
         for square in scan_reversed(our_infantry):
             all_enemies_adjacent_to_ours = BB_ADJACENT_SQUARES[square] & occupied_co[not color]
-            capturable_enemies |= BB_ADJACENT_SQUARES[square] & all_enemies_adjacent_to_ours # yeah because we kinda hacked this on with the adjacent enemies but really they are part of the cluster
+            for enemy in scan_reversed(all_enemies_adjacent_to_ours):
+                if not self._is_artillery_pointed_at(enemy, square):
+                    capturable_enemies |= BB_SQUARES[enemy]
+
+            # capturable_enemies |= BB_ADJACENT_SQUARES[square] & all_enemies_adjacent_to_ours # yeah because we kinda hacked this on with the adjacent enemies but really they are part of the cluster
 
         num_captures_board = msb_n(our_infantry, num_capturable_enemies)
 
@@ -1775,6 +1784,24 @@ class BaseBoard:
 
     def _is_hq_captured(self, color: Color) -> bool:
         return popcount(self.hq & self.occupied_co[color]) == 0
+
+    def _is_artillery_pointed_at(self, artillery: Square, target_square: Square) -> bool:
+        if not is_artillery(self.piece_type_at(artillery)):
+            return False
+        orientation = self.get_orientation(artillery)
+        if orientation is None:
+            return False
+
+        if orientation == ORIENT_N:
+            return artillery + 8 == target_square
+        if orientation == ORIENT_S:
+            return artillery - 8 == target_square
+        if orientation == ORIENT_E:
+            return artillery + 1 == target_square
+        if orientation == ORIENT_W:
+            return artillery - 1 == target_square
+
+        return False
 
 
 IntoSquareSet: TypeAlias = Union[SupportsInt, Iterable[Square]]

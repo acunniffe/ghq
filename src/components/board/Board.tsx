@@ -132,6 +132,7 @@ export default function Board({
                     userActionState,
                     rightClicked,
                     boardEngagements,
+                    allowedMoves: possibleAllowedMoves,
                   })}
                   isFlipped={isFlipped}
                 />

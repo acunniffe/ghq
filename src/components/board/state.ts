@@ -68,6 +68,25 @@ export function updateClick(
     return self;
   }
 
+  // If this is a free auto-capture move, then we should just return the move.
+  if (
+    possibleAllowedMoves.some(
+      (move) =>
+        move.name === "AutoCapture" &&
+        move.args[0] === "free" &&
+        areCoordsEqual(move.args[1], [rowIndex, colIndex])
+    )
+  ) {
+    return {
+      chosenMove: possibleAllowedMoves.find(
+        (move) =>
+          move.name === "AutoCapture" &&
+          move.args[0] === "free" &&
+          areCoordsEqual(move.args[1], [rowIndex, colIndex])
+      ),
+    };
+  }
+
   // If we have chosen candidates already, then the user is attempting to finalize their move, let's lock it in.
   const chosenMove = self.chosenMoves?.find(
     (move) =>

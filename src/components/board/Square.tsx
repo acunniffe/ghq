@@ -64,6 +64,7 @@ export function getSquareState({
   userActionState,
   rightClicked,
   boardEngagements,
+  allowedMoves,
 }: {
   currentPlayer: Player;
   board: Board;
@@ -77,12 +78,14 @@ export function getSquareState({
   userActionState: UserActionState | null;
   rightClicked: Set<string>;
   boardEngagements: BoardEngagements;
+  allowedMoves: AllowedMove[];
 }): SquareState {
   // TODO(tyler): add allowed moves so we can check if there are start of turn free captures
   const coord: Coordinate = [rowIndex, colIndex];
   const hoveredCoord = userActionState?.hoveredCoordinate ?? [-1, -1];
   const { isMovable, isCaptureCandidate } = getMoveAndCaptureCandidates(
     coord,
+    allowedMoves,
     userActionState?.candidateMoves,
     userActionState?.chosenMoves,
     userActionState?.hoveredCoordinate
@@ -370,6 +373,7 @@ function getCaptureLocation(move: AllowedMove): Coordinate | undefined {
 
 function getMoveAndCaptureCandidates(
   coord: Coordinate,
+  allowedMoves: AllowedMove[],
   candidateMoves: AllowedMove[] = [],
   chosenMoves: AllowedMove[] = [],
   hoveredCoordinate?: Coordinate
@@ -400,6 +404,16 @@ function getMoveAndCaptureCandidates(
   for (const move of chosenMoves) {
     const captureLocation = getCaptureLocation(move);
     if (captureLocation && areCoordsEqual(coord, captureLocation)) {
+      isCaptureCandidate = true;
+    }
+  }
+
+  for (const move of allowedMoves) {
+    if (
+      move.name === "AutoCapture" &&
+      move.args[0] === "free" &&
+      areCoordsEqual(coord, move.args[1])
+    ) {
       isCaptureCandidate = true;
     }
   }

@@ -114,11 +114,7 @@ export interface MoveAndOrientMove {
 
 export interface AutoCaptureMove {
   name: "AutoCapture";
-  args: [
-    autoCaptureType: "bombard" | "free",
-    from?: Coordinate,
-    capturePreference?: Coordinate
-  ];
+  args: [autoCaptureType: "bombard" | "free", capturePreference: Coordinate];
 }
 
 export interface SkipMove {

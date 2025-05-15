@@ -91,25 +91,18 @@ export function allowedMoveToUci(move: AllowedMove): string {
   }
 
   if (move.name === "AutoCapture") {
-    const [autoCaptureType, from, capturePreference] = move.args;
+    const [autoCaptureType, capturePreference] = move.args;
     let result = "s";
     if (autoCaptureType === "bombard") {
       if (!capturePreference) {
         throw new Error("capturePreference is required for auto-capture");
       }
-      result += "bx" + coordinateToSquare(capturePreference);
+      result += "b" + coordinateToSquare(capturePreference);
     } else if (autoCaptureType === "free") {
       if (!capturePreference) {
         throw new Error("capturePreference is required for auto-capture");
       }
-      if (!from) {
-        throw new Error("from is required for auto-capture");
-      }
-      result +=
-        "f" +
-        coordinateToSquare(from) +
-        "x" +
-        coordinateToSquare(capturePreference);
+      result += "f" + coordinateToSquare(capturePreference);
     }
     return result;
   }
@@ -170,28 +163,25 @@ export function allowedMoveFromUci(uci: string): AllowedMove {
       throw new Error("invalid auto-capture move: too short");
     }
 
-    if (uci[1] === "b" && uci[2] === "x" && uci.length >= 5) {
+    if (uci[1] === "b" && uci.length >= 4) {
       try {
-        const capturePreference = squareToCoordinate(uci.slice(3, 5));
+        const capturePreference = squareToCoordinate(uci.slice(2, 4));
         return {
           name: "AutoCapture",
-          args: ["bombard", undefined, capturePreference],
+          args: ["bombard", capturePreference],
         };
       } catch (e) {
-        throw new Error(`invalid capture square: ${uci.slice(3, 5)}`);
+        throw new Error(`invalid capture square: ${uci.slice(2, 4)}`);
       }
-    } else if (uci[1] === "f" && uci.length >= 6) {
+    } else if (uci[1] === "f" && uci.length >= 4) {
       try {
-        const from = squareToCoordinate(uci.slice(2, 4));
-        const capturePreference = squareToCoordinate(uci.slice(5, 7));
+        const capturePreference = squareToCoordinate(uci.slice(2, 4));
         return {
           name: "AutoCapture",
-          args: ["free", from, capturePreference],
+          args: ["free", capturePreference],
         };
       } catch (e) {
-        throw new Error(
-          `invalid squares: ${uci.slice(2, 4)} or ${uci.slice(5, 7)}`
-        );
+        throw new Error(`invalid capture square: ${uci.slice(2, 4)}`);
       }
     } else {
       throw new Error(`invalid auto-capture type: ${uci[1]}`);
