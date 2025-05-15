@@ -2208,6 +2208,8 @@ def _get_color_score(board: BaseBoard, color: Color) -> float:
         score += PIECE_VALUES[piece_type] * num_pieces
         for square in scan_reversed(pieces_mask):
             multiplier = 1 if piece_type == ARTILLERY or piece_type == ARMORED_ARTILLERY or piece_type == HEAVY_ARTILLERY else 0.5
+            if piece_type == AIRBORNE_INFANTRY:
+                multiplier = -3
             score += POSITION_GRADIENTS[color][square] * multiplier
     
     for square in scan_reversed(board.bombarded_co[color]):
