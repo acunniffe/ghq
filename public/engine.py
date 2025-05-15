@@ -1,3 +1,4 @@
+# import numpy as np
 import typing
 import random
 from typing import Callable, Dict, Iterable, Iterator, List, Optional, SupportsInt, Tuple, TypeAlias, Union
@@ -787,6 +788,12 @@ class BaseBoard:
     def clear_board(self) -> None:
         self._clear_board()
 
+    def is_red_turn(self) -> bool:
+        return self.turn == RED
+
+    def is_blue_turn(self) -> bool:
+        return self.turn == BLUE
+
     def pieces_mask(self, piece_type: PieceType, color: Color) -> Bitboard:
         if piece_type == INFANTRY:
             bb = self.infantry
@@ -807,9 +814,8 @@ class BaseBoard:
 
         return bb & self.occupied_co[color]
 
-    def pieces(self, piece_type: PieceType, color: Color) -> typing.Iterator[Square]:
-        for square in scan_forward(self.pieces_mask(piece_type, color)):
-            yield square
+    def pieces(self, piece_type: PieceType, color: Color) -> "SquareSet":
+        return SquareSet(self.pieces_mask(piece_type, color))
 
     def piece_at(self, square: Square) -> Optional[Piece]:
         piece_type = self.piece_type_at(square)
@@ -856,13 +862,6 @@ class BaseBoard:
         for square in self.pieces(HQ, color):
             return square
         return None
-
-    def is_red_turn(self) -> bool:
-        return self.turn == RED
-
-    def is_blue_turn(self) -> bool:
-        return self.turn == BLUE
-
 
     def _remove_piece_at(self, square: Square) -> Optional[PieceType]:
         piece_type = self.piece_type_at(square)
@@ -1270,7 +1269,7 @@ class BaseBoard:
         moves = BB_ARMORED_MOVES[square]
 
         # from chess: include all queen moves that don't jump over pieces
-        impassable_squares = self.occupied | self.bombarded_co[not self.turn]
+        impassable_squares = self.occupied | self.bombarded_co[not self.turn] | self.adjacent_infantry_squares_co[not self.turn]
         moves &= (BB_RANK_ATTACKS[square][BB_RANK_MASKS[square] & impassable_squares] |
                     BB_DIAG_ATTACKS[square][BB_DIAG_MASKS[square] & impassable_squares] |
                     BB_FILE_ATTACKS[square][BB_FILE_MASKS[square] & impassable_squares])
@@ -1327,6 +1326,8 @@ class BaseBoard:
 
     def generate_legal_moves(self, from_mask: Bitboard = BB_ALL, to_mask: Bitboard = BB_ALL) -> Iterator[Move]:
         our_pieces = self.occupied_co[self.turn] & ~self.turn_pieces
+
+        # TODO(tyler): if self.turn_moves == 0, first look for all free captures, only return those if they exist
 
         # Get all unoccupied squares and non-bombarded squares
         bombarded = self.bombarded_co[not self.turn]
@@ -2212,7 +2213,7 @@ def _get_color_score(board: BaseBoard, color: Color) -> float:
             if piece_type == AIRBORNE_INFANTRY:
                 multiplier = -3
             score += POSITION_GRADIENTS[color][square] * multiplier
-    
+
     for square in scan_reversed(board.bombarded_co[color]):
         score += POSITION_GRADIENTS[color][square] * 1
 

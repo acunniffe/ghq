@@ -251,6 +251,11 @@ const LEGAL_MOVES_TESTS: LegalMovesTest[] = [
     expectedMovesUCI:
       "c4b4 c4b3 c4c3 c4d3 d4c3 d4d3 d4e3 e4f4 e4d3 e4e3 f3f4 f3f5 f3f5xe5 f3g4 f3h5 f3e3 f3d3 f3g3 f3h3 f3e2 f3d1 f3f2 f3f1 f3g2 h1g2 h1h2 h1g1",
   },
+  {
+    description: "armored infantry blocked by infantry",
+    boardFEN: "q7/8/8/8/8/3f↓4/3F↑4/7Q - - r -",
+    expectedMovesUCI: "d2c2 d2b2 d2e2 d2f2 d2c1 d2d1 d2e1 h1g2 h1h2 h1g1",
+  },
 ];
 
 const MAKE_MOVE_TESTS: MakeMoveTest[] = [
