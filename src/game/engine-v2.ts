@@ -25,6 +25,7 @@ export interface GameEngine {
   };
   BaseBoard: (fen?: string) => PythonBoard;
   RandomPlayer: (board: PythonBoard) => PythonPlayer;
+  ValuePlayer: (board: PythonBoard) => PythonPlayer;
 }
 
 export class GameV2 {
@@ -349,8 +350,10 @@ export function newGHQGameV2({
           ];
         }
 
-        const player = engine.RandomPlayer(board);
+        const player = engine.ValuePlayer(board);
+        const start = Date.now();
         const move = player.get_next_move();
+        console.log(`Took ${Date.now() - start}ms`);
         const allowedMove = allowedMoveFromUci(move.uci());
 
         return [

@@ -2146,3 +2146,79 @@ class RandomPlayer():
     def get_next_move(self):
         moves = list(self.board.generate_legal_moves())
         return random.choice(moves)
+
+
+class ValuePlayer():
+    def __init__(self, board):
+        self.board = board
+
+    def get_next_move(self):
+        moves = self.board.generate_legal_moves()
+        best_move = None
+        best_value = float("-inf")
+
+        for m1 in moves:
+            b1 = self.board.copy()
+            b1.push(m1)
+            v = -1 * evaluate_board(b1)
+            if v > best_value:
+                best_value = v
+                best_move = m1
+
+        return best_move
+
+
+PIECE_VALUES: Dict[PieceType, float] = {
+    HQ: 100,
+    INFANTRY: 1,
+    ARMORED_INFANTRY: 2,
+    AIRBORNE_INFANTRY: 4,
+    ARTILLERY: 3,
+    ARMORED_ARTILLERY: 4,
+    HEAVY_ARTILLERY: 5,
+}
+
+
+POSITION_GRADIENT = [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.05, 0.07, 0.09, 0.1, 0.1, 0.09, 0.07, 0.05,
+    0.15, 0.17, 0.19, 0.2, 0.2, 0.19, 0.17, 0.15,
+    0.25, 0.27, 0.29, 0.3, 0.3, 0.29, 0.27, 0.25,
+    0.35, 0.37, 0.39, 0.4, 0.4, 0.39, 0.37, 0.35,
+    0.45, 0.47, 0.49, 0.5, 0.5, 0.49, 0.47, 0.45,
+    0.55, 0.57, 0.59, 0.6, 0.6, 0.59, 0.57, 0.55,
+    0.65, 0.67, 0.69, 0.7, 0.7, 0.69, 0.67, 0.65,
+    0.75, 0.77, 0.79, 0.8, 0.8, 0.79, 0.77, 0.75,
+]
+
+
+POSITION_GRADIENTS = {
+    RED: POSITION_GRADIENT,
+    BLUE: POSITION_GRADIENT[::-1],
+}
+
+def evaluate_board(board: BaseBoard) -> float:
+    return _get_color_score(board, RED) - _get_color_score(board, BLUE)
+
+def _get_color_score(board: BaseBoard, color: Color) -> float:
+    score = 0
+    for piece_type in PIECE_VALUES:
+        pieces_mask = board.pieces_mask(piece_type, color)
+        num_pieces = popcount(pieces_mask)
+        score += PIECE_VALUES[piece_type] * num_pieces
+        for square in scan_reversed(pieces_mask):
+            multiplier = 1 if piece_type == ARTILLERY or piece_type == ARMORED_ARTILLERY or piece_type == HEAVY_ARTILLERY else 0.5
+            score += POSITION_GRADIENTS[color][square] * multiplier
+    
+    for square in scan_reversed(board.bombarded_co[color]):
+        score += POSITION_GRADIENTS[color][square] * 1
+
+    if board.turn == color:
+        board.push(Move.skip())
+
+    moves = board.generate_legal_moves()
+    has_captures = any(m.capture_preference is not None for m in moves)
+    if has_captures:
+        score -= 2
+
+    return score

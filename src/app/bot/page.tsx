@@ -8,7 +8,7 @@ import { GHQBoardV2 } from "@/components/board/boardv2";
 import { newGHQGameV2 } from "@/game/engine-v2";
 import { useEngine } from "@/game/engine-v2";
 import { Loader2 } from "lucide-react";
-import { RandomBot } from "boardgame.io/ai";
+import { WorkerBot } from "./worker-bot";
 
 export default function Page() {
   const [client, setClient] = useState<any | null>(null);
@@ -23,7 +23,7 @@ export default function Page() {
     const AppComponent = Client({
       game: newGHQGameV2({ engine, type: "bot" }),
       board: GHQBoardV2,
-      multiplayer: Local({ bots: { "1": RandomBot } }),
+      multiplayer: Local({ bots: { "1": WorkerBot } }),
     });
     setApp(() => AppComponent);
   }, [engine]);
