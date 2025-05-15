@@ -942,10 +942,11 @@ class BaseBoard:
         self._clear_board()
 
         parts = fen.split()
-        if len(parts) < 4:
+        if len(parts) < 3:
             raise ValueError("Invalid FEN string: must have at least four parts (board, red reserve, blue reserve, turn, moves)")
 
-        board_fen, red_reserve_fen, blue_reserve_fen, turn_fen = parts[:4]
+        board_fen, red_reserve_fen, blue_reserve_fen = parts[:3]
+        turn_fen = parts[3] if len(parts) > 3 else "r"
         turn_moves_fen = parts[4] if len(parts) > 4 else "-"
 
         # Set turn
