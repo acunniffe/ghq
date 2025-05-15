@@ -89,8 +89,8 @@ describe("UCI notation", () => {
   });
 
   it("can deserialize and serialize moves from a sample game", () => {
-    const movesUCI = require("./test-game-moves.json");
-    for (const moveUCI of movesUCI) {
+    const gameMoves = require("../game/tests/testdata/game1.json");
+    for (const moveUCI of gameMoves) {
       const move = allowedMoveFromUci(moveUCI);
       const moveUCI2 = allowedMoveToUci(move);
       console.log(moveUCI, moveUCI2);
