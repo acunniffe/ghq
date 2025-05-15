@@ -6,6 +6,7 @@ import { useScript } from "usehooks-ts";
 import {
   AllowedMove,
   ctxPlayerToPlayer,
+  getCapturePreference,
   GHQGame,
   GHQState,
   SkipMove,
@@ -51,11 +52,6 @@ export class GameV2 {
     const move = this.engine.Move.from_uci(allowedMoveToUci(ghqMove));
     board.push(move);
     return board.board_fen();
-  }
-
-  lastBombardments(boardFen: string): [number, number][] {
-    // const board = this.engine.BaseBoard(boardFen); // TODO(tyler): this isn't going to include the move stack, we either need tog
-    return [];
   }
 
   defaultBoardFen(): string {
@@ -123,10 +119,7 @@ export function newGHQGameV2({
     move: AllowedMove
   ) {
     let capturedPiece: Square = null;
-    const capturePreference =
-      move.name === "Move" || move.name === "Reinforce"
-        ? move.args[2]
-        : undefined;
+    const capturePreference = getCapturePreference(move);
     if (capturePreference) {
       const [x, y] = capturePreference;
       capturedPiece = JSON.parse(JSON.stringify(G.board[x][y])); // deep copy for boardgame.io engine reasons
@@ -152,6 +145,19 @@ export function newGHQGameV2({
       capturePreference,
       capturedPiece,
     });
+
+    if (move.name === "AutoCapture" && move.args[0] === "bombard") {
+      G.historyLog?.push({
+        isCapture: true,
+        turn: ctx.turn,
+        playerId: ctx.currentPlayer,
+        captured: JSON.parse(
+          JSON.stringify([
+            { coordinate: capturePreference, square: capturedPiece },
+          ])
+        ), // deep copy for boardgame.io engine reasons
+      });
+    }
   }
 
   function updateStateFromFen(G: GHQState, fen: string) {
@@ -236,7 +242,7 @@ export function newGHQGameV2({
     turn: {
       minMoves: 1,
       maxMoves: 0,
-      onBegin: ({ ctx, G }) => {
+      onBegin: ({ ctx, G, log }) => {
         if (!G.v2state) {
           throw new Error("v2state is not defined");
         }
@@ -248,68 +254,12 @@ export function newGHQGameV2({
         G.lastTurnMoves[ctx.currentPlayer as "0" | "1"] = [];
         G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"] = [];
 
-        // TODO(tyler): update G.lastTurnCaptures with bombarded
-        for (const [x, y] of board.lastBombardments(G.v2state)) {
-          G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"].push([x, y]);
-          G.historyLog?.push({
-            isCapture: true,
-            turn: ctx.turn,
-            playerId: ctx.currentPlayer,
-            // captured: JSON.parse(JSON.stringify(bombardCaptured)), // deep copy for boardgame.io engine reasons
-          });
+        const allowedMoves = board.generateLegalMoves(G.v2state);
+        for (const move of allowedMoves) {
+          if (move.name === "AutoCapture" && move.args[0] === "bombard") {
+            pushAndUpdateState(ctx, G, log, move);
+          }
         }
-
-        // TODO(tyler): add phase for pre-turn captures
-
-        // const bombardCaptured = clearBombardedSquares(G, ctx);
-        // if (bombardCaptured.length > 0) {
-        //   const clearedSquares = bombardCaptured.map(
-        //     ({ coordinate }) => coordinate
-        //   );
-        //   G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"].push(
-        //     ...clearedSquares
-        //   );
-
-        // }
-
-        // const freeCaptured = freeInfantryCaptures(
-        //   G.board,
-        //   ctx.currentPlayer === "0" ? "RED" : "BLUE"
-        // );
-        // if (freeCaptured.length > 0) {
-        //   const clearedSquares = freeCaptured.map(
-        //     ({ capture }) => capture.coordinate
-        //   ) as Coordinate[];
-        //   G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"].push(
-        //     ...clearedSquares
-        //   );
-
-        //   for (const {
-        //     capture: { coordinate },
-        //   } of freeCaptured) {
-        //     G.board[coordinate[0]][coordinate[1]] = null;
-        //   }
-
-        //   const freeCapturedRes = freeCaptured.map(
-        //     ({ capture: { coordinate, piece } }) => ({
-        //       coordinate,
-        //       square: piece,
-        //     })
-        //   );
-        //   G.lastTurnCaptures[ctx.currentPlayer as "0" | "1"].push(
-        //     ...clearedSquares
-        //   );
-
-        //   const capturedByInfantry = freeCaptured.map(({ attacker }) => attacker);
-
-        //   G.historyLog?.push({
-        //     isCapture: true,
-        //     turn: ctx.turn,
-        //     playerId: ctx.currentPlayer,
-        //     captured: JSON.parse(JSON.stringify(freeCapturedRes)), // deep copy for boardgame.io engine reasons
-        //     capturedByInfantry: JSON.parse(JSON.stringify(capturedByInfantry)), // deep copy for boardgame.io engine reasons
-        //   });
-        // }
 
         G.turnStartTime = Date.now();
         G.eval = calculateEval({

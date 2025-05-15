@@ -33,6 +33,7 @@ export function HistoryLog({
   log: BoardProps<GHQState>["log"];
   gameover?: GameoverState;
 }) {
+  // TODO(tyler): show history from log uci
   const filteredLog: LogEntry[] = [];
 
   const undoneMoves: LogEntry[] = [];
@@ -116,6 +117,14 @@ export function HistoryLog({
       } else if (type === "Resign") {
         description = "resigned";
         reactNode = playerResign({ player, description });
+      } else if (type === "AutoCapture") {
+        const [bombardOrFree, capturePreference] = args;
+        description = `${bombardOrFree.toLowerCase()} ${capturePreference.toLowerCase()}`;
+        reactNode = playerAction({
+          player,
+          action: type,
+          description: `${player} ${type}`,
+        });
       } else {
         reactNode = playerAction({
           player,

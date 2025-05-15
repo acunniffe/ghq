@@ -742,3 +742,34 @@ export function hasMoveLimitReached(ctx: Ctx) {
 export function ctxPlayerToPlayer(ctx: Ctx) {
   return ctx.currentPlayer === "0" ? "RED" : "BLUE";
 }
+
+export function isMoveCapture(move: AllowedMove) {
+  if (move.name === "Move" && move.args[2]) {
+    return true;
+  }
+  if (move.name === "Reinforce" && move.args[2]) {
+    return true;
+  }
+  if (move.name === "AutoCapture" && move.args[0] === "free") {
+    return true;
+  }
+
+  return false;
+}
+
+export function getCapturePreference(move: AllowedMove) {
+  if (move.name === "Move" && move.args[2]) {
+    return move.args[2];
+  }
+  if (move.name === "Reinforce" && move.args[2]) {
+    return move.args[2];
+  }
+  if (move.name === "AutoCapture" && move.args[0] === "free") {
+    return move.args[1];
+  }
+  if (move.name === "AutoCapture" && move.args[0] === "bombard") {
+    return move.args[1];
+  }
+
+  return undefined;
+}

@@ -1342,8 +1342,14 @@ class BaseBoard:
     def generate_legal_moves(self, from_mask: Bitboard = BB_ALL, to_mask: Bitboard = BB_ALL) -> Iterator[Move]:
         our_pieces = self.occupied_co[self.turn] & ~self.turn_pieces
 
-        # First look for all free captures, only return those if they exist
         if self.turn_moves == 0:
+            # First look for bombardments, only return those if they exist
+            bombardments = list(self._find_bombardment_moves())
+            if len(bombardments) > 0:
+                yield from bombardments
+                return
+
+            # Then look for all free captures, only return those if they exist
             free_captures = list(set(self._generate_free_captures(self.turn)))
             if len(free_captures) > 0:
                 yield from free_captures
@@ -1577,10 +1583,12 @@ class BaseBoard:
         elif move.name == "Skip":
             pass
         elif move.name == "AutoCapture":
-            if move.auto_capture_type != "free":
-                return
-            self._do_captures(move)
-            self._record_free_capture(move)
+            if move.auto_capture_type == "free":
+                self._do_captures(move)
+                self._record_free_capture(move)
+            elif move.auto_capture_type == "bombard":
+                self._do_captures(move)
+
             # we don't want to increment turn_moves here because we're not making a move
             return
 
@@ -1597,7 +1605,6 @@ class BaseBoard:
             self.turn_moves = 0
             self.turn_pieces = BB_EMPTY
             self.end_of_turn_occupied_enemy_infantry = self.occupied_co[not self.turn] & self.infantry
-            self._do_start_of_turn_captures()
 
     def _move_piece(self, move: Move) -> None:
         piece_type = self._remove_piece_at(move.from_square)
@@ -1608,16 +1615,17 @@ class BaseBoard:
         if move.capture_preference is not None:
             self._remove_piece_at(move.capture_preference)
 
-    def _do_start_of_turn_captures(self) -> None:
-        self._remove_bombarded_pieces()
-
-    def _remove_bombarded_pieces(self) -> None:
+    def _find_bombardment_moves(self) -> Iterator[Move]:
         bombarded_squares = self.bombarded_co[self.turn]
         enemy_pieces = self.occupied_co[not self.turn] & bombarded_squares
 
         for square in scan_reversed(enemy_pieces):
-            self.move_stack.append(Move.auto_capture_bombard(square))
-            self._remove_piece_at(square)
+            yield Move.auto_capture_bombard(square)
+
+    def _remove_bombarded_pieces(self) -> None:
+        for move in self._find_bombardment_moves():
+            self.move_stack.append(move)
+            self._remove_piece_at(move.capture_preference)
 
     def _record_free_capture(self, move: Move) -> None:
         if move.auto_capture_type != "free" or move.capture_preference is None:

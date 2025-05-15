@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AllowedMove, GHQState, Player } from "@/game/engine";
+import { AllowedMove, GHQState, isMoveCapture, Player } from "@/game/engine";
 import { BoardProps } from "boardgame.io/react";
 import { UserActionState } from "./state";
 import {
@@ -140,18 +140,4 @@ export default function useBoard({
     mostRecentMove,
     replay: () => animateOpponentsTurnToLatestBoardState(),
   };
-}
-
-function isMoveCapture(move: AllowedMove) {
-  if (move.name === "Move" && move.args[2]) {
-    return true;
-  }
-  if (move.name === "Reinforce" && move.args[2]) {
-    return true;
-  }
-  if (move.name === "AutoCapture" && move.args[0] === "free") {
-    return true;
-  }
-
-  return false;
 }
