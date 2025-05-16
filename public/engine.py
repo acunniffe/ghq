@@ -2256,6 +2256,16 @@ def _get_color_score(board: BaseBoard, color: Color) -> float:
     if board.turn == color:
         board.push(Move.skip())
 
+    while True:
+        moves = board.generate_legal_captures()
+
+        for move in moves:
+            if move.capture_preference is not None:
+                board.push(move)
+                break
+        else:
+            break
+
     for piece_type in PIECE_VALUES:
         pieces_mask = board.pieces_mask(piece_type, color)
         num_pieces = popcount(pieces_mask)
@@ -2270,10 +2280,5 @@ def _get_color_score(board: BaseBoard, color: Color) -> float:
 
     for square in scan_reversed(board.bombarded_co[color]):
         score += POSITION_GRADIENTS[color][square] * 1
-
-    moves = board.generate_legal_captures()
-    has_captures = any(m.capture_preference is not None for m in moves)
-    if has_captures:
-        score -= 2
 
     return score
