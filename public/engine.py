@@ -380,7 +380,7 @@ def between_inclusive_end(a: Square, b: Square) -> Bitboard:
 class Outcome:
     """
     Information about the outcome of an ended game, usually obtained from
-    :func:`chess.Board.outcome()`.
+    :func:`Board.outcome()`.
     """
 
     termination: str # TODO(tyler): add enum
@@ -1137,13 +1137,13 @@ class BaseBoard:
         Returns a transformed copy of the board (without move stack)
         by applying a bitboard transformation function.
 
-        Available transformations include :func:`chess.flip_vertical()`,
-        :func:`chess.flip_horizontal()`, :func:`chess.flip_diagonal()`,
-        :func:`chess.flip_anti_diagonal()`, :func:`chess.shift_down()`,
-        :func:`chess.shift_up()`, :func:`chess.shift_left()`, and
-        :func:`chess.shift_right()`.
+        Available transformations include :func:`flip_vertical()`,
+        :func:`flip_horizontal()`, :func:`flip_diagonal()`,
+        :func:`flip_anti_diagonal()`, :func:`shift_down()`,
+        :func:`shift_up()`, :func:`shift_left()`, and
+        :func:`shift_right()`.
 
-        Alternatively, :func:`~chess.BaseBoard.apply_transform()` can be used
+        Alternatively, :func:`~BaseBoard.apply_transform()` can be used
         to apply the transformation on the board.
         """
         board = self.copy()
@@ -1165,7 +1165,7 @@ class BaseBoard:
         The board is mirrored vertically and piece colors are swapped, so that
         the position is equivalent modulo color.
 
-        Alternatively, :func:`~chess.BaseBoard.apply_mirror()` can be used
+        Alternatively, :func:`~BaseBoard.apply_mirror()` can be used
         to mirror the board.
         """
         board = self.copy()
@@ -1278,7 +1278,7 @@ class BaseBoard:
     def _get_armored_moves(self, square: Square) -> Bitboard:
         moves = BB_ARMORED_MOVES[square]
 
-        # from chess: include all queen moves that don't jump over pieces
+        # similar to chess: include all queen moves that don't jump over pieces
         impassable_squares = self.occupied | self.bombarded_co[not self.turn]
 
         # if this is an armored infantry that is currently adjacent to enemy infantry, we can't move it to a square with adjacent enemy infantry
@@ -1452,7 +1452,6 @@ class BaseBoard:
     def _find_adjacent_attackable_squares(self, engaged: Tuple[Bitboard, Bitboard], attacker_from: Square | None, attacker_to: Square) -> Bitboard:
         attacker_color = self.color_at(attacker_to)
         adjacent_squares_with_enamies = BB_ADJACENT_SQUARES[attacker_to] & self.occupied_co[not attacker_color]
-        # TODO(tyler): do we need to disallow being in front of an artillerys line of fire or is it implicit already?
 
         # artillery or engaged pieces
         artillery = self.artillery | self.heavy_artillery | self.armored_artillery
@@ -1481,7 +1480,6 @@ class BaseBoard:
         attacker_from: Square | None,
         attacker_to: Square | None,
     ) -> Tuple[Bitboard, Bitboard]:
-        # TODO(tyler): probably most sketch performance stuff here
         def in_bounds(sq: int, direction: int) -> bool:
             if direction == -1: return sq % 8 > 0
             if direction == 1: return sq % 8 < 7
@@ -1708,8 +1706,6 @@ class BaseBoard:
 
     def _find_free_captures_for_cluster(self, occupied_co: Tuple[Bitboard, Bitboard], cluster: Bitboard, color: Color):
         our_infantry = cluster & occupied_co[color]
-        # TODO(tyler): the cluster probably needs to include both infantry and artillery and HQs, but the enemy_infantry should only be infantry --> maybe not actually
-        # this should allow all_enemies_adjacent_to_ours to include artillery and HQs
         enemy_infantry = cluster & occupied_co[not color]
 
         num_our_infantry = popcount(our_infantry)
@@ -1727,8 +1723,6 @@ class BaseBoard:
             for enemy in scan_reversed(all_enemies_adjacent_to_ours):
                 if not self._is_artillery_pointed_at(enemy, square):
                     capturable_enemies |= BB_SQUARES[enemy]
-
-            # capturable_enemies |= BB_ADJACENT_SQUARES[square] & all_enemies_adjacent_to_ours # yeah because we kinda hacked this on with the adjacent enemies but really they are part of the cluster
 
         num_captures_board = msb_n(our_infantry, num_capturable_enemies)
 
@@ -1818,13 +1812,11 @@ class SquareSet:
     """
     A set of squares.
 
-    >>> import chess
-    >>>
-    >>> squares = chess.SquareSet([chess.A8, chess.A1])
+    >>> squares = SquareSet([A8, A1])
     >>> squares
     SquareSet(0x0100_0000_0000_0001)
 
-    >>> squares = chess.SquareSet(chess.BB_A8 | chess.BB_RANK_1)
+    >>> squares = SquareSet(BB_A8 | BB_RANK_1)
     >>> squares
     SquareSet(0x0100_0000_0000_00ff)
 
@@ -1844,19 +1836,19 @@ class SquareSet:
     >>> bool(squares)
     True
 
-    >>> chess.B1 in squares
+    >>> B1 in squares
     True
 
     >>> for square in squares:
-    ...     # 0 -- chess.A1
-    ...     # 1 -- chess.B1
-    ...     # 2 -- chess.C1
-    ...     # 3 -- chess.D1
-    ...     # 4 -- chess.E1
-    ...     # 5 -- chess.F1
-    ...     # 6 -- chess.G1
-    ...     # 7 -- chess.H1
-    ...     # 56 -- chess.A8
+    ...     # 0 -- A1
+    ...     # 1 -- B1
+    ...     # 2 -- C1
+    ...     # 3 -- D1
+    ...     # 4 -- E1
+    ...     # 5 -- F1
+    ...     # 6 -- G1
+    ...     # 7 -- H1
+    ...     # 56 -- A8
     ...     print(square)
     ...
     0
@@ -1880,16 +1872,16 @@ class SquareSet:
     72057594037928191
 
     Also supports common set operations like
-    :func:`~chess.SquareSet.issubset()`, :func:`~chess.SquareSet.issuperset()`,
-    :func:`~chess.SquareSet.union()`, :func:`~chess.SquareSet.intersection()`,
-    :func:`~chess.SquareSet.difference()`,
-    :func:`~chess.SquareSet.symmetric_difference()` and
-    :func:`~chess.SquareSet.copy()` as well as
-    :func:`~chess.SquareSet.update()`,
-    :func:`~chess.SquareSet.intersection_update()`,
-    :func:`~chess.SquareSet.difference_update()`,
-    :func:`~chess.SquareSet.symmetric_difference_update()` and
-    :func:`~chess.SquareSet.clear()`.
+    :func:`~SquareSet.issubset()`, :func:`~SquareSet.issuperset()`,
+    :func:`~SquareSet.union()`, :func:`~SquareSet.intersection()`,
+    :func:`~SquareSet.difference()`,
+    :func:`~SquareSet.symmetric_difference()` and
+    :func:`~SquareSet.copy()` as well as
+    :func:`~SquareSet.update()`,
+    :func:`~SquareSet.intersection_update()`,
+    :func:`~SquareSet.difference_update()`,
+    :func:`~SquareSet.symmetric_difference_update()` and
+    :func:`~SquareSet.clear()`.
     """
 
     def __init__(self, squares: IntoSquareSet = BB_EMPTY) -> None:
@@ -2104,19 +2096,13 @@ class SquareSet:
 
         return "".join(builder)
 
-    def _repr_svg_(self) -> str:
-        import chess.svg
-        return chess.svg.board(squares=self, size=390)
-
     @classmethod
     def ray(cls, a: Square, b: Square) -> "SquareSet":
         """
         All squares on the rank, file or diagonal with the two squares, if they
         are aligned.
 
-        >>> import chess
-        >>>
-        >>> print(chess.SquareSet.ray(chess.E2, chess.B5))
+        >>> print(SquareSet.ray(E2, B5))
         . . . . . . . .
         . . . . . . . .
         1 . . . . . . .
@@ -2134,9 +2120,7 @@ class SquareSet:
         All squares on the rank, file or diagonal between the two squares
         (bounds not included), if they are aligned.
 
-        >>> import chess
-        >>>
-        >>> print(chess.SquareSet.between(chess.E2, chess.B5))
+        >>> print(SquareSet.between(E2, B5))
         . . . . . . . .
         . . . . . . . .
         . . . . . . . .
@@ -2154,9 +2138,7 @@ class SquareSet:
         All squares on the rank, file or diagonal between the two squares
         (bounds included), if they are aligned.
 
-        >>> import chess
-        >>>
-        >>> print(chess.SquareSet.between_inclusive(chess.E2, chess.B5))
+        >>> print(SquareSet.between_inclusive_end(E2, B5))
         . . . . . . . .
         . . . . . . . .
         . . . . . . . .
@@ -2171,11 +2153,9 @@ class SquareSet:
     @classmethod
     def from_square(cls, square: Square) -> "SquareSet":
         """
-        Creates a :class:`~chess.SquareSet` from a single square.
+        Creates a :class:`~SquareSet` from a single square.
 
-        >>> import chess
-        >>>
-        >>> chess.SquareSet.from_square(chess.A1) == chess.BB_A1
+        >>> SquareSet.from_square(A1) == BB_A1
         True
         """
         return cls(BB_SQUARES[square])
