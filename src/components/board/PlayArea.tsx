@@ -14,6 +14,9 @@ import useBoard from "./useBoard";
 import { Settings } from "./SettingsMenu";
 import { useUsers } from "./useUsers";
 import { hasMoveLimitReachedV2 } from "@/game/engine-v2";
+import { pieceSizes } from "@/game/constants";
+import { useMeasure } from "@uidotdev/usehooks";
+import { squareSizes } from "@/game/constants";
 
 export default function PlayArea(
   props: BoardProps<GHQState> & { className: string; settings: Settings }
@@ -36,6 +39,9 @@ export default function PlayArea(
   const currentPlayerTurn = useMemo(
     () => playerIdToPlayer(ctx.currentPlayer),
     [ctx.currentPlayer]
+  );
+  const { measureRef, squareSize, pieceSize } = useBoardDimensions(
+    G.isTutorial
   );
 
   // TODO(tyler): allow spectators to choose which side to view
@@ -106,7 +112,7 @@ export default function PlayArea(
         G.isTutorial
           ? "flex flex-col w-[360px]"
           : classNames(
-              "flex flex-col w-[360px] md:w-[600px] lg:w-[600px] overflow-x-hidden overflow-y-auto",
+              "flex flex-col w-[360px] md:w-[600px] lg:w-[600px] overflow-x-hidden overflow-y-auto gap-1",
               className
             )
       }
@@ -129,6 +135,7 @@ export default function PlayArea(
           sendChatMessage({ message, time: Date.now() })
         }
         chatMessages={chatMessages}
+        squareSize={squareSize}
       />
       <Board
         G={G}
@@ -142,6 +149,9 @@ export default function PlayArea(
         currentPlayer={currentPlayer}
         currentPlayerTurn={currentPlayerTurn}
         isFlipped={isFlipped}
+        measureRef={measureRef}
+        squareSize={squareSize}
+        pieceSize={pieceSize}
       />
       <Reserve
         G={G}
@@ -161,6 +171,7 @@ export default function PlayArea(
           sendChatMessage({ message, time: Date.now() })
         }
         chatMessages={chatMessages}
+        squareSize={squareSize}
       />
       <ControlsView
         {...props}
@@ -177,4 +188,31 @@ export default function PlayArea(
 
 function playerIdToPlayer(playerId: string): Player {
   return playerId === "0" ? "RED" : "BLUE";
+}
+
+function useBoardDimensions(preferSmall: boolean) {
+  const [measureRef, { width, height }] = useMeasure();
+
+  const [squareSize, pieceSize] = useMemo(() => {
+    const smallestDim: number = Math.min(width || 0, height || 0);
+    if (!width || !height) {
+      return [squareSizes.large, pieceSizes.large];
+    }
+
+    if (smallestDim && smallestDim - squareSizes.large * 8 >= 0) {
+      return [squareSizes.large, pieceSizes.large];
+    } else {
+      return [squareSizes.small, pieceSizes.small];
+    }
+  }, [width, height]);
+
+  if (preferSmall) {
+    return {
+      measureRef,
+      squareSize: squareSizes.small,
+      pieceSize: pieceSizes.small,
+    };
+  }
+
+  return { measureRef, squareSize, pieceSize };
 }

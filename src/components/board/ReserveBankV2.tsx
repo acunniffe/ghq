@@ -8,6 +8,7 @@ export function ReserveBankV2(props: {
   selectedKind?: keyof ReserveFleet;
   selectReserve: (kind: keyof ReserveFleet) => void;
   squareSize: number;
+  hideHQ?: boolean;
 }) {
   const kinds = [
     "INFANTRY",
@@ -22,6 +23,7 @@ export function ReserveBankV2(props: {
   const reserves = kinds.flatMap((kind) => {
     const count = props.reserve[kind as keyof ReserveFleet];
     if (count === 0) return null;
+    if (props.hideHQ && (kind as string) === "HQ") return null;
 
     return (
       <ReserveBankButton
@@ -46,5 +48,5 @@ export function ReserveBankV2(props: {
     );
   }
 
-  return <div className="flex flex-1 gap-1">{reserves}</div>;
+  return <div className="flex flex-1 gap-2">{reserves}</div>;
 }

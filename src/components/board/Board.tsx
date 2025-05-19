@@ -33,6 +33,9 @@ export default function Board({
   currentPlayer,
   currentPlayerTurn,
   isFlipped,
+  measureRef,
+  squareSize,
+  pieceSize,
 }: {
   G: GHQState;
   ctx: Ctx;
@@ -45,11 +48,10 @@ export default function Board({
   setUserActionState: React.Dispatch<React.SetStateAction<UserActionState>>;
   possibleAllowedMoves: AllowedMove[];
   isFlipped: boolean;
+  measureRef: (instance: Element | null) => void;
+  squareSize: number;
+  pieceSize: number;
 }) {
-  const { measureRef, squareSize, pieceSize } = useBoardDimensions(
-    G.isTutorial
-  );
-
   const bombarded = useMemo(() => bombardedSquares(board), [board]);
   const recentMoves = useMemo(
     () => [...G.lastTurnMoves["0"], ...G.lastTurnMoves["1"]],
@@ -157,27 +159,4 @@ export default function Board({
       />
     </>
   );
-}
-
-function useBoardDimensions(isTutorial: boolean) {
-  const [measureRef, { width, height }] = useMeasure();
-
-  const [squareSize, pieceSize] = useMemo(() => {
-    const smallestDim: number = Math.min(width || 0, height || 0);
-    if (smallestDim && smallestDim - squareSizes.large * 8 >= 0) {
-      return [squareSizes.large, pieceSizes.large];
-    } else {
-      return [squareSizes.small, pieceSizes.small];
-    }
-  }, [width, height]);
-
-  if (isTutorial) {
-    return {
-      measureRef,
-      squareSize: squareSizes.small,
-      pieceSize: pieceSizes.small,
-    };
-  }
-
-  return { measureRef, squareSize, pieceSize };
 }

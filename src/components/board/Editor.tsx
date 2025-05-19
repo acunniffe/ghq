@@ -326,6 +326,7 @@ function useBoardDimensions() {
 
   return { measureRef, squareSize, pieceSize };
 }
+
 function simpleSquareState(
   rowIndex: number,
   colIndex: number,

@@ -9,6 +9,8 @@ import GameoverDialog from "./GameoverDialog";
 import { useEffect, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import { useLatestMoveContext } from "@/components/LatestMoveContext";
+import Header from "../Header";
+import MobileHeader from "../MobileHeader";
 
 export function GHQBoardV2(props: BoardProps<GHQState>) {
   const [settings, setSettings] = useState<Settings>({
@@ -26,9 +28,12 @@ export function GHQBoardV2(props: BoardProps<GHQState>) {
 
   return (
     <div className="flex flex-col md:flex-row">
+      <div className="block sm:hidden mb-1">
+        <MobileHeader />
+      </div>
       {!isTutorial && (
         <Sidebar
-          className="order-3 md:order-1"
+          className="order-3 md:order-1 mt-8 md:mt-0"
           {...props}
           settings={settings}
           setSettings={setSettings}

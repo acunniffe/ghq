@@ -56,7 +56,9 @@ export default function Sidebar({
 
   return (
     <div className={classNames("w-full md:w-[450px] bg-white", className)}>
-      <Header />
+      <div className="hidden sm:block">
+        <Header />
+      </div>
       {historyEval}
       {ctx.gameover ? (
         <div className="flex flex-col items-center justify-center gap-1 justify-center items-center">

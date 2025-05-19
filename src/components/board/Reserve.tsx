@@ -19,6 +19,8 @@ import LatestChatMessage from "./LatestChatMessage";
 import { User } from "@/lib/types";
 import Username from "@/components/Username";
 import { numMovesThisTurn } from "@/game/engine-v2";
+import { ReserveBankV2 } from "./ReserveBankV2";
+import { cn } from "@/lib/utils";
 
 export default function Reserve({
   G,
@@ -32,6 +34,7 @@ export default function Reserve({
   selectReserve,
   sendChatMessage,
   chatMessages,
+  squareSize,
 }: {
   G: GHQState;
   ctx: Ctx;
@@ -44,64 +47,90 @@ export default function Reserve({
   userActionState: UserActionState;
   users: User[];
   selectReserve: (kind: keyof ReserveFleet) => void;
+  squareSize: number;
 }) {
   const playerIndex = player === "RED" ? 0 : 1;
   const defaultUsername = `Player ${playerIndex + 1}`;
   const userId = G.userIds?.[playerIndex];
   const user = users.find((user) => user.id === userId);
 
-  return (
-    <>
-      <LatestChatMessage player={player} chatMessages={chatMessages} />
-      <div className="items-center justify-center flex py-2 px-1">
-        <ReserveBank
+  if (G.isTutorial) {
+    return (
+      <div className="items-center justify-center flex py-2 px-1 gap-2">
+        <ReserveBankV2
           player={player}
           reserve={player === "RED" ? G.redReserve : G.blueReserve}
+          selectable={player === currentPlayerTurn && player === currentPlayer}
           selectedKind={
             player === currentPlayerTurn
               ? userActionState.selectedReserve
               : undefined
           }
-          selectable={player === currentPlayerTurn && player === currentPlayer}
           selectReserve={selectReserve}
+          squareSize={squareSize}
+          hideHQ={true}
         />
-        <div className="ml-4 lg:ml-20 my-2 flex flex-col gap-1">
-          {!G.isTutorial && (
-            <div className="flex gap-2 items-center">
-              {matchData?.[playerIndex]?.isConnected !== undefined && (
-                <ConnectionStatus
-                  isConnected={matchData[playerIndex].isConnected}
-                />
-              )}
-              {user ? (
-                <Username user={user} includeElo />
-              ) : (
-                <div>{defaultUsername}</div>
-              )}
-            </div>
-          )}
-          {!G.isTutorial && (
-            <div className="flex gap-2 justify-center items-center">
-              {player === currentPlayer && (
-                <ChatIcon sendChatMessage={sendChatMessage} />
-              )}
-              <MoveCounter
-                numMoves={numMovesThisTurn(G)}
-                active={currentPlayerTurn === player && !ctx.gameover}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <LatestChatMessage player={player} chatMessages={chatMessages} />
+      <div
+        className={cn(
+          "items-center justify-center flex flex-col w-full px-1 gap-1",
+          player === "RED" && "flex-col-reverse"
+        )}
+      >
+        <div className="flex justify-between gap-1 w-full">
+          <div className="flex gap-2 items-center flex-1">
+            {matchData?.[playerIndex]?.isConnected !== undefined && (
+              <ConnectionStatus
+                isConnected={matchData[playerIndex].isConnected}
               />
-              <CountdownTimer
-                active={
-                  currentPlayerTurn === player &&
-                  !ctx.gameover &&
-                  !G.isReplayMode
-                }
-                player={player}
-                elapsed={player === "RED" ? G.redElapsed : G.blueElapsed}
-                startDate={G.turnStartTime}
-                totalTimeAllowed={G.timeControl}
-                isReplayMode={G.isReplayMode ?? false}
-              />
-            </div>
+            )}
+            {user ? (
+              <Username user={user} includeElo />
+            ) : (
+              <div>{defaultUsername}</div>
+            )}
+          </div>
+          <div className="flex gap-2 justify-center items-center">
+            <MoveCounter
+              numMoves={numMovesThisTurn(G)}
+              active={currentPlayerTurn === player && !ctx.gameover}
+            />
+            <CountdownTimer
+              active={
+                currentPlayerTurn === player && !ctx.gameover && !G.isReplayMode
+              }
+              player={player}
+              elapsed={player === "RED" ? G.redElapsed : G.blueElapsed}
+              startDate={G.turnStartTime}
+              totalTimeAllowed={G.timeControl}
+              isReplayMode={G.isReplayMode ?? false}
+            />
+          </div>
+        </div>
+        <div className="flex gap-3 md:gap-5 items-center">
+          <ReserveBankV2
+            player={player}
+            reserve={player === "RED" ? G.redReserve : G.blueReserve}
+            selectable={
+              player === currentPlayerTurn && player === currentPlayer
+            }
+            selectedKind={
+              player === currentPlayerTurn
+                ? userActionState.selectedReserve
+                : undefined
+            }
+            selectReserve={selectReserve}
+            squareSize={squareSize}
+            hideHQ={true}
+          />
+          {player === currentPlayer && (
+            <ChatIcon sendChatMessage={sendChatMessage} />
           )}
         </div>
       </div>

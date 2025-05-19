@@ -11,22 +11,23 @@ import { config } from "@/lib/config";
 import { ghqFetch } from "@/lib/api";
 import { API_URL } from "@/app/live/config";
 import Username from "./Username";
+import { User } from "@/lib/types";
 
 export default function Header() {
   return (
-    <div className="flex justify-between px-1">
+    <div className="flex justify-between border-b bg-white">
       <Link
-        className="text-4xl font-bold text-blue-400 flex gap-2 items-center"
+        className="text-4xl font-bold text-blue-400 flex gap-1 items-center px-2"
         href="/"
       >
         <Image
           src="/icon.png"
           alt="GHQ"
-          width={40}
-          height={40}
+          width={24}
+          height={24}
           className="cursor-pointer"
         />
-        <Image src="/ghq-letters.png" alt="GHQ" width={120} height={32} />
+        <Image src="/ghq-letters.png" alt="GHQ" width={60} height={16} />
       </Link>
       <div className="p-2">{config.useClerk && <AuthSection />}</div>
     </div>
