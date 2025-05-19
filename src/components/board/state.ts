@@ -96,7 +96,7 @@ export function updateClick(
         isBombardedBy(board, move.args[0], move.args[1], move.args[2], [
           rowIndex,
           colIndex,
-        ])) ||
+        ]).isBombarded) ||
       (move.name === "Reinforce" &&
         areCoordsEqual(move.args[2] ?? [-1, -1], [rowIndex, colIndex]))
   );

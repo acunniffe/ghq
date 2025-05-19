@@ -253,14 +253,15 @@ export function isBombardedBy(
   fromCoordinate: Coordinate,
   toCoordinate: Coordinate,
   orientation: Orientation | undefined,
-  target: Coordinate
-): boolean {
+  target: Coordinate,
+  hoveredCoord?: Coordinate
+): { isBombarded: boolean; isHighlighted: boolean } {
   const square = board[fromCoordinate[0]][fromCoordinate[1]];
   if (!square || orientation === undefined) {
-    return false;
+    return { isBombarded: false, isHighlighted: false };
   }
 
-  const orientationVectors = {
+  const orientationVectors: Record<Orientation, Coordinate> = {
     0: [-1, 0], // Up
     45: [-1, 1], // Top-Right
     90: [0, 1], // Right
@@ -275,23 +276,47 @@ export function isBombardedBy(
 
   let currentX = toCoordinate[0];
   let currentY = toCoordinate[1];
+  let isBombarded = false;
+  let isHoveredOnLine = false;
+  let targetOrientationVector: Coordinate | null = null;
   const orientationVector = orientationVectors[orientation];
 
+  // Check if the hovered coordinate is on this bombardment line.
   for (let i = 0; i < range; i++) {
     currentX += orientationVector[0];
     currentY += orientationVector[1];
 
-    // off board, stop
+    if (hoveredCoord && areCoordsEqual(hoveredCoord, [currentX, currentY])) {
+      targetOrientationVector = structuredClone(orientationVector);
+    }
+  }
+
+  // Reset the current position to the target coordinate.
+  currentX = toCoordinate[0];
+  currentY = toCoordinate[1];
+
+  // Check if the target square is on a potentially bombarded square.
+  for (let i = 0; i < range; i++) {
+    currentX += orientationVector[0];
+    currentY += orientationVector[1];
+
+    // off board, stop.
     if (!(currentX >= 0 && currentX < 8 && currentY >= 0 && currentY < 8)) {
       break;
     }
 
-    if (currentX === target[0] && currentY === target[1]) {
-      return true;
+    if (areCoordsEqual(target, [currentX, currentY])) {
+      isBombarded = true;
+      if (targetOrientationVector) {
+        isHoveredOnLine = areCoordsEqual(
+          targetOrientationVector,
+          orientationVector
+        );
+      }
     }
   }
 
-  return false;
+  return { isBombarded, isHighlighted: isHoveredOnLine };
 }
 
 export function getOpponent(player: Player): Player {

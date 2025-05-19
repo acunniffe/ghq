@@ -40,6 +40,7 @@ export interface SquareState {
   isSelected: boolean;
   isCaptureCandidate: boolean;
   isBombardCandidate: boolean;
+  isHighlightedBombardCandidate: boolean;
   showTarget: boolean;
   wasRecentlyCapturedPiece: NonNullSquare | undefined;
   wasRecentlyMovedTo: boolean;
@@ -90,8 +91,19 @@ export function getSquareState({
     userActionState?.chosenMoves,
     userActionState?.hoveredCoordinate
   );
-  const { isSelected, isMidMove, stagedSquare, isBombardCandidate } =
-    getChosenCandidates(coord, userActionState, board, currentPlayer);
+  const {
+    isSelected,
+    isMidMove,
+    stagedSquare,
+    isBombardCandidate,
+    isHighlightedBombardCandidate,
+  } = getChosenCandidates(
+    coord,
+    userActionState,
+    board,
+    currentPlayer,
+    hoveredCoord
+  );
   const wasRecentlyMovedTo = recentMoves.some((moveCoord) =>
     areCoordsEqual(coord, moveCoord)
   );
@@ -121,6 +133,7 @@ export function getSquareState({
     isMovable,
     isCaptureCandidate,
     isBombardCandidate,
+    isHighlightedBombardCandidate,
     isRightClicked: rightClicked.has(`${rowIndex},${colIndex}`),
     isHovered: areCoordsEqual(coord, hoveredCoord),
     isMidMove,
@@ -311,7 +324,7 @@ function SquareBackground({ squareState }: { squareState: SquareState }) {
           <div className="absolute rounded-full bg-green-700/50 w-1/3 h-1/3 pointer-events-none"></div>
         ))}
       {squareState.isBombardCandidate &&
-        (squareState.isHovered ? (
+        (squareState.isHighlightedBombardCandidate ? (
           <SquareBackgroundColor className="bg-yellow-600/80 z-10" />
         ) : (
           <div
@@ -359,7 +372,10 @@ function getMoveDestination(move: AllowedMove): Coordinate | undefined {
     return move.args[1];
   }
   if (move.name === "AutoCapture" && move.args[0] === "free") {
-    return move.args[2];
+    return move.args[1];
+  }
+  if (move.name === "AutoCapture" && move.args[0] === "bombard") {
+    return move.args[1];
   }
   return undefined;
 }
@@ -435,7 +451,8 @@ function getChosenCandidates(
   coord: Coordinate,
   userActionState: UserActionState | null,
   board: Board,
-  currentPlayer: Player
+  currentPlayer: Player,
+  hoveredCoord?: Coordinate
 ) {
   const selectedCoord = userActionState?.selectedPiece?.coordinate ?? [-1, -1];
 
@@ -443,6 +460,7 @@ function getChosenCandidates(
   let isMidMove = false;
   let stagedSquare = null;
   let isBombardCandidate = false;
+  let isHighlightedBombardCandidate = false;
 
   // #perf-improvement-possible: chosenMoves could be a set
   for (const move of userActionState?.chosenMoves ?? []) {
@@ -496,11 +514,21 @@ function getChosenCandidates(
     }
 
     // If the current move would bombard this square, let's display that.
-    if (
-      move.name === "MoveAndOrient" &&
-      isBombardedBy(board, move.args[0], move.args[1], move.args[2], coord)
-    ) {
-      isBombardCandidate = true;
+    if (move.name === "MoveAndOrient") {
+      const { isBombarded, isHighlighted } = isBombardedBy(
+        board,
+        move.args[0],
+        move.args[1],
+        move.args[2],
+        coord,
+        hoveredCoord
+      );
+      if (isBombarded) {
+        isBombardCandidate = true;
+      }
+      if (isHighlighted) {
+        isHighlightedBombardCandidate = true;
+      }
     }
   }
 
@@ -509,7 +537,13 @@ function getChosenCandidates(
     isMidMove = areCoordsEqual(coord, selectedCoord);
   }
 
-  return { isSelected, isMidMove, stagedSquare, isBombardCandidate };
+  return {
+    isSelected,
+    isMidMove,
+    stagedSquare,
+    isBombardCandidate,
+    isHighlightedBombardCandidate,
+  };
 }
 
 function getAnimation(
