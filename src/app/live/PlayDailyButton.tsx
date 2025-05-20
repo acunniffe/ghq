@@ -92,7 +92,9 @@ export function PlayDailyButton() {
             <div className="flex justify-between p-2 px-4 rounded-md border items-center">
               <Username user={selectedUser} />
               <div className="text-sm">
-                {selectedUser.gamesThisMonth} games this month
+                {selectedUser.gamesThisMonth}{" "}
+                {selectedUser.gamesThisMonth === 1 ? "game" : "games"} this
+                month
               </div>
             </div>
           )}
