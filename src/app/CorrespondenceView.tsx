@@ -32,7 +32,6 @@ export default function CorrespondenceView() {
   const [sentChallenges, setSentChallenges] = useState<Challenge[]>([]);
   const [receivedChallenges, setReceivedChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [showActive, setShowActive] = useState<boolean>(true);
 
   useEffect(() => {
     fetchMatchesAndChallenges();
@@ -79,25 +78,10 @@ export default function CorrespondenceView() {
       .finally(() => setLoading(false));
   }
 
-  function filterActive(challenge: Challenge) {
-    const thirtyDaysAgo = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30);
-    return (
-      challenge.created_at && new Date(challenge.created_at) > thirtyDaysAgo
-    );
-  }
-
   useEffect(() => {
-    setSentChallenges(
-      challenges
-        .filter((c) => c.challenger.id === userId)
-        .filter((c) => (showActive ? filterActive(c) : true))
-    );
-    setReceivedChallenges(
-      challenges
-        .filter((c) => c.target.id === userId)
-        .filter((c) => (showActive ? filterActive(c) : true))
-    );
-  }, [challenges, showActive]);
+    setSentChallenges(challenges.filter((c) => c.challenger.id === userId));
+    setReceivedChallenges(challenges.filter((c) => c.target.id === userId));
+  }, [challenges]);
 
   async function acceptChallenge(challengerUserId: string) {
     await ghqFetch({
@@ -115,14 +99,6 @@ export default function CorrespondenceView() {
       <div className="flex justify-between items-center mb-3">
         <div className="text-lg font-bold flex items-center gap-2">
           Correspondence
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 text-gray-500"
-            onClick={() => setShowActive(!showActive)}
-          >
-            {showActive ? "Showing active" : "Showing all"}
-          </Button>
         </div>
         <PlayFriendDialog />
       </div>

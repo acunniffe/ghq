@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export default function Button({
@@ -37,7 +38,14 @@ export default function Button({
       )}
       onClick={doOnClick}
     >
-      {loading ? <div>{_loadingText}</div> : children}
+      {loading ? (
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {_loadingText}
+        </div>
+      ) : (
+        children
+      )}
     </button>
   );
 }

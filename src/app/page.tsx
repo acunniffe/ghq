@@ -11,6 +11,7 @@ import CorrespondenceView from "./CorrespondenceView";
 import PlayersTab from "./PlayersTab";
 import { useState } from "react";
 import { Star } from "lucide-react";
+import { PlayDailyButton } from "./live/PlayDailyButton";
 
 function App() {
   const router = useRouter();
@@ -48,7 +49,7 @@ function App() {
               <Star className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all duration-300" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 place-items-center">
-              <PlayOnlineButton mode="blitz" />
+              <PlayDailyButton />
               <PlayOnlineButton mode="rapid" />
               <Button onClick={playBot}>🤖 Play Bot</Button>
               <Button onClick={playLocal}>👨‍💻 Pass n&apos; Play</Button>
@@ -57,6 +58,7 @@ function App() {
 
               {showVariants && (
                 <>
+                  <PlayOnlineButton mode="blitz" />
                   <PlayOnlineButton mode="endgame" />
                   <PlayOnlineButton mode="normandy" />
                 </>

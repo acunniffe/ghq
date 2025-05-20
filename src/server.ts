@@ -37,6 +37,7 @@ import { getUser } from "./lib/supabase";
 import { getMatchSummary } from "./server/match-summary";
 import { updateUserStats } from "./server/user-stats";
 import { getUserSummary } from "./server/user-summary";
+import { getActivePlayersInLast30Days, listMatches } from "./server/matches";
 
 const supabase = createClient(
   "https://wjucmtrnmjcaatbtktxo.supabase.co",
@@ -198,90 +199,12 @@ server.router.get("/matches", async (ctx) => {
     (ctx.request.query.isCorrespondence as string) === "true";
 
   const matches = await listMatches({
+    supabase,
     userId,
     isCorrespondence,
   });
   ctx.body = JSON.stringify({ matches });
 });
-
-async function listMatches({
-  userId,
-  isCorrespondence,
-}: {
-  userId?: string;
-  isCorrespondence?: boolean;
-}): Promise<MatchModel[]> {
-  let query = supabase
-    .from("matches")
-    .select(
-      "id, created_at, player0_id, player1_id, player0_elo, player1_elo, winner_id, status, current_turn_player_id, rated"
-    );
-
-  if (userId) {
-    query = query.or(`player0_id.eq.${userId},player1_id.eq.${userId}`);
-  }
-
-  if (isCorrespondence) {
-    query = query.eq("is_correspondence", true);
-  }
-
-  query = query.order("created_at", { ascending: false }).limit(100);
-
-  const { data: matchesData, error: matchesError } = await query;
-
-  if (matchesError) {
-    console.log({
-      message: "Error fetching matches",
-      matchesError,
-    });
-    return [];
-  }
-
-  const userIds = matchesData.flatMap((match) => [
-    match.player0_id,
-    match.player1_id,
-  ]);
-
-  const { data: users, error } = await supabase
-    .from("users")
-    .select("id, username")
-    .in("id", userIds);
-
-  if (error) {
-    console.log({
-      message: "Error fetching users for matches",
-      error,
-    });
-    return [];
-  }
-
-  const matches: MatchModel[] = [];
-
-  if (users) {
-    const userMap = new Map(
-      users.map((user) => [user.id, user.username ?? "Anonymous"])
-    );
-
-    for (const match of matchesData) {
-      matches.push({
-        id: match.id,
-        player1: userMap.get(match.player0_id),
-        player2: userMap.get(match.player1_id),
-        winner: userMap.get(match.winner_id) ?? null,
-        player1Elo: match.player0_elo,
-        player2Elo: match.player1_elo,
-        status: match.status,
-        createdAt: match.created_at,
-        isYourTurn: isCorrespondence
-          ? match.current_turn_player_id === userId
-          : undefined,
-        rated: match.rated,
-      });
-    }
-  }
-
-  return matches;
-}
 
 server.router.get("/matches/:matchId", async (ctx) => {
   const userId = ctx.state.auth.userId;
@@ -760,7 +683,11 @@ server.router.get("/correspondence/matches", async (ctx) => {
     throw new Error("userId is required");
   }
 
-  const matches = await listMatches({ userId, isCorrespondence: true });
+  const matches = await listMatches({
+    supabase,
+    userId,
+    isCorrespondence: true,
+  });
   ctx.body = JSON.stringify({ matches });
 });
 
@@ -924,6 +851,51 @@ server.router.post("/correspondence/accept", async (ctx) => {
   }
 
   ctx.body = JSON.stringify({ matchId });
+});
+
+server.router.get("/correspondence/random-user", async (ctx) => {
+  const userId = ctx.state.auth.userId;
+  if (!userId) {
+    throw new Error("userId is required");
+  }
+
+  // Get this user's active correspondence matches
+  const { data: myMatches, error: myMatchesError } = await supabase
+    .from("matches")
+    .select("id, player0_id, player1_id, status, is_correspondence")
+    .eq("is_correspondence", true)
+    .is("status", null)
+    .or(`player0_id.eq.${userId},player1_id.eq.${userId}`);
+
+  if (myMatchesError) {
+    console.log({
+      message: "Error fetching my matches",
+      myMatchesError,
+    });
+    ctx.throw(400, "Error fetching my matches");
+    return;
+  }
+
+  const myMatchesUserIds = new Set<string>();
+  for (const match of myMatches) {
+    myMatchesUserIds.add(match.player0_id);
+    myMatchesUserIds.add(match.player1_id);
+  }
+
+  // Get all active players in the last 30 days and filter out the players that are in the user's matches
+  const activePlayers = await getActivePlayersInLast30Days({ supabase });
+  const filteredActivePlayers = activePlayers.filter(
+    (player) => !myMatchesUserIds.has(player)
+  );
+
+  const randomPlayer =
+    filteredActivePlayers[
+      Math.floor(Math.random() * filteredActivePlayers.length)
+    ];
+
+  const user = await getUser(randomPlayer);
+
+  ctx.body = JSON.stringify({ user });
 });
 
 function clerkUsernameOrRandomDefault(username?: string | null): string {
