@@ -266,42 +266,42 @@ export const boards: Record<string, TutorialSetupData> = {
     category: "puzzles",
     boardArrows: [],
   },
-  "Capture two infantry": {
-    boardState: {
-      board: [
-        [B.HQ, null, null, null, B.IN, null, null, null],
-        [null, null, null, B.IN, R.IN, null, null, null],
-        [null, null, B.IN, R.IN, null, R.IN, null, null],
-        [null, B.IN, R.IN, null, null, null, null, null],
-        [B.IN, R.IN, null, null, null, null, null, null],
-        [R.IN, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, R.HQ],
-      ],
-      redReserve: emptyReserveFleet,
-      blueReserve: emptyReserveFleet,
-    },
-    category: "puzzles",
-    boardArrows: [],
-  },
-  "Capture HQ!": {
-    boardState: {
-      board: [
-        [B.HQ, null, B.IN, null, null, null, null, null],
-        [B.IN, null, null, null, null, null, null, null],
-        [R.IN, null, B.IN, null, null, null, null, null],
-        [null, R.AI, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, null, null],
-        [null, null, null, null, null, null, R.AB, R.HQ],
-      ],
-      redReserve: emptyReserveFleet,
-      blueReserve: emptyReserveFleet,
-    },
-    category: "puzzles",
-    boardArrows: [],
-  },
+  // "Capture two infantry": {
+  //   boardState: {
+  //     board: [
+  //       [B.HQ, null, null, null, B.IN, null, null, null],
+  //       [null, null, null, B.IN, R.IN, null, null, null],
+  //       [null, null, B.IN, R.IN, null, R.IN, null, null],
+  //       [null, B.IN, R.IN, null, null, null, null, null],
+  //       [B.IN, R.IN, null, null, null, null, null, null],
+  //       [R.IN, null, null, null, null, null, null, null],
+  //       [null, null, null, null, null, null, null, null],
+  //       [null, null, null, null, null, null, null, R.HQ],
+  //     ],
+  //     redReserve: emptyReserveFleet,
+  //     blueReserve: emptyReserveFleet,
+  //   },
+  //   category: "puzzles",
+  //   boardArrows: [],
+  // },
+  // "Capture HQ!": {
+  //   boardState: {
+  //     board: [
+  //       [B.HQ, null, B.IN, null, null, null, null, null],
+  //       [B.IN, null, null, null, null, null, null, null],
+  //       [R.IN, null, B.IN, null, null, null, null, null],
+  //       [null, R.AI, null, null, null, null, null, null],
+  //       [null, null, null, null, null, null, null, null],
+  //       [null, null, null, null, null, null, null, null],
+  //       [null, null, null, null, null, null, null, null],
+  //       [null, null, null, null, null, null, R.AB, R.HQ],
+  //     ],
+  //     redReserve: emptyReserveFleet,
+  //     blueReserve: emptyReserveFleet,
+  //   },
+  //   category: "puzzles",
+  //   boardArrows: [],
+  // },
   "Collapse the center line": {
     boardState: {
       board: [
