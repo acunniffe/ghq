@@ -193,7 +193,8 @@ export function newGHQGameV2({
     G.redReserve = boardState.redReserve;
     G.blueReserve = boardState.blueReserve;
     G.v2state = fen;
-    G.thisTurnMoves = boardState.thisTurnMoves ?? [];
+    // TODO(tyler): figure out how to get this to work without overriding thisTurnMoves on the player's final turn
+    // G.thisTurnMoves = boardState.thisTurnMoves ?? [];
 
     G.eval = calculateEval({
       ...G,
