@@ -9,7 +9,6 @@ import GameoverDialog from "./GameoverDialog";
 import { useEffect, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import { useLatestMoveContext } from "@/components/LatestMoveContext";
-import Header from "../Header";
 import MobileHeader from "../MobileHeader";
 
 export function GHQBoardV2(props: BoardProps<GHQState>) {

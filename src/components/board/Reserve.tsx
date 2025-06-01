@@ -5,7 +5,6 @@ import CountdownTimer from "@/game/countdown";
 
 import MoveCounter from "../../game/MoveCounter";
 import { ChatMessage, Ctx } from "boardgame.io";
-import { ReserveBank } from "../../game/board";
 import { UserActionState } from "./state";
 import { BoardProps } from "boardgame.io/react";
 import {
