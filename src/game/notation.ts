@@ -59,7 +59,6 @@ export interface BoardState {
   redReserve: ReserveFleet;
   blueReserve: ReserveFleet;
   currentPlayerTurn?: Player;
-  thisTurnMoves?: AllowedMove[];
 }
 
 // Inspired by https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
@@ -69,7 +68,6 @@ export function boardToFEN({
   redReserve,
   blueReserve,
   currentPlayerTurn,
-  thisTurnMoves,
 }: BoardState): string {
   let fen = "";
 
@@ -112,14 +110,6 @@ export function boardToFEN({
   fen += " ";
 
   fen += (currentPlayerTurn ?? "RED") === "RED" ? "r" : "b";
-
-  fen += " ";
-
-  if (thisTurnMoves && thisTurnMoves.length > 0) {
-    fen += thisTurnMoves.map(allowedMoveToUci).join(",");
-  } else {
-    fen += "-";
-  }
 
   return fen;
 }
@@ -198,14 +188,7 @@ export function FENtoBoardState(fen: string): BoardState {
 
   const currentPlayerTurn = currentPlayerFen === "r" ? "RED" : "BLUE";
 
-  const thisTurnMoves: AllowedMove[] = [];
-  if (movesFen && movesFen !== "-") {
-    for (const moveUci of movesFen.split(",")) {
-      thisTurnMoves.push(allowedMoveFromUci(moveUci));
-    }
-  }
-
-  return { board, redReserve, blueReserve, currentPlayerTurn, thisTurnMoves };
+  return { board, redReserve, blueReserve, currentPlayerTurn };
 }
 
 function parseFENChar(char: string): {

@@ -750,7 +750,7 @@ export function isMoveCapture(move: AllowedMove) {
   if (move.name === "Reinforce" && move.args[2]) {
     return true;
   }
-  if (move.name === "AutoCapture" && move.args[0] === "free") {
+  if (move.name === "AutoCapture") {
     return true;
   }
 

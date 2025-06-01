@@ -15,7 +15,7 @@ import {
   UnitType,
 } from "./engine";
 import { allowedMoveFromUci, allowedMoveToUci } from "./notation-uci";
-import { FENtoBoardState } from "./notation";
+import { BoardState, FENtoBoardState } from "./notation";
 import { INVALID_MOVE } from "boardgame.io/core";
 import { calculateEval } from "./eval";
 import { LogAPI } from "boardgame.io/src/plugins/plugin-log";
@@ -28,7 +28,10 @@ export interface GameEngine {
   Move: {
     from_uci: (uci: string) => any;
   };
-  BaseBoard: (fen?: string) => PythonBoard;
+  BaseBoard: {
+    (fen?: string): PythonBoard;
+    deserialize: (serialized: string) => PythonBoard;
+  };
   RandomPlayer: (board: PythonBoard) => PythonPlayer;
   ValuePlayer: (board: PythonBoard) => PythonPlayer;
 }
@@ -36,8 +39,8 @@ export interface GameEngine {
 export class GameV2 {
   constructor(private engine: GameEngine) {}
 
-  generateLegalMoves(boardFen: string): AllowedMove[] {
-    const board = this.engine.BaseBoard(boardFen);
+  generateLegalMoves(v2state: string): AllowedMove[] {
+    const board = this.engine.BaseBoard.deserialize(v2state);
     const moves = board.generate_legal_moves();
     const ghqMoves = Array.from(moves).map((move) =>
       allowedMoveFromUci(move.uci())
@@ -45,25 +48,46 @@ export class GameV2 {
     return ghqMoves;
   }
 
-  isLegalMove(boardFen: string, ghqMove: AllowedMove): boolean {
-    const board = this.engine.BaseBoard(boardFen);
+  isLegalMove(v2state: string, ghqMove: AllowedMove): boolean {
+    const board = this.engine.BaseBoard.deserialize(v2state);
     const move = this.engine.Move.from_uci(allowedMoveToUci(ghqMove));
     return board.is_legal(move);
   }
 
-  push(boardFen: string, ghqMove: AllowedMove) {
-    const board = this.engine.BaseBoard(boardFen);
+  push(
+    v2state: string,
+    ghqMove: AllowedMove
+  ): { boardState: BoardState; v2state: string } {
+    const board = this.engine.BaseBoard.deserialize(v2state);
     const move = this.engine.Move.from_uci(allowedMoveToUci(ghqMove));
     board.push(move);
-    return board.board_fen();
+    return {
+      boardState: FENtoBoardState(board.board_fen()),
+      v2state: board.serialize(),
+    };
   }
 
-  defaultBoardFen(): string {
-    return this.engine.BaseBoard().board_fen();
+  boardStatesFromFen(fen?: string): {
+    boardState: BoardState;
+    v2state: string;
+  } {
+    const board = this.engine.BaseBoard(fen);
+    return {
+      boardState: FENtoBoardState(board.board_fen()),
+      v2state: board.serialize(),
+    };
   }
 
-  currentPlayerTurn(boardFen: string): Player {
-    const board = this.engine.BaseBoard(boardFen);
+  boardStates(v2state: string): { boardState: BoardState; v2state: string } {
+    const board = this.engine.BaseBoard.deserialize(v2state);
+    return {
+      boardState: FENtoBoardState(board.board_fen()),
+      v2state: board.serialize(),
+    };
+  }
+
+  currentPlayerTurn(v2state: string): Player {
+    const board = this.engine.BaseBoard.deserialize(v2state);
     return board.is_red_turn() ? "RED" : "BLUE";
   }
 }
@@ -76,6 +100,7 @@ export interface PythonBoard {
   generate_legal_moves: () => Iterable<PythonMove>;
   push: (move: PythonMove) => void;
   board_fen: () => string;
+  serialize: () => string;
   is_legal: (move: PythonMove) => boolean;
   is_red_turn: () => boolean;
   is_blue_turn: () => boolean;
@@ -115,8 +140,8 @@ export function newGHQGameV2({
     }
 
     updateMoveShim(ctx, G, log, move);
-    const boardFen = board.push(G.v2state, move);
-    updateStateFromFen(G, boardFen);
+    const states = board.push(G.v2state, move);
+    updateStateFromStates(G, states);
   }
 
   function updateMoveShim(
@@ -187,12 +212,14 @@ export function newGHQGameV2({
     }
   }
 
-  function updateStateFromFen(G: GHQState, fen: string) {
-    const boardState = FENtoBoardState(fen);
+  function updateStateFromStates(
+    G: GHQState,
+    { boardState, v2state }: { boardState: BoardState; v2state: string }
+  ) {
     G.board = boardState.board;
     G.redReserve = boardState.redReserve;
     G.blueReserve = boardState.blueReserve;
-    G.v2state = fen;
+    G.v2state = v2state;
     // TODO(tyler): figure out how to get this to work without overriding thisTurnMoves on the player's final turn
     // G.thisTurnMoves = boardState.thisTurnMoves ?? [];
 
@@ -210,7 +237,7 @@ export function newGHQGameV2({
       }
 
       const state = { ...v1Game.setup({ ctx, ...plugins }, setupData) };
-      updateStateFromFen(state, fen ?? board.defaultBoardFen());
+      updateStateFromStates(state, board.boardStatesFromFen(fen));
 
       if (type === "bot") {
         applyBotOptions(state);
@@ -258,7 +285,7 @@ export function newGHQGameV2({
           }
 
           // If it's already the next player's turn, end the turn without sending a move.
-          const boardState = FENtoBoardState(G.v2state);
+          const { boardState } = board.boardStates(G.v2state);
           if (boardState.currentPlayerTurn !== ctxPlayerToPlayer(ctx)) {
             events.endTurn();
             return;
@@ -285,7 +312,7 @@ export function newGHQGameV2({
         }
 
         // If it's already the next player's turn, end the turn without sending a move.
-        const boardState = FENtoBoardState(G.v2state);
+        const { boardState } = board.boardStates(G.v2state);
         if (boardState.currentPlayerTurn !== ctxPlayerToPlayer(ctx)) {
           events.endTurn();
           return;

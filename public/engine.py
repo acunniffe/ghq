@@ -1,7 +1,10 @@
+import base64
 import typing
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, SupportsInt, Tuple, TypeAlias, Union
+from typing import Callable, Dict, Hashable, Iterable, Iterator, List, Optional, SupportsInt, Tuple, TypeAlias, Union
 from dataclasses import dataclass
 from typing import Optional, Union, Literal
+import struct
+import zlib
 
 if typing.TYPE_CHECKING:
     from typing_extensions import Self
@@ -40,7 +43,7 @@ FILE_NAMES = ["a", "b", "c", "d", "e", "f", "g", "h"]
 
 RANK_NAMES = ["1", "2", "3", "4", "5", "6", "7", "8"]
 
-STARTING_FEN = "qr↓6/iii5/8/8/8/8/5III/6R↑Q IIIIIFFFPRRTH iiiiifffprrth r -"
+STARTING_FEN = "qr↓6/iii5/8/8/8/8/5III/6R↑Q IIIIIFFFPRRTH iiiiifffprrth r"
 """The FEN for the standard GHQ starting position."""
 
 Orientation: TypeAlias = int
@@ -60,10 +63,8 @@ CARDINAL_DIRECTIONS = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
 def bits_to_orientation(bit0: int, bit1: int, bit2: int) -> Optional[Orientation]:
     return (bit2 << 2) | (bit1 << 1) | bit0
 
-
 def orientation_to_bits(orientation: Orientation) -> Tuple[int, int, int]:
     return [orientation & 1, (orientation >> 1) & 1, orientation >> 2]
-
 
 def orientation_to_cardinal(orientation: int) -> str:
     if orientation < 0 or orientation >= 8:
@@ -76,6 +77,11 @@ def cardinal_to_orientation(cardinal: str) -> Optional[int]:
     except ValueError:
         return None
 
+def rotate_orientations_180(bit0: int, bit1: int, bit2: int) -> Tuple[int, int, int]:
+    return (bit0, bit1, bit2 ^ BB_ALL)
+
+def rotate_orientations_90(bit0: int, bit1: int, bit2: int) -> Tuple[int, int, int]:
+    return (bit0, bit1 ^ BB_ALL, bit2 ^ bit1)
 
 def piece_symbol(piece_type: PieceType) -> str:
     return typing.cast(str, PIECE_SYMBOLS[piece_type])
@@ -273,6 +279,19 @@ def flip_horizontal(bb: Bitboard) -> Bitboard:
     bb = ((bb >> 4) & 0x0f0f_0f0f_0f0f_0f0f) | ((bb & 0x0f0f_0f0f_0f0f_0f0f) << 4)
     return bb
 
+def flip_diag_a1h8(bb: Bitboard) -> Bitboard:
+    # https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#FlipabouttheDiagonal
+    t = 0x0f0f_0f0f_0000_0000 & (bb ^ (bb << 28))
+    bb ^= t ^ (t >> 28)
+    t = 0x3333_0000_3333_0000 & (bb ^ (bb << 14))
+    bb ^= t ^ (t >> 14)
+    t = 0x5500_5500_5500_5500 & (bb ^ (bb << 7))
+    bb ^= t ^ (t >> 7)
+    return bb
+
+def rotate_90_clockwise(bb: Bitboard) -> Bitboard:
+    return flip_vertical(flip_diag_a1h8(bb))
+
 def _sliding_moves(square: Square, occupied: Bitboard, deltas: Iterable[int]) -> Bitboard:
     attacks = BB_EMPTY
 
@@ -402,6 +421,12 @@ def is_hq(piece_type: PieceType) -> bool:
 
 def is_infantry(piece_type: PieceType) -> bool:
     return piece_type == INFANTRY or piece_type == ARMORED_INFANTRY or piece_type == AIRBORNE_INFANTRY
+
+def is_airborne(piece_type: PieceType) -> bool:
+    return piece_type == AIRBORNE_INFANTRY
+
+def is_armored(piece_type: PieceType) -> bool:
+    return piece_type == ARMORED_INFANTRY or piece_type == ARMORED_ARTILLERY
 
 class Piece:
     piece_type: PieceType
@@ -682,16 +707,32 @@ class Move:
     @classmethod
     def reinforce(cls, unit_type: PieceType, to_square: Square, capture_preference: Optional[Square] = None) -> "Move":
         """Creates a reinforce move."""
+        if to_square < 0 or to_square >= 64:
+            raise ValueError(f"invalid to square: {to_square}")
+        if capture_preference is not None and (capture_preference < 0 or capture_preference >= 64):
+            raise ValueError(f"invalid capture preference: {capture_preference}")
         return cls(name="Reinforce", unit_type=unit_type, to_square=to_square, capture_preference=capture_preference)
 
     @classmethod
     def move(cls, from_square: Square, to_square: Square, capture_preference: Optional[Square] = None) -> "Move":
         """Creates a move."""
+        if from_square < 0 or from_square >= 64:
+            raise ValueError(f"invalid from square: {from_square}")
+        if to_square < 0 or to_square >= 64:
+            raise ValueError(f"invalid to square: {to_square}")
+        if capture_preference is not None and (capture_preference < 0 or capture_preference >= 64):
+            raise ValueError(f"invalid capture preference: {capture_preference}")
         return cls(name="Move", from_square=from_square, to_square=to_square, capture_preference=capture_preference)
 
     @classmethod
     def move_and_orient(cls, from_square: Square, to_square: Square, orientation: Optional[int] = None) -> "Move":
         """Creates a move and orient move."""
+        if from_square < 0 or from_square >= 64:
+            raise ValueError(f"invalid from square: {from_square}")
+        if to_square < 0 or to_square >= 64:
+            raise ValueError(f"invalid to square: {to_square}")
+        if orientation is not None and (orientation < 0 or orientation >= 8):
+            raise ValueError(f"invalid orientation: {orientation}")
         return cls(name="MoveAndOrient", from_square=from_square, to_square=to_square, orientation=orientation)
 
     @classmethod
@@ -702,11 +743,15 @@ class Move:
     @classmethod
     def auto_capture_bombard(cls, square: Square) -> "Move":
         """Creates an auto-capture move."""
+        if square < 0 or square >= 64:
+            raise ValueError(f"invalid square: {square}")
         return cls(name="AutoCapture", auto_capture_type="bombard", capture_preference=square)
 
     @classmethod
     def auto_capture_free(cls, capture_preference: Square) -> "Move":
         """Creates an auto-capture move."""
+        if capture_preference < 0 or capture_preference >= 64:
+            raise ValueError(f"invalid capture preference: {capture_preference}")
         return cls(name="AutoCapture", auto_capture_type="free", capture_preference=capture_preference)
 
     def copy(self) -> "Move":
@@ -714,6 +759,8 @@ class Move:
 
     def with_capture(self, capture_preference: Square) -> "Move":
         """Creates a move with a capture preference."""
+        if capture_preference < 0 or capture_preference >= 64:
+            raise ValueError(f"invalid capture preference: {capture_preference}")
         m = self.copy()
         m.capture_preference = capture_preference
         return m
@@ -747,62 +794,14 @@ class BaseBoard:
     # optional game state
     move_stack: List[Move]
 
-    @classmethod
-    def deserialize(cls, data: List[int]) -> "BaseBoard":
-        board = cls()
-        board.occupied = int(data[0])
-        board.occupied_co = [int(data[1]), int(data[2])]
-        board.infantry = int(data[3])
-        board.armored_infantry = int(data[4])
-        board.airborne_infantry = int(data[5])
-        board.artillery = int(data[6])
-        board.armored_artillery = int(data[7])
-        board.heavy_artillery = int(data[8])
-        board.hq = int(data[9])
-        board.reserves = [ReserveFleet.from_ints(data[10:16]), ReserveFleet.from_ints(data[16:22])]
-        board.turn = bool(data[22])
-        board.turn_moves = int(data[23])
-        board.turn_pieces = int(data[24])
-        board.orientation_bit0 = int(data[25])
-        board.orientation_bit1 = int(data[26])
-        board.orientation_bit2 = int(data[27])
-        board.bombarded_co = [int(data[28]), int(data[29])]
-        board.adjacent_infantry_squares_co = [int(data[30]), int(data[31])]
-        board.free_capture_clusters = int(data[32])
-        board.free_capture_enemies = int(data[33])
-        board.free_capture_num_allowed = int(data[34])
-        board.turn_auto_moves = int(data[35])
-        return board
+    # computed game state from move history
+    did_offer_draw: bool
+    did_accept_draw: bool
 
-    def serialize(self) -> List[int]:
-        return [
-            self.occupied,
-            self.occupied_co[RED],
-            self.occupied_co[BLUE],
-            self.infantry,
-            self.armored_infantry,
-            self.airborne_infantry,
-            self.artillery,
-            self.armored_artillery,
-            self.heavy_artillery,
-            self.hq,
-            *self.reserves[RED].to_ints(),
-            *self.reserves[BLUE].to_ints(),
-            self.turn,
-            self.turn_moves,
-            self.turn_pieces,
-            self.orientation_bit0,
-            self.orientation_bit1,
-            self.orientation_bit2,
-            *self.bombarded_co,
-            *self.adjacent_infantry_squares_co,
-            self.free_capture_clusters,
-            self.free_capture_enemies,
-            self.free_capture_num_allowed,
-            self.turn_auto_moves,
-        ]
+    def __init__(self, board_fen: Optional[str] = STARTING_FEN, skip_init: bool = False) -> None:
+        if skip_init:
+            return
 
-    def __init__(self, board_fen: Optional[str] = STARTING_FEN) -> None:
         self._reset_board()
 
         if board_fen is not None:
@@ -839,6 +838,104 @@ class BaseBoard:
         self.free_capture_enemies = BB_EMPTY
         self.free_capture_num_allowed = BB_EMPTY
         self.move_stack = []
+        self.did_offer_draw = False
+        self.did_accept_draw = False
+
+    def serialize(self) -> str:
+        # Pack all integers into a byte array
+        # Q = unsigned long long (64 bits) for bitboards
+        # b = signed char (8 bits) for turn state
+        # I = unsigned int (32 bits) for reserve counts
+        packed = struct.pack(
+            ">21Q3b12I",  # big-endian format
+            # units
+            self.occupied,
+            self.infantry,
+            self.armored_infantry,
+            self.airborne_infantry,
+            self.artillery,
+            self.armored_artillery,
+            self.heavy_artillery,
+            self.hq,
+            # colors
+            self.occupied_co[0],
+            self.occupied_co[1],
+            self.bombarded_co[0],
+            self.bombarded_co[1],
+            self.adjacent_infantry_squares_co[0],
+            self.adjacent_infantry_squares_co[1],
+            # orientation
+            self.orientation_bit0,
+            self.orientation_bit1,
+            self.orientation_bit2,
+            # mid-turn state
+            self.turn_pieces,
+            self.free_capture_clusters,
+            self.free_capture_enemies,
+            self.free_capture_num_allowed,
+            # move state
+            self.turn,
+            self.turn_moves,
+            self.turn_auto_moves,
+            # reserve
+            *self.reserves[0].to_ints(),
+            *self.reserves[1].to_ints(),
+        )
+        return base64.b64encode(zlib.compress(packed)).decode()
+
+    @classmethod
+    def deserialize(cls, data: str) -> "BaseBoard":
+        # Decompress the data first
+        decompressed = zlib.decompress(base64.b64decode(data))
+
+        # Unpack the byte array back into integers
+        values = struct.unpack(">21Q3b12I", decompressed)
+
+        board = cls(skip_init=True)
+
+        # units
+        board.occupied = values[0]
+        board.infantry = values[1]
+        board.armored_infantry = values[2]
+        board.airborne_infantry = values[3]
+        board.artillery = values[4]
+        board.armored_artillery = values[5]
+        board.heavy_artillery = values[6]
+        board.hq = values[7]
+
+        # colors
+        board.occupied_co = [values[8], values[9]]
+        board.bombarded_co = [values[10], values[11]]
+        board.adjacent_infantry_squares_co = [values[12], values[13]]
+
+        # orientation
+        board.orientation_bit0 = values[14]
+        board.orientation_bit1 = values[15]
+        board.orientation_bit2 = values[16]
+
+        # mid-turn state
+        board.turn_pieces = values[17]
+        board.free_capture_clusters = values[18]
+        board.free_capture_enemies = values[19]
+        board.free_capture_num_allowed = values[20]
+
+        # move state
+        board.turn = values[21]
+        board.turn_moves = values[22]
+        board.turn_auto_moves = values[23]
+
+        # reserve
+        board.reserves = [
+            ReserveFleet.from_ints(values[24:30]),
+            ReserveFleet.from_ints(values[30:36])
+        ]
+
+        # Initialize empty lists
+        board.move_stack = []
+        board.did_offer_draw = False
+        board.did_accept_draw = False
+
+        return board
 
     def clear_board(self) -> None:
         self._clear_board()
@@ -1001,7 +1098,6 @@ class BaseBoard:
 
         board_fen, red_reserve_fen, blue_reserve_fen = parts[:3]
         turn_fen = parts[3] if len(parts) > 3 else "r"
-        turn_moves_fen = parts[4] if len(parts) > 4 else "-"
 
         # Set turn
         if turn_fen == "r":
@@ -1034,18 +1130,8 @@ class BaseBoard:
         self.reserves[RED] = ReserveFleet.from_fen(red_reserve_fen if red_reserve_fen != "-" else "")
         self.reserves[BLUE] = ReserveFleet.from_fen(blue_reserve_fen if blue_reserve_fen != "-" else "")
 
-        # Parse turn moves
-        if turn_moves_fen != "-":
-            moves = turn_moves_fen.split(",")
-            self.turn_moves = len(moves)
-            self.turn_auto_moves = 0
-            for move_uci in moves:
-                move = Move.from_uci(move_uci)
-                self.move_stack.append(move)
-                if move.to_square is not None:
-                    self.turn_pieces |= BB_SQUARES[move.to_square]
-                if move.auto_capture_type is not None:
-                    self.turn_auto_moves += 1
+        # HACK: generate free captures to set up the internal board state
+        list(self._generate_free_captures(self.turn))
 
     def board_fen(self) -> str:
         builder = []
@@ -1074,14 +1160,7 @@ class BaseBoard:
         blue_reserve = self.reserves[BLUE].to_fen(BLUE)
         turn_fen = "r" if self.turn == RED else "b"
 
-        turn_moves = ""
-        turns_this_move = self.turn_moves + self.turn_auto_moves
-        if turns_this_move > 0:
-            turn_moves = ",".join([m.uci() for m in self.move_stack[-turns_this_move:]])
-        else:
-            turn_moves = "-"
-
-        return f"{''.join(builder)} {red_reserve or '-'} {blue_reserve or '-'} {turn_fen} {turn_moves}"
+        return f"{''.join(builder)} {red_reserve or '-'} {blue_reserve or '-'} {turn_fen}"
 
     def get_reserve_count(self, piece_type: PieceType, color: Color) -> int:
         return self.reserves[color].get_count(piece_type)
@@ -1091,6 +1170,13 @@ class BaseBoard:
 
     def remove_from_reserve(self, piece_type: PieceType, color: Color, count: int = 1) -> None:
         self.reserves[color].remove(piece_type, count)
+
+    def _transposition_key(self) -> Hashable:
+        return (self.infantry, self.armored_infantry, self.airborne_infantry,
+                self.artillery, self.armored_artillery, self.heavy_artillery,
+                self.hq, self.occupied_co[RED], self.occupied_co[BLUE],
+                self.turn, self.turn_pieces,
+                self.orientation_bit0, self.orientation_bit1, self.orientation_bit2)
 
     def __repr__(self) -> str:
         return f"BaseBoard('{self.board_fen()}')"
@@ -1193,6 +1279,19 @@ class BaseBoard:
         self.orientation_bit1 = f(self.orientation_bit1)
         self.orientation_bit2 = f(self.orientation_bit2)
 
+    def apply_orientation_transform(self, f: Callable[[int, int, int], Tuple[int, int, int]]) -> None:
+        # Get all pieces that have an orientation
+        pieces_with_orientation = self.occupied & (self.artillery | self.armored_artillery | self.heavy_artillery)
+
+        # For each piece, extract its orientation bits and apply the transform
+        # We can do this by masking each bitboard with the pieces that have orientation
+        bit0 = self.orientation_bit0 & pieces_with_orientation
+        bit1 = self.orientation_bit1 & pieces_with_orientation
+        bit2 = self.orientation_bit2 & pieces_with_orientation
+
+        # Apply the transform to each bit
+        self.orientation_bit0, self.orientation_bit1, self.orientation_bit2 = f(bit0, bit1, bit2)
+
     def transform(self, f: Callable[[Bitboard], Bitboard]) -> "BaseBoard":
         """
         Returns a transformed copy of the board (without move stack)
@@ -1214,10 +1313,12 @@ class BaseBoard:
     def apply_mirror(self) -> None:
         self.apply_transform(flip_vertical)
         self.apply_transform(flip_horizontal)
+        self.apply_orientation_transform(rotate_orientations_180)
         self.reserves[RED], self.reserves[BLUE] = self.reserves[BLUE], self.reserves[RED]
-        # self.occupied_co[RED], self.occupied_co[BLUE] = self.occupied_co[RED], self.occupied_co[BLUE]
-        # self.bombarded_co[RED], self.bombarded_co[BLUE] = self.bombarded_co[BLUE], self.bombarded_co[RED]
-        # self.adjacent_infantry_squares_co[RED], self.adjacent_infantry_squares_co[BLUE] = self.adjacent_infantry_squares_co[BLUE], self.adjacent_infantry_squares_co[RED]
+        self.occupied_co[RED], self.occupied_co[BLUE] = self.occupied_co[BLUE], self.occupied_co[RED]
+        self.bombarded_co[RED], self.bombarded_co[BLUE] = self.bombarded_co[BLUE], self.bombarded_co[RED]
+        self.adjacent_infantry_squares_co[RED], self.adjacent_infantry_squares_co[BLUE] = self.adjacent_infantry_squares_co[BLUE], self.adjacent_infantry_squares_co[RED]
+        self.turn = not self.turn
 
     def mirror(self) -> "BaseBoard":
         """
@@ -1233,11 +1334,23 @@ class BaseBoard:
         board.apply_mirror()
         return board
 
+    def rotate_90_clockwise(self) -> "BaseBoard":
+        board = self.copy()
+        board.apply_transform(rotate_90_clockwise)
+        board.apply_orientation_transform(rotate_orientations_90)
+        return board
+
     def copy(self) -> "BaseBoard":
-        board = type(self)()
+        board = type(self)(skip_init=True)
         board.occupied_co = self.occupied_co.copy()
         board.reserves = [self.reserves[RED].copy(), self.reserves[BLUE].copy()]
         board.turn = self.turn
+        board.turn_pieces = self.turn_pieces
+        board.turn_moves = self.turn_moves
+        board.did_offer_draw = self.did_offer_draw
+        board.did_accept_draw = self.did_accept_draw
+        board.turn_auto_moves = self.turn_auto_moves
+        board.move_stack = self.move_stack.copy()
         board.infantry = self.infantry
         board.armored_infantry = self.armored_infantry
         board.airborne_infantry = self.airborne_infantry
@@ -1291,6 +1404,7 @@ class BaseBoard:
             return square(clamp_to_board(file - squares), rank)
 
         # If it's diagonal directions, we need to work our way back from the target square
+        # TODO(tyler): we could probably have some precomputed lookup table for this
         def find_valid_diagonal(file_delta: int, rank_delta: int, squares: int) -> Optional[Tuple[int, int]]:
             target_file, target_rank = file + squares * file_delta, rank + squares * rank_delta
             while (target_file < 0 or target_file > 7 or target_rank < 0 or target_rank > 7) and squares > 0:
@@ -1315,7 +1429,7 @@ class BaseBoard:
 
     def set_orientation(self, square: Square, orientation: Optional[Orientation]) -> None:
         """Set the orientation of a piece at a given square."""
-        mask = BB_SQUARES[square]
+        mask = BB_SQUARES[square] & BB_ALL
 
         if orientation is None:
             # Clear orientation bits
@@ -1325,10 +1439,9 @@ class BaseBoard:
             return
 
         # Set individual orientation bits
-        bit0, bit1, bit2 = orientation_to_bits(orientation)
-        self.orientation_bit0 = (self.orientation_bit0 & ~mask) | (bit0 * mask)
-        self.orientation_bit1 = (self.orientation_bit1 & ~mask) | (bit1 * mask)
-        self.orientation_bit2 = (self.orientation_bit2 & ~mask) | (bit2 * mask)
+        if orientation & 1: self.orientation_bit0 |= mask
+        if orientation & 2: self.orientation_bit1 |= mask
+        if orientation & 4: self.orientation_bit2 |= mask
 
     def _all_infantry(self) -> Bitboard:
         return self.infantry | self.armored_infantry | self.airborne_infantry
@@ -1631,15 +1744,21 @@ class BaseBoard:
         if move.name == "Move":
             self._move_piece(move)
             self._do_captures(move)
+            self.did_offer_draw = False
         elif move.name == "MoveAndOrient":
             self._move_piece(move)
+            self.did_offer_draw = False
         elif move.name == "Reinforce":
             orientation = ORIENT_N if self.turn == RED else ORIENT_S
             self.reserves[self.turn].remove(move.unit_type)
             self._set_piece_at(move.to_square, move.unit_type, self.turn, orientation)
             self._do_captures(move)
+            self.did_offer_draw = False
         elif move.name == "Skip":
-            pass
+            if self.did_offer_draw:
+                self.did_accept_draw = True
+            else:
+                self.did_offer_draw = self.turn_moves == 0
         elif move.name == "AutoCapture":
             if move.auto_capture_type == "free":
                 self._do_captures(move)
@@ -1664,6 +1783,9 @@ class BaseBoard:
             self.turn_auto_moves = 0
             self.turn_pieces = BB_EMPTY
             self.end_of_turn_occupied_enemy_infantry = self.occupied_co[not self.turn] & self.infantry
+
+            # HACK: generate free captures to set up the internal board state
+            list(self._generate_free_captures(self.turn))
 
     def _move_piece(self, move: Move) -> None:
         piece_type = self._remove_piece_at(move.from_square)
@@ -1842,6 +1964,8 @@ class BaseBoard:
             return Outcome("hq capture", RED)
         if not any(self.generate_legal_moves()):
             return Outcome("stalemate", None)
+        if self.did_offer_draw and self.did_accept_draw:
+            return Outcome("draw", None)
 
         return None
 
