@@ -21,30 +21,24 @@ interface MatchSummary {
 }
 
 export default function Leaderboard() {
-  const { isSignedIn, getToken } = useAuth();
   const [loading, setLoading] = useState(true);
   const [rawUsers, setRawUsers] = useState<MatchSummary[]>([]);
   const [users, setUsers] = useState<MatchSummary[]>([]);
   const { usersOnline: usersOnlineFromMatchmaking } = useMatchmaking();
 
   useEffect(() => {
-    if (!isSignedIn) {
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
 
     ghqFetch<{ summary: MatchSummary[] }>({
       url: `${API_URL}/match-summary`,
-      getToken,
+      getToken: async () => "", // public api
       method: "GET",
     })
       .then((data) => {
         setRawUsers(data.summary ?? []);
       })
       .finally(() => setLoading(false));
-  }, [isSignedIn]);
+  }, []);
 
   useEffect(() => {
     const userStatusLookup = new Map<string, OnlineUser["status"]>();
@@ -64,10 +58,6 @@ export default function Leaderboard() {
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      {!isSignedIn && (
-        <div className="text-gray-600">Sign in to see the top players!</div>
-      )}
-
       {loading && (
         <div className="flex flex-col gap-2">
           <div className="py-2 px-3 bg-gray-300 animate-pulse border border-gray-200 rounded-lg h-8"></div>

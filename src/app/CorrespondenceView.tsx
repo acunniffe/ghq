@@ -1,5 +1,5 @@
 import { ghqFetch } from "@/lib/api";
-import { Loader2, Mail, MailQuestion, Plus } from "lucide-react";
+import { Loader2, Mail, MailQuestion } from "lucide-react";
 import { useEffect, useState } from "react";
 import { API_URL } from "./live/config";
 import { useAuth } from "@clerk/nextjs";
@@ -131,7 +131,9 @@ export default function CorrespondenceView() {
         matches.length === 0 &&
         sentChallenges.length === 0 &&
         receivedChallenges.length === 0 && (
-          <div className="text-gray-600">No games or open challenges found</div>
+          <div className="text-gray-600 text-sm">
+            No games or open challenges found
+          </div>
         )}
 
       {matches.length > 0 && (

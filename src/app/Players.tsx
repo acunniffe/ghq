@@ -10,12 +10,14 @@ export default function Players({
 }: {
   usersOnline: UsersOnline | null;
 }) {
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn } = useAuth();
 
   if (!isSignedIn) {
     return (
       <div className="flex flex-col gap-2 w-full">
-        <div className="text-gray-600">Sign in to see online players!</div>
+        <div className="text-gray-600 text-sm">
+          Sign in to see online players!
+        </div>
       </div>
     );
   }
