@@ -18,16 +18,14 @@ export default function LiveGamesList() {
   const [filterUserId, setFilterUserId] = useState<string>("");
 
   useEffect(() => {
-    if (!isSignedIn) {
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
+
+    // allow for public usage
+    const maybeGetToken = isSignedIn ? getToken : async () => "";
 
     ghqFetch<{ matches: MatchModel[] }>({
       url: `${API_URL}/matches?userId=${filterUserId}`,
-      getToken,
+      getToken: maybeGetToken,
       method: "GET",
     })
       .then((data) => {
@@ -60,9 +58,7 @@ export default function LiveGamesList() {
       </div>
 
       {!loading && games.length === 0 && (
-        <div className="text-gray-600 text-sm">
-          {isSignedIn ? "No games found" : "Sign in to see recent games!"}
-        </div>
+        <div className="text-gray-600 text-sm">No games found!</div>
       )}
       {loading && (
         <div className="flex flex-col gap-2">

@@ -2,7 +2,11 @@ require("dotenv").config();
 import { createClerkClient } from "@clerk/backend";
 import Koa from "koa";
 
-const PUBLIC_API_PATHS = new Set(["/leaderboard", "/match-summary"]);
+const PUBLIC_API_PATHS = new Set([
+  "/leaderboard",
+  "/match-summary",
+  "/matches",
+]);
 
 export const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
