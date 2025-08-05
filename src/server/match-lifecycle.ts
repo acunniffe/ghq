@@ -58,13 +58,12 @@ export async function checkAndUpdateMatch({
   // Since we dont really need to check for time-based game over in correspondence games.
   // TODO(tyler): We may need a longer interval on abandons/timeouts on correspondence games in the future.
   if (matchData.is_correspondence) {
-    const { data: ctx, error: gameError } = await supabase
-      .from("Games")
-      .select("state->ctx->currentPlayer")
-      .eq("id", matchId)
-      .single();
+    const { data: currentPlayerId, error: gameError } = await supabase.rpc(
+      "get_current_player_for_match",
+      { match_id: matchId }
+    );
 
-    if (gameError || !ctx) {
+    if (gameError || !currentPlayerId) {
       console.log({
         message: "Error fetching game",
         matchId,
@@ -76,7 +75,7 @@ export async function checkAndUpdateMatch({
     await updateMatchesWithCurrentTurnPlayerId({
       supabase,
       matchData,
-      ctxCurrentPlayer: ctx.currentPlayer as string,
+      ctxCurrentPlayer: currentPlayerId,
     });
     return;
   }
