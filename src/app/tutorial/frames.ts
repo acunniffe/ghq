@@ -601,7 +601,7 @@ addFrame({
   slug: "airborne-3",
   heading:
     "You can also use it to get unexpected two-on-one's against Infantry",
-  details: "Team up with your Basic Infantry to Capture Blue's Armored Infantry.",
+  details: "Team up with your Basic Infantry to capture Blue's Armored Infantry.",
   redReserve: emptyReserveFleet,
   blueReserve: emptyReserveFleet,
   board: [
