@@ -1,5 +1,5 @@
 export function GHQNight() {
-  const targetDate = new Date("2025-04-29");
+  const targetDate = new Date("2025-08-12");
   const today = new Date();
   const diffTime = targetDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
