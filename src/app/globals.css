@@ -177,5 +177,18 @@ body {
 }
 
 .tutorial-link {
-  @apply bg-blue-400 text-gray-50 font-semibold p-3 px-10 rounded-2xl;
+  @apply bg-blue-400 text-gray-50 font-semibold py-2.5 px-10 rounded-2xl;
+}
+
+.tutorial-bot-button {
+  @apply bg-green-500;
+}
+
+/* Responsive styling for last slide buttons on narrow screens */
+@media (max-width: 500px) {
+  /* Shrink both buttons when space gets tight */
+  .tutorial-bot-button,
+  .tutorial-link:has(~ .tutorial-bot-button) {
+    @apply px-2;
+  }
 }
