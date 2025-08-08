@@ -54,29 +54,9 @@ export async function checkAndUpdateMatch({
     return;
   }
 
-  // Just query state.ctx.currentPlayer instead of fetching entire state for correspondence games.
-  // Since we dont really need to check for time-based game over in correspondence games.
-  // TODO(tyler): We may need a longer interval on abandons/timeouts on correspondence games in the future.
+  // For correspondence games, the current_turn_player_id is now handled by PostgreSQL triggers
+  // No need to manually update it here
   if (matchData.is_correspondence) {
-    const { data: currentPlayerId, error: gameError } = await supabase.rpc(
-      "get_current_player_for_match",
-      { match_id: matchId }
-    );
-
-    if (gameError || !currentPlayerId) {
-      console.log({
-        message: "Error fetching game",
-        matchId,
-        gameError: gameError ?? "unknown error",
-      });
-      return;
-    }
-
-    await updateMatchesWithCurrentTurnPlayerId({
-      supabase,
-      matchData,
-      ctxCurrentPlayer: currentPlayerId,
-    });
     return;
   }
 
@@ -117,48 +97,5 @@ export async function checkAndUpdateMatch({
     await db.setMetadata(matchId, metadata);
     console.log(`Updated gameover state for matchId=${matchId}.`);
     onGameEnd({ ctx: state.ctx, G: state.G });
-  }
-}
-
-async function updateMatchesWithCurrentTurnPlayerId({
-  supabase,
-  matchData,
-  ctxCurrentPlayer,
-}: {
-  supabase: SupabaseClient;
-  matchData: {
-    id: string;
-    player0_id: string;
-    player1_id: string;
-    status: string;
-    current_turn_player_id: string;
-  };
-  ctxCurrentPlayer: string;
-}) {
-  const currentPlayerId =
-    ctxCurrentPlayer === "0" ? matchData.player0_id : matchData.player1_id;
-
-  if (matchData.current_turn_player_id === currentPlayerId) {
-    return;
-  }
-
-  console.log({
-    message: "Updating matches with current turn player",
-    matchId: matchData.id,
-    currentPlayerId,
-  });
-
-  const { error } = await supabase
-    .from("matches")
-    .update({ current_turn_player_id: currentPlayerId })
-    .eq("id", matchData.id);
-
-  if (error) {
-    console.log({
-      message: "Error updating current turn player",
-      matchId: matchData.id,
-      currentPlayerId,
-      error,
-    });
   }
 }
