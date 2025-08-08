@@ -197,6 +197,10 @@ body {
   @apply bg-green-500;
 }
 
+.tutorial-bot-button:hover {
+  @apply bg-green-600;
+}
+
 /* Responsive styling for last slide buttons on narrow screens */
 @media (max-width: 500px) {
   /* Shrink both buttons when space gets tight */
