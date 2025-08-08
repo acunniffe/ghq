@@ -404,6 +404,7 @@ async function createActiveMatches({
       player1_id: user1.id,
       player0_elo: user0.elo,
       player1_elo: user1.elo,
+      current_turn_player_id: user0.id,
       is_correspondence: isCorrespondence,
       rated,
     },

@@ -21,8 +21,28 @@ export async function matchLifecycle({
     where: { isGameover: false },
   });
 
-  for (const matchId of matchIds) {
-    await checkAndUpdateMatch({ db, supabase, matchId, onGameEnd });
+  if (matchIds.length === 0) {
+    return;
+  }
+
+  const { data: matchesData, error: matchesError } = await supabase
+    .from("matches")
+    .select(
+      "id, player0_id, player1_id, status, current_turn_player_id, is_correspondence"
+    )
+    .in("id", matchIds);
+
+  if (matchesError) {
+    console.log({
+      message: "Error fetching matches batch",
+      matchIds,
+      matchesError,
+    });
+    return;
+  }
+
+  for (const matchData of matchesData) {
+    await checkAndUpdateMatchWithData({ db, supabase, matchData, onGameEnd });
   }
 }
 
@@ -54,13 +74,27 @@ export async function checkAndUpdateMatch({
     return;
   }
 
+  await checkAndUpdateMatchWithData({ db, supabase, matchData, onGameEnd });
+}
+
+async function checkAndUpdateMatchWithData({
+  db,
+  supabase,
+  matchData,
+  onGameEnd,
+}: {
+  db: StorageAPI.Async | StorageAPI.Sync;
+  supabase: SupabaseClient;
+  matchData: any;
+  onGameEnd: ({ ctx, G }: { ctx: any; G: GHQState }) => void;
+}) {
   // For correspondence games, the current_turn_player_id is now handled by PostgreSQL triggers
   // No need to manually update it here
   if (matchData.is_correspondence) {
     return;
   }
 
-  const { state, metadata } = await db.fetch(matchId, {
+  const { state, metadata } = await db.fetch(matchData.id, {
     state: true,
     metadata: true,
   });
@@ -76,9 +110,11 @@ export async function checkAndUpdateMatch({
   if (matchData.status === "ABORTED") {
     metadata.gameover = { status: matchData.status };
     state.ctx.gameover = { status: matchData.status };
-    await db.setMetadata(matchId, metadata);
-    await db.setState(matchId, state);
-    console.log(`Updated game match to be aborted for matchId=${matchId}.`);
+    await db.setMetadata(matchData.id, metadata);
+    await db.setState(matchData.id, state);
+    console.log(
+      `Updated game match to be aborted for matchId=${matchData.id}.`
+    );
     return;
   }
 
@@ -93,9 +129,9 @@ export async function checkAndUpdateMatch({
     metadata.updatedAt = Date.now();
     state.ctx.gameover = gameover;
     state._stateID += 1; // Needed so that setState() works.
-    await db.setState(matchId, state);
-    await db.setMetadata(matchId, metadata);
-    console.log(`Updated gameover state for matchId=${matchId}.`);
+    await db.setState(matchData.id, state);
+    await db.setMetadata(matchData.id, metadata);
+    console.log(`Updated gameover state for matchId=${matchData.id}.`);
     onGameEnd({ ctx: state.ctx, G: state.G });
   }
 }
