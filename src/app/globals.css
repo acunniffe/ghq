@@ -184,12 +184,12 @@ body {
   @apply bg-blue-500;
 }
 
-/* Darker Next button when encourageAdvance is true */
-.encourage-advance .tutorial-link:last-child {
+/* Darker Next button when encourageAdvance is true (but not bot button) */
+.encourage-advance .tutorial-link:last-child:not(.tutorial-bot-button) {
   @apply bg-blue-600;
 }
 
-.encourage-advance .tutorial-link:last-child:hover {
+.encourage-advance .tutorial-link:last-child:not(.tutorial-bot-button):hover {
   @apply bg-blue-700;
 }
 

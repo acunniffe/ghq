@@ -730,12 +730,14 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length === 2) {
       if (last && last.type === "Move" && last.capturedPiece) {
         message("You got it! You're ready to play!");
+        setEncourageAdvance(true);
       } else {
+        setEncourageAdvance(false);
         reset();
       }
     }
