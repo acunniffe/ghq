@@ -24,7 +24,8 @@ export type TutorialFrame = {
     moves: MoveLog[],
     next: () => void,
     reset: () => void,
-    message: (text: string) => void
+    message: (text: string) => void,
+    setEncourageAdvance: (value: boolean) => void
   ) => void;
 };
 
@@ -112,13 +113,15 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (last) {
       if (last.type === "Move" && last.unitType === "INFANTRY") {
         message("Perfect! You can go to the next slide now.");
+        setEncourageAdvance(true);
       } else {
         message("That's not an infantry!");
+        setEncourageAdvance(false);
       }
     }
   },
@@ -140,13 +143,15 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length && last) {
       if (last.type === "Move" && last.unitType === "ARMORED_INFANTRY") {
         message("Great! You can go to the next slide now.");
+        setEncourageAdvance(true);
       } else {
         message("That's not an armored infantry!");
+        setEncourageAdvance(false);
       }
     }
   },
@@ -169,14 +174,16 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length && last) {
       const bombarded = bombardedSquares(board);
       if (last.type === "MoveAndOrient" && Boolean(bombarded["2,2"])) {
         message("Nice! You can go to the next slide now.");
+        setEncourageAdvance(true);
       } else {
         message("You didn't aim at Blue's HQ. Try again!");
+        setEncourageAdvance(false);
         reset();
       }
     }
@@ -200,9 +207,14 @@ addFrame({
     [null, null, R.HA, null, R.AA, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const hasTwo = moves.filter((i) => i.type === "MoveAndOrient").length === 2;
-    if (hasTwo) message("Good! You can go to the next slide now.");
+    if (hasTwo) {
+      message("Good! You can go to the next slide now.");
+      setEncourageAdvance(true);
+    } else {
+      setEncourageAdvance(false);
+    }
   },
 });
 
@@ -221,15 +233,17 @@ addFrame({
     [null, null, null, R.IN, null, null, null, null],
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, R.HQ],
+    [null, null, null, null, R.AR, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (last) {
       if (last.type === "Move" && last.unitType === "INFANTRY") {
         message("Good! You can go to the next slide now.");
+        setEncourageAdvance(true);
       } else {
         message("That's not an infantry!");
+        setEncourageAdvance(false);
       }
     }
   },
@@ -252,11 +266,14 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (last) {
       if (last.unitType === "HEAVY_ARTILLERY") {
         message("See how you won their piece before your turn even started? You can go to the next slide now.");
+        setEncourageAdvance(true);
+      } else {
+        setEncourageAdvance(false);
       }
     }
   },
@@ -279,10 +296,13 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (last && last.type === "Reinforce") {
       message("Good! You can go to the next slide now.");
+      setEncourageAdvance(true);
+    } else {
+      setEncourageAdvance(false);
     }
   },
 });
@@ -303,11 +323,14 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (last) {
       if (last.type === "Move" && last.unitType === "INFANTRY") {
         message("Right, there's no way to capture this piece right now. Go to the next slide to see how.");
+        setEncourageAdvance(true);
+      } else {
+        setEncourageAdvance(false);
       }
     }
   },
@@ -330,16 +353,19 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length === 2 && last.type === "Move" && last.capturedPiece) {
       message("Bravo! You can go to the next slide.");
+      setEncourageAdvance(true);
       return;
     }
     if (moves.length === 1) {
       message("OK, one more move!");
+      setEncourageAdvance(false);
     } else if (moves.length === 2) {
       message("That's not it. Try to surround the piece next time");
+      setEncourageAdvance(false);
       reset();
     }
   },
@@ -362,8 +388,13 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
-    if (moves.length === 2) message("See? No captures. You can go to the next slide.");
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
+    if (moves.length === 2) {
+      message("See? No captures. You can go to the next slide.");
+      setEncourageAdvance(true);
+    } else {
+      setEncourageAdvance(false);
+    }
   },
 });
 addFrame({
@@ -382,15 +413,19 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length > 1 && last.type === "Move" && last.capturedPiece) {
       message("Nice! You can go to the next slide.");
+      setEncourageAdvance(true);
       return;
     }
     if (moves.length === 3 && !moves.some(move => move.type === "Move" && move.capturedPiece)) {
       message("That didn't work. Try again!");
+      setEncourageAdvance(false);
       reset();
+    } else {
+      setEncourageAdvance(false);
     }
   },
 });
@@ -412,13 +447,15 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length > 0) {
       if (last.type === "Move" && last.capturedPiece) {
         message("You got it! You can go to the next slide.");
+        setEncourageAdvance(true);
       } else {
         message("Line up next to the artillery");
+        setEncourageAdvance(false);
         reset();
       }
     }
@@ -442,14 +479,16 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length > 0) {
       if (last.type === "Move" && last.unitType === "INFANTRY" && last.to[0] === 2 && last.to[1] === 4) {
         message("Yes, notice how everything is safe. You can go to the next slide.");
+        setEncourageAdvance(true);
         return;
       } else {
         message("Try the same move as last time");
+        setEncourageAdvance(false);
         reset();
       }
     }
@@ -473,7 +512,7 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (
       last &&
@@ -483,18 +522,21 @@ addFrame({
       last.to[1] === 3
     ) {
       message("Right! You can go to the next slide.");
+      setEncourageAdvance(true);
       return;
     }
     if (moves.length &&
       last.unitType === "INFANTRY"
     ) {
       message("Not there! Or Infantry to D5 will capture your Artillery");
+      setEncourageAdvance(false);
       reset();
     }
     if (moves.length &&
       last.unitType === "ARTILLERY"
     ) {
       message("Let's only move the Infantry");
+      setEncourageAdvance(false);
       reset();
     }
   },
@@ -518,13 +560,15 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (last) {
       if (last.type === "Move" && last.unitType === "ARMORED_INFANTRY") {
         message("Good! You can go to the next slide.");
+        setEncourageAdvance(true);
       } else {
         message("That's not an infantry!");
+        setEncourageAdvance(false);
       }
     }
   },
@@ -547,7 +591,7 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, R.AB, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length) {
       if (
@@ -556,7 +600,9 @@ addFrame({
         last.unitType === "AIRBORNE_INFANTRY"
       ) {
         message("Currahee! You can go to the next slide.");
+        setEncourageAdvance(true);
       } else {
+        setEncourageAdvance(false);
         reset();
       }
     }
@@ -580,7 +626,7 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, R.AB, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length) {
       if (
@@ -590,7 +636,9 @@ addFrame({
         last.capturedPiece
       ) {
         message("Good! You can go to the next slide.");
+        setEncourageAdvance(true);
       } else {
+        setEncourageAdvance(false);
         reset();
       }
     }
@@ -614,7 +662,7 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, R.AB, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length) {
       if (
@@ -624,7 +672,9 @@ addFrame({
         last.capturedPiece
       ) {
         message("Good! You can go to the next slide.");
+        setEncourageAdvance(true);
       } else {
+        setEncourageAdvance(false);
         reset();
       }
     }
@@ -648,13 +698,15 @@ addFrame({
     [null, null, null, null, null, null, null, null],
     [null, null, null, null, null, null, null, R.HQ],
   ],
-  didMove: (board, moves, next, reset, message) => {
+  didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length === 2) {
       if (last && last.type === "Move" && last.capturedPiece) {
         message("Good! You can go to the next slide.");
+        setEncourageAdvance(true);
       } else {
         message("Capture their Infantry with a 2-on-1!");
+        setEncourageAdvance(false);
         reset();
       }
     }

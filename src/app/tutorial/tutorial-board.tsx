@@ -39,6 +39,7 @@ export function TutorialBoard(props: { slug: string; nextLink: string }) {
   }, [key, setKey]);
 
   const [message, setMessage] = useState<string | null>(null);
+  const [encourageAdvance, setEncourageAdvance] = useState(false);
 
   const App = useMemo(
     () =>
@@ -130,15 +131,45 @@ export function TutorialBoard(props: { slug: string; nextLink: string }) {
         })
         .filter((i) => typeof i !== "undefined");
 
-      tutorialFrame.didMove(board, playerMessages, next, reset, setMessage);
+      tutorialFrame.didMove(board, playerMessages, next, reset, setMessage, setEncourageAdvance);
     }
   }, [moves, board, tutorialFrame]);
+
+  // Initialize encourageAdvance based on whether the frame requires user action
+  useEffect(() => {
+    // For frames that don't have didMove, encourage advance immediately
+    if (!tutorialFrame.didMove) {
+      setEncourageAdvance(true);
+    }
+    // For frames with didMove, start with false (user needs to complete action)
+    else {
+      setEncourageAdvance(false);
+    }
+  }, [tutorialFrame.slug]);
+
+  // Add/remove CSS class to body based on encourageAdvance state
+  useEffect(() => {
+    if (encourageAdvance) {
+      document.body.classList.add('encourage-advance');
+    } else {
+      document.body.classList.remove('encourage-advance');
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('encourage-advance');
+    };
+  }, [encourageAdvance]);
 
   return (
     <>
       <div className="h-12 flex items-center justify-center">
         {message && (
-          <h3 className="text-md text-center text-blue-900">{message}</h3>
+          <h3 className={`text-md text-center ${
+            encourageAdvance ? 'text-green-600' : 'text-blue-900'
+          }`}>
+            {message}
+          </h3>
         )}
       </div>
 
