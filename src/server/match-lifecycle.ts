@@ -46,37 +46,6 @@ export async function matchLifecycle({
   }
 }
 
-export async function checkAndUpdateMatch({
-  db,
-  supabase,
-  matchId,
-  onGameEnd,
-}: {
-  db: StorageAPI.Async | StorageAPI.Sync;
-  supabase: SupabaseClient;
-  matchId: string;
-  onGameEnd: ({ ctx, G }: { ctx: any; G: GHQState }) => void;
-}) {
-  const { data: matchData, error: matchError } = await supabase
-    .from("matches")
-    .select(
-      "id, player0_id, player1_id, status, current_turn_player_id, is_correspondence"
-    )
-    .eq("id", matchId)
-    .single();
-
-  if (matchError) {
-    console.log({
-      message: "Error fetching match",
-      matchId,
-      matchError,
-    });
-    return;
-  }
-
-  await checkAndUpdateMatchWithData({ db, supabase, matchData, onGameEnd });
-}
-
 async function checkAndUpdateMatchWithData({
   db,
   supabase,
