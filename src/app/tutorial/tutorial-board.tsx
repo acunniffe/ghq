@@ -166,7 +166,7 @@ export function TutorialBoard(props: { slug: string; nextLink: string }) {
       <div className="h-12 flex items-center justify-center">
         {message && (
           <h3 className={`text-md text-center ${
-            encourageAdvance ? 'text-green-600' : 'text-blue-900'
+            encourageAdvance ? 'text-green-700' : 'text-yellow-600'
           }`}>
             {message}
           </h3>

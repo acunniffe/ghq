@@ -177,12 +177,20 @@ body {
 }
 
 .tutorial-link {
-  @apply bg-blue-400 text-gray-50 font-semibold py-2.5 px-10 rounded-2xl;
+  @apply bg-blue-400 text-gray-50 font-semibold py-2.5 px-10 rounded-2xl transition-colors duration-200;
+}
+
+.tutorial-link:hover {
+  @apply bg-blue-500;
 }
 
 /* Darker Next button when encourageAdvance is true */
 .encourage-advance .tutorial-link:last-child {
   @apply bg-blue-600;
+}
+
+.encourage-advance .tutorial-link:last-child:hover {
+  @apply bg-blue-700;
 }
 
 .tutorial-bot-button {

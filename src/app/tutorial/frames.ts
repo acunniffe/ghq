@@ -117,7 +117,7 @@ addFrame({
     const last = moves[moves.length - 1];
     if (last) {
       if (last.type === "Move" && last.unitType === "INFANTRY") {
-        message("Perfect! You can go to the next slide now.");
+        message("Perfect!");
         setEncourageAdvance(true);
       } else {
         message("That's not an infantry!");
@@ -147,7 +147,7 @@ addFrame({
     const last = moves[moves.length - 1];
     if (moves.length && last) {
       if (last.type === "Move" && last.unitType === "ARMORED_INFANTRY") {
-        message("Great! You can go to the next slide now.");
+        message("Great!");
         setEncourageAdvance(true);
       } else {
         message("That's not an armored infantry!");
@@ -179,7 +179,7 @@ addFrame({
     if (moves.length && last) {
       const bombarded = bombardedSquares(board);
       if (last.type === "MoveAndOrient" && Boolean(bombarded["2,2"])) {
-        message("Nice! You can go to the next slide now.");
+        message("Nice!");
         setEncourageAdvance(true);
       } else {
         message("You didn't aim at Blue's HQ. Try again!");
@@ -210,7 +210,7 @@ addFrame({
   didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const hasTwo = moves.filter((i) => i.type === "MoveAndOrient").length === 2;
     if (hasTwo) {
-      message("Good! You can go to the next slide now.");
+      message("Good!");
       setEncourageAdvance(true);
     } else {
       setEncourageAdvance(false);
@@ -239,7 +239,7 @@ addFrame({
     const last = moves[moves.length - 1];
     if (last) {
       if (last.type === "Move" && last.unitType === "INFANTRY") {
-        message("Good! You can go to the next slide now.");
+        message("Good!");
         setEncourageAdvance(true);
       } else {
         message("That's not an infantry!");
@@ -270,7 +270,7 @@ addFrame({
     const last = moves[moves.length - 1];
     if (last) {
       if (last.unitType === "HEAVY_ARTILLERY") {
-        message("See how you won their piece before your turn even started? You can go to the next slide now.");
+        message("See how you won their piece before your turn even started?");
         setEncourageAdvance(true);
       } else {
         setEncourageAdvance(false);
@@ -299,7 +299,7 @@ addFrame({
   didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (last && last.type === "Reinforce") {
-      message("Good! You can go to the next slide now.");
+      message("Good!");
       setEncourageAdvance(true);
     } else {
       setEncourageAdvance(false);
@@ -356,7 +356,7 @@ addFrame({
   didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length === 2 && last.type === "Move" && last.capturedPiece) {
-      message("Bravo! You can go to the next slide.");
+      message("Bravo!");
       setEncourageAdvance(true);
       return;
     }
@@ -390,7 +390,7 @@ addFrame({
   ],
   didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     if (moves.length === 2) {
-      message("See? No captures. You can go to the next slide.");
+      message("See? No captures.");
       setEncourageAdvance(true);
     } else {
       setEncourageAdvance(false);
@@ -416,7 +416,7 @@ addFrame({
   didMove: (board, moves, next, reset, message, setEncourageAdvance) => {
     const last = moves[moves.length - 1];
     if (moves.length > 1 && last.type === "Move" && last.capturedPiece) {
-      message("Nice! You can go to the next slide.");
+      message("Nice!");
       setEncourageAdvance(true);
       return;
     }
@@ -451,7 +451,7 @@ addFrame({
     const last = moves[moves.length - 1];
     if (moves.length > 0) {
       if (last.type === "Move" && last.capturedPiece) {
-        message("You got it! You can go to the next slide.");
+        message("You got it!");
         setEncourageAdvance(true);
       } else {
         message("Line up next to the artillery");
@@ -483,7 +483,7 @@ addFrame({
     const last = moves[moves.length - 1];
     if (moves.length > 0) {
       if (last.type === "Move" && last.unitType === "INFANTRY" && last.to[0] === 2 && last.to[1] === 4) {
-        message("Yes, notice how everything is safe. You can go to the next slide.");
+        message("Yes, notice how everything is safe.");
         setEncourageAdvance(true);
         return;
       } else {
@@ -521,7 +521,7 @@ addFrame({
       last.to[0] === 4 &&
       last.to[1] === 3
     ) {
-      message("Right! You can go to the next slide.");
+      message("Right!");
       setEncourageAdvance(true);
       return;
     }
@@ -564,7 +564,7 @@ addFrame({
     const last = moves[moves.length - 1];
     if (last) {
       if (last.type === "Move" && last.unitType === "ARMORED_INFANTRY") {
-        message("Good! You can go to the next slide.");
+        message("Good!");
         setEncourageAdvance(true);
       } else {
         message("That's not an infantry!");
@@ -599,7 +599,7 @@ addFrame({
         last.type === "Move" &&
         last.unitType === "AIRBORNE_INFANTRY"
       ) {
-        message("Currahee! You can go to the next slide.");
+        message("Currahee!");
         setEncourageAdvance(true);
       } else {
         setEncourageAdvance(false);
@@ -635,7 +635,7 @@ addFrame({
         last.unitType === "AIRBORNE_INFANTRY" &&
         last.capturedPiece
       ) {
-        message("Good! You can go to the next slide.");
+        message("Good!");
         setEncourageAdvance(true);
       } else {
         setEncourageAdvance(false);
@@ -671,7 +671,7 @@ addFrame({
         last.unitType === "AIRBORNE_INFANTRY" &&
         last.capturedPiece
       ) {
-        message("Good! You can go to the next slide.");
+        message("Good!");
         setEncourageAdvance(true);
       } else {
         setEncourageAdvance(false);
@@ -702,7 +702,7 @@ addFrame({
     const last = moves[moves.length - 1];
     if (moves.length === 2) {
       if (last && last.type === "Move" && last.capturedPiece) {
-        message("Good! You can go to the next slide.");
+        message("Good!");
         setEncourageAdvance(true);
       } else {
         message("Capture their Infantry with a 2-on-1!");
