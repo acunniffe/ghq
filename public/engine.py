@@ -1142,6 +1142,7 @@ class BaseBoard:
         self.reserves[BLUE] = ReserveFleet.from_fen(blue_reserve_fen if blue_reserve_fen != "-" else "")
 
         # HACK: generate free captures to set up the internal board state
+        self._clear_free_captures()
         list(self._generate_free_captures(self.turn))
 
     def board_fen(self) -> str:
@@ -1802,6 +1803,7 @@ class BaseBoard:
             self.end_of_turn_occupied_enemy_infantry = self.occupied_co[not self.turn] & self.infantry
 
             # HACK: generate free captures to set up the internal board state
+            self._clear_free_captures()
             list(self._generate_free_captures(self.turn))
 
     def _move_piece(self, move: Move) -> None:
@@ -1844,6 +1846,11 @@ class BaseBoard:
                 msb_pos = msb(self.free_capture_num_allowed & cluster) # remove one from this cluster of allowed captures
                 self.free_capture_num_allowed &= ~BB_SQUARES[msb_pos]
                 break
+
+    def _clear_free_captures(self) -> None:
+        self.free_capture_clusters = BB_EMPTY
+        self.free_capture_enemies = BB_EMPTY
+        self.free_capture_num_allowed = BB_EMPTY
 
     def _generate_free_captures(self, color: Color):
         if self.turn_moves != 0:
