@@ -30,6 +30,7 @@ export async function matchLifecycle({
     .select(
       "id, player0_id, player1_id, status, current_turn_player_id, is_correspondence"
     )
+    .eq("is_correspondence", false)
     .in("id", matchIds);
 
   if (matchesError) {
