@@ -13,7 +13,7 @@ export function GHQNight() {
   };
 
   return (
-    <div className="p-3 flex flex-col gap-2 text-white bg-blue-600">
+    <div className="p-3 flex flex-col gap-2 text-white bg-blue-500 rounded">
       <div className="flex flex-col gap-1">
         <div className="flex justify-between">
           <div className="text-lg font-bold">GHQ Tuesday 🪖 💣 💥</div>

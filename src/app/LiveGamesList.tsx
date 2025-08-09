@@ -61,14 +61,16 @@ export default function LiveGamesList() {
         <div className="text-gray-600 text-sm">No games found!</div>
       )}
       {loading && (
-        <div className="flex flex-col gap-2">
-          <div className="py-2 px-3 bg-gray-300 animate-pulse border border-gray-200 rounded-lg h-20"></div>
-          <div className="py-2 px-3 bg-gray-300 animate-pulse border border-gray-200 rounded-lg h-20"></div>
-          <div className="py-2 px-3 bg-gray-300 animate-pulse border border-gray-200 rounded-lg h-20"></div>
+        <div className="flex flex-col gap-0.5">
+          <div className="py-2 px-3 bg-gray-400 animate-pulse rounded-lg h-8 opacity-50"></div>
+          <div className="py-2 px-3 bg-gray-400 animate-pulse rounded-lg h-8 opacity-50"></div>
+          <div className="py-2 px-3 bg-gray-400 animate-pulse rounded-lg h-8 opacity-50"></div>
+          <div className="py-2 px-3 bg-gray-400 animate-pulse rounded-lg h-8 opacity-50"></div>
+          <div className="py-2 px-3 bg-gray-400 animate-pulse rounded-lg h-8 opacity-50"></div>
         </div>
       )}
 
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-0.5">
         {pageGames.map((game: MatchModel) => (
           <MatchLink key={game.id} game={game} />
         ))}

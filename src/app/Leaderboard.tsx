@@ -47,10 +47,10 @@ export default function Leaderboard() {
   return (
     <div className="flex flex-col gap-2 w-full">
       {loading && (
-        <div className="flex flex-col gap-2">
-          <div className="py-2 px-3 bg-gray-300 animate-pulse border border-gray-200 rounded-lg h-8"></div>
-          <div className="py-2 px-3 bg-gray-300 animate-pulse border border-gray-200 rounded-lg h-8"></div>
-          <div className="py-2 px-3 bg-gray-300 animate-pulse border border-gray-200 rounded-lg h-8"></div>
+        <div className="flex flex-col gap-0.5">
+          <div className="py-2 px-3 bg-gray-400 animate-pulse rounded-lg h-8 opacity-50"></div>
+          <div className="py-2 px-3 bg-gray-400 animate-pulse rounded-lg h-8 opacity-50"></div>
+          <div className="py-2 px-3 bg-gray-400 animate-pulse rounded-lg h-8 opacity-50"></div>
         </div>
       )}
 

@@ -116,7 +116,7 @@ export default function CorrespondenceView() {
       )}
 
       {receivedChallenges.length > 0 && (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           {receivedChallenges.map((challenge) => (
             <ReceivedChallengeRow
               key={`${challenge.challenger.id}-${challenge.target.id}`}
@@ -137,7 +137,7 @@ export default function CorrespondenceView() {
         )}
 
       {matches.length > 0 && (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           {matches.map((game) => (
             <MatchLink key={game.id} game={game} />
           ))}
@@ -145,7 +145,7 @@ export default function CorrespondenceView() {
       )}
 
       {sentChallenges.length > 0 && (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-0.5">
           {sentChallenges.map((challenge) => (
             <SentChallengeRow
               key={`${challenge.challenger.id}-${challenge.target.id}`}
