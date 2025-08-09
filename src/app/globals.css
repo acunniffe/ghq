@@ -176,6 +176,4 @@ body {
   }
 }
 
-.tutorial-link {
-  @apply bg-blue-400 text-gray-50 font-semibold p-3 px-10 rounded-2xl;
-}
+

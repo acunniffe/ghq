@@ -13,8 +13,14 @@ import { useBoardArrow } from "@/game/BoardArrowProvider";
 import { coordinateToAlgebraic, degreesToCardinal } from "@/game/notation";
 import { MoveLog } from "@/app/tutorial/types";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-export function TutorialBoard(props: { slug: string; nextLink: string }) {
+export function TutorialBoard(props: { 
+  slug: string; 
+  nextLink: string; 
+  prev?: string; 
+  next?: string; 
+}) {
   const [client, setClient] = useState<any | null>(null);
   const router = useRouter();
 
@@ -39,6 +45,7 @@ export function TutorialBoard(props: { slug: string; nextLink: string }) {
   }, [key, setKey]);
 
   const [message, setMessage] = useState<string | null>(null);
+  const [encourageAdvance, setEncourageAdvance] = useState(false);
 
   const App = useMemo(
     () =>
@@ -130,16 +137,80 @@ export function TutorialBoard(props: { slug: string; nextLink: string }) {
         })
         .filter((i) => typeof i !== "undefined");
 
-      tutorialFrame.didMove(board, playerMessages, next, reset, setMessage);
+      tutorialFrame.didMove(board, playerMessages, next, reset, setMessage, setEncourageAdvance);
     }
   }, [moves, board, tutorialFrame]);
 
+  // Initialize encourageAdvance based on whether the frame requires user action
+  useEffect(() => {
+    // For frames that don't have didMove, encourage advance immediately
+    if (!tutorialFrame.didMove) {
+      setEncourageAdvance(true);
+    }
+    // For frames with didMove, start with false (user needs to complete action)
+    else {
+      setEncourageAdvance(false);
+    }
+  }, [tutorialFrame.slug]);
+
+  // No longer need to manipulate body classes
+
+  const prevLink = props.prev ? `/tutorial/${props.prev}` : null;
+  const nextLink = props.next ? `/tutorial/${props.next}` : null;
+
   return (
     <>
-      {message && (
-        <h3 className="mt-5 text-md text-center text-blue-900 ">{message}</h3>
-      )}
+      {/* Navigation */}
+      <div className="flex justify-center gap-4 relative z-10 mb-[-10px]">
+        {prevLink && (
+          <Link 
+            className={`bg-blue-400 hover:bg-blue-500 text-gray-50 font-semibold py-2.5 rounded-2xl transition-colors duration-200 ${
+              !nextLink ? 'max-[500px]:px-2 px-10' : 'px-10'
+            }`}
+            href={prevLink}
+          >
+            ◄ Back
+          </Link>
+        )}
+        {nextLink ? (
+          <Link 
+            className={`text-gray-50 font-semibold py-2.5 px-10 rounded-2xl transition-colors duration-200 ${
+              encourageAdvance 
+                ? 'bg-blue-600 hover:bg-blue-700' 
+                : 'bg-blue-400 hover:bg-blue-500'
+            }`}
+            href={nextLink}
+          >
+            Next ►
+          </Link>
+        ) : (
+          <Link 
+            className="bg-green-500 hover:bg-green-600 text-gray-50 font-semibold py-2.5 px-10 rounded-2xl transition-colors duration-200 max-[500px]:px-2"
+            href={`/bot`}
+          >
+            Play your first game against a bot!
+          </Link>
+        )}
+      </div>
+      
+      {/* Header */}
+      <div className="p-5 bg-gray-200">
+        <h1 className="text-2xl mb-4 font-bold">{tutorialFrame.heading}</h1>
+        <h3 className="text-xl px-2">{tutorialFrame.details}</h3>
+      </div>
 
+      {/* Message */}
+      <div className="h-12 flex items-center justify-center">
+        {message && (
+          <h3 className={`text-md text-center ${
+            encourageAdvance ? 'text-green-700' : 'text-yellow-600'
+          }`}>
+            {message}
+          </h3>
+        )}
+      </div>
+
+      {/* Game Board */}
       <div
         className={classNames("flex bg-gray-50 justify-center", {
           ["pointer-events-none"]: tutorialFrame.disablePlay,
