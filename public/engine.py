@@ -92,8 +92,6 @@ def piece_name(piece_type: PieceType) -> str:
 
 
 Square: TypeAlias = int
-
-Square: TypeAlias = int
 A1: Square = 0
 B1: Square = 1
 C1: Square = 2
@@ -1553,9 +1551,10 @@ class BaseBoard:
             for to_square in scan_forward(back_rank):
                 move = Move.reinforce(piece_type, to_square)
                 yield move
-                captures = self._generate_captures(move)
-                for capture in captures:
-                    yield capture
+                if is_infantry(piece_type):
+                    captures = self._generate_captures(move)
+                    for capture in captures:
+                        yield capture
 
         # hq moves
         hq = our_pieces & self.hq & from_mask
