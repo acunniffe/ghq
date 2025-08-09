@@ -19,6 +19,7 @@ export default function LiveGamesList() {
 
   useEffect(() => {
     setLoading(true);
+    setGames([]);
 
     // allow for public usage
     const maybeGetToken = isSignedIn ? getToken : async () => "";
