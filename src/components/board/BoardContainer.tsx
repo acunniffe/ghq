@@ -31,9 +31,15 @@ export default function BoardContainer({
   const [isLikelyMobile, setIsLikelyMobile] = useState(false);
 
   function coordinateFromHTMLElement(el: HTMLElement): Coordinate | null {
-    const { rowIndex, colIndex } = el.dataset;
+    // Handle both camelCase and kebab-case data attributes
+    const rowIndex = el.dataset.rowIndex || el.dataset['row-index'];
+    const colIndex = el.dataset.colIndex || el.dataset['col-index'];
     if (!rowIndex || !colIndex) return null;
-    return [parseInt(rowIndex, 10), parseInt(colIndex, 10)];
+    const row = parseInt(rowIndex, 10);
+    const col = parseInt(colIndex, 10);
+    // Validate coordinates are within board bounds (0-7)
+    if (isNaN(row) || isNaN(col) || row < 0 || row > 7 || col < 0 || col > 7) return null;
+    return [row, col];
   }
 
   const handleMouseDown = useCallback(
@@ -89,8 +95,26 @@ export default function BoardContainer({
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       setIsLikelyMobile(true);
+      e.preventDefault(); // Prevent default touch behaviors
+      
       const touch = e.touches[0];
-      const coordinate = coordinateFromHTMLElement(touch.target as HTMLElement);
+      if (!touch) return;
+      
+      // Try to get coordinate from the direct target first
+      let targetElement = touch.target as HTMLElement;
+      let coordinate = coordinateFromHTMLElement(targetElement);
+      
+      // If not found, walk up the DOM tree
+      if (!coordinate) {
+        let attempts = 0;
+        while (targetElement && attempts < 10) {
+          coordinate = coordinateFromHTMLElement(targetElement);
+          if (coordinate) break;
+          targetElement = targetElement.parentElement as HTMLElement;
+          attempts++;
+        }
+      }
+      
       if (!coordinate) return;
       onLeftClickDown(coordinate);
     },
@@ -100,19 +124,42 @@ export default function BoardContainer({
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent) => {
       setIsLikelyMobile(true);
+      e.preventDefault(); // Prevent default touch behaviors
+      
       const touch = e.changedTouches[0];
-      const touchedElement = document.elementFromPoint(
-        touch.pageX,
-        touch.pageY
+      if (!touch) return;
+      
+      // Use clientX/clientY instead of pageX/pageY for viewport-relative coordinates
+      let touchedElement = document.elementFromPoint(
+        touch.clientX,
+        touch.clientY
       );
+      
       if (!touchedElement) return;
-      const coordinate = coordinateFromHTMLElement(
-        touchedElement as HTMLElement
-      );
-      if (!coordinate) return;
-      onLeftClickUp(coordinate);
+      
+      // Walk up the DOM tree to find an element with coordinate data
+      let attempts = 0;
+      while (touchedElement && attempts < 10) {
+        const coordinate = coordinateFromHTMLElement(
+          touchedElement as HTMLElement
+        );
+        if (coordinate) {
+          onLeftClickUp(coordinate);
+          return;
+        }
+        touchedElement = touchedElement.parentElement;
+        attempts++;
+      }
     },
     [onLeftClickUp]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      // Prevent scrolling when touching the game board
+      e.preventDefault();
+    },
+    []
   );
 
   return (
@@ -122,6 +169,7 @@ export default function BoardContainer({
       onMouseUp={handleMouseUp}
       onContextMenu={(e) => e.preventDefault()}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       className={classNames(
         isTutorial

@@ -23,6 +23,12 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "GHQ",
   description: "Play GHQ online, learn to play, and join the community.",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
   openGraph: {
     title: "GHQ",
     siteName: "GHQ",
