@@ -169,11 +169,6 @@ export interface GHQState {
   // The current board state.
   board: Board;
 
-  // The board state at the start of the current turn.
-  // These are being deprecated in favor of thisTurnBoards and lastTurnBoards.
-  redTurnStartBoard: Board;
-  blueTurnStartBoard: Board;
-
   // The turns made so far on this/last turn. Required to know what moves are playable this turn.
   thisTurnMoves: AllowedMove[];
   lastPlayerMoves: AllowedMove[];
@@ -544,8 +539,6 @@ export const GHQGame: Game<GHQState> = {
       bonusTime: setupData?.bonusTime ?? 10 * 1000,
       lastPlayerMoves: [],
       timeControl: setupData?.timeControl ?? 15 * 60 * 1000,
-      redTurnStartBoard: board,
-      blueTurnStartBoard: board,
       board,
       thisTurnMoves: [],
       lastTurnBoards: [],
@@ -650,12 +643,6 @@ export const GHQGame: Game<GHQState> = {
     },
     onEnd: ({ ctx, G }) => {
       const elapsed = Date.now() - G.turnStartTime;
-
-      if (ctx.currentPlayer === "0") {
-        G.redTurnStartBoard = JSON.parse(JSON.stringify(G.board));
-      } else {
-        G.blueTurnStartBoard = JSON.parse(JSON.stringify(G.board));
-      }
 
       if (ctx.currentPlayer === "0") {
         G.redElapsed = G.redElapsed + elapsed - G.bonusTime;

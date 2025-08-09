@@ -366,12 +366,6 @@ export function newGHQGameV2({
         const elapsed = Date.now() - G.turnStartTime;
 
         if (ctx.currentPlayer === "0") {
-          G.redTurnStartBoard = JSON.parse(JSON.stringify(G.board));
-        } else {
-          G.blueTurnStartBoard = JSON.parse(JSON.stringify(G.board));
-        }
-
-        if (ctx.currentPlayer === "0") {
           G.redElapsed = G.redElapsed + elapsed - G.bonusTime;
         } else {
           G.blueElapsed = G.blueElapsed + elapsed - G.bonusTime;
