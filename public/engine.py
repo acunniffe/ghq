@@ -63,7 +63,7 @@ CARDINAL_DIRECTIONS = ["↑", "↗", "→", "↘", "↓", "↙", "←", "↖"]
 def bits_to_orientation(bit0: int, bit1: int, bit2: int) -> Optional[Orientation]:
     return (bit2 << 2) | (bit1 << 1) | bit0
 
-def orientation_to_bits(orientation: Orientation) -> Tuple[int, int, int]:
+def orientation_to_bits(orientation: Orientation) -> List[int]:
     return [orientation & 1, (orientation >> 1) & 1, orientation >> 2]
 
 def orientation_to_cardinal(orientation: int) -> str:
@@ -593,18 +593,24 @@ class Move:
             return result
 
         if self.name == "Move":
+            if self.from_square is None or self.to_square is None:
+                raise ValueError("from_square and to_square must be set for Move and MoveAndOrient moves")
             result = SQUARE_NAMES[self.from_square] + SQUARE_NAMES[self.to_square]
             if self.capture_preference is not None:
                 result += "x" + SQUARE_NAMES[self.capture_preference]
             return result
 
         if self.name == "MoveAndOrient":
+            if self.from_square is None or self.to_square is None:
+                raise ValueError("from_square and to_square must be set for Move and MoveAndOrient moves")
             result = SQUARE_NAMES[self.from_square] + SQUARE_NAMES[self.to_square]
             if self.orientation is not None:
                 result += orientation_to_cardinal(self.orientation)
             return result
 
         if self.name == "AutoCapture":
+            if self.capture_preference is None:
+                raise ValueError("capture_preference must be set for AutoCapture moves")
             result = "s"
             if self.auto_capture_type == "bombard":
                 result += "b"
@@ -768,7 +774,7 @@ class Move:
 class BaseBoard:
     # core game state
     occupied: Bitboard
-    occupied_co: Tuple[Bitboard, Bitboard]
+    occupied_co: List[Bitboard]
     infantry: Bitboard
     armored_infantry: Bitboard
     airborne_infantry: Bitboard
@@ -776,7 +782,7 @@ class BaseBoard:
     armored_artillery: Bitboard
     heavy_artillery: Bitboard
     hq: Bitboard
-    reserves: Tuple[ReserveFleet, ReserveFleet]
+    reserves: List[ReserveFleet]
     turn: Color
     turn_moves: int
     turn_auto_moves: int
@@ -784,8 +790,8 @@ class BaseBoard:
     orientation_bit0: Bitboard
     orientation_bit1: Bitboard
     orientation_bit2: Bitboard
-    bombarded_co: Tuple[Bitboard, Bitboard]
-    adjacent_infantry_squares_co: Tuple[Bitboard, Bitboard]
+    bombarded_co: List[Bitboard]
+    adjacent_infantry_squares_co: List[Bitboard]
 
     free_capture_clusters: Bitboard
     free_capture_enemies: Bitboard
@@ -928,8 +934,8 @@ class BaseBoard:
 
         # reserve
         board.reserves = [
-            ReserveFleet.from_ints(values[24:30]),
-            ReserveFleet.from_ints(values[30:36])
+            ReserveFleet.from_ints(list(values[24:30])),
+            ReserveFleet.from_ints(list(values[30:36]))
         ]
 
         # move state
@@ -1003,7 +1009,7 @@ class BaseBoard:
         else:
             return HQ
 
-    def color_at(self, square: Square, occupied_co: Optional[Tuple[Bitboard, Bitboard]] = None) -> Optional[Color]:
+    def color_at(self, square: Square, occupied_co: Optional[List[Bitboard]] = None) -> Optional[Color]:
         """Gets the color of the piece at the given square."""
         occupied_co = occupied_co if occupied_co is not None else self.occupied_co
         mask = BB_SQUARES[square]
@@ -1040,6 +1046,9 @@ class BaseBoard:
             self.hq ^= mask
         else:
             return None
+
+        if piece_color is None or piece_type is None:
+            raise ValueError(f"no piece at {square} (color: {piece_color}, type: {piece_type})")
 
         self.occupied ^= mask
         self.occupied_co[piece_color] ^= mask
@@ -1610,7 +1619,7 @@ class BaseBoard:
                 continue
 
             # skip if we're not moving into this cluster
-            if not (cluster & BB_SQUARES[move.to_square]):
+            if move.to_square is None or not (cluster & BB_SQUARES[move.to_square]):
                 continue
 
             capturable_enemies = free_capture_enemies & cluster & self.occupied_co[not color]
@@ -1753,6 +1762,11 @@ class BaseBoard:
             self._move_piece(move)
             self.did_offer_draw = False
         elif move.name == "Reinforce":
+            if move.unit_type is None:
+                raise ValueError(f"invalid reinforce move: {move}")
+            if move.to_square is None:
+                raise ValueError(f"invalid reinforce move: {move}")
+
             orientation = ORIENT_N if self.turn == RED else ORIENT_S
             self.reserves[self.turn].remove(move.unit_type)
             self._set_piece_at(move.to_square, move.unit_type, self.turn, orientation)
@@ -1792,6 +1806,11 @@ class BaseBoard:
             list(self._generate_free_captures(self.turn))
 
     def _move_piece(self, move: Move) -> None:
+        if move.from_square is None:
+            raise ValueError(f"invalid move: {move}")
+        if move.to_square is None:
+            raise ValueError(f"invalid move: {move}")
+
         piece_type = self._remove_piece_at(move.from_square)
         assert piece_type is not None, f"push() expects move to be pseudo-legal, but got {move} in {self.board_fen()}"
         self._set_piece_at(move.to_square, piece_type, self.turn, move.orientation)
@@ -1809,6 +1828,9 @@ class BaseBoard:
 
     def _remove_bombarded_pieces(self) -> None:
         for move in self._find_bombardment_moves():
+            if move.capture_preference is None:
+                raise ValueError(f"invalid bombardment move: {move}")
+
             self.move_stack.append(move)
             self._remove_piece_at(move.capture_preference)
 
@@ -1862,6 +1884,8 @@ class BaseBoard:
         occupied_co = self.occupied_co.copy()
 
         if move is not None:
+            if move.to_square is None:
+                raise ValueError(f"invalid free capture move: {move}")
             to_square = move.to_square
 
             # short circuit if the to_square isn't adjacent to any enemy pieces
@@ -1872,6 +1896,8 @@ class BaseBoard:
                 # short circuit if we're not making a move
                 return BB_EMPTY, BB_EMPTY, BB_EMPTY
             if move.name == "Move":
+                if move.from_square is None:
+                    raise ValueError(f"invalid free capture move: {move}")
                 # remove the piece from its original square square
                 all_units &= ~BB_SQUARES[move.from_square]
                 occupied_co[color] &= ~BB_SQUARES[move.from_square]
@@ -1891,7 +1917,7 @@ class BaseBoard:
 
         return free_capture_clusters, free_capture_enemies, free_capture_num_allowed
 
-    def _find_free_captures_for_cluster(self, occupied_co: Tuple[Bitboard, Bitboard], cluster: Bitboard, color: Color):
+    def _find_free_captures_for_cluster(self, occupied_co: List[Bitboard], cluster: Bitboard, color: Color):
         our_infantry = cluster & occupied_co[color]
         enemy_infantry = cluster & occupied_co[not color]
 
@@ -1915,7 +1941,7 @@ class BaseBoard:
 
         return [capturable_enemies, num_captures_board]
 
-    def _find_adjacency_clusters(self, occupied_co: Tuple[Bitboard, Bitboard], all_units: Bitboard):
+    def _find_adjacency_clusters(self, occupied_co: List[Bitboard], all_units: Bitboard):
         visited = BB_EMPTY
 
         while all_units:
@@ -1977,7 +2003,8 @@ class BaseBoard:
         return popcount(self.hq & self.occupied_co[color]) == 0
 
     def _is_artillery_pointed_at(self, artillery: Square, target_square: Square) -> bool:
-        if not is_artillery(self.piece_type_at(artillery)):
+        piece_type = self.piece_type_at(artillery)
+        if piece_type is None or not is_artillery(piece_type):
             return False
         orientation = self.get_orientation(artillery)
         if orientation is None:
@@ -2375,6 +2402,7 @@ def find_clusters(board: Bitboard):
 
         yield cluster
         all_units &= ~visited
+
 
 import random
 
