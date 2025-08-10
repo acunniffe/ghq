@@ -49,7 +49,7 @@ export default function LiveGamesList() {
         <Button
           variant="ghost"
           size="sm"
-          className="h-5 text-gray-500"
+          className="h-5 text-gray-600 hover:bg-white/70"
           onClick={() =>
             filterUserId ? setFilterUserId("") : setFilterUserId(userId ?? "")
           }

@@ -20,7 +20,7 @@ export default function PlayersTab() {
           onClick={() => setTab("thisMonth")}
           className={cn(
             tab === "thisMonth" && "font-bold underline underline-offset-2",
-            "rounded px-2 py-1 hover:bg-gray-100"
+            "rounded px-2 py-1 hover:bg-white/70"
           )}
         >
           Current Month
@@ -29,7 +29,7 @@ export default function PlayersTab() {
           onClick={() => setTab("leaderboard")}
           className={cn(
             tab === "leaderboard" && "font-bold",
-            "rounded px-2 py-1 hover:bg-gray-100"
+            "rounded px-2 py-1 hover:bg-white/70"
           )}
         >
           Overall Rating
@@ -39,7 +39,7 @@ export default function PlayersTab() {
           className={cn(
             "flex flex-row gap-1 items-center",
             tab === "players" && "font-bold",
-            "rounded px-2 py-1 hover:bg-gray-100"
+            "rounded px-2 py-1 hover:bg-white/70"
           )}
         >
           Online
