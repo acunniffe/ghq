@@ -10,7 +10,7 @@ import { GHQNight } from "@/components/GHQNight";
 import CorrespondenceView from "./CorrespondenceView";
 import PlayersTab from "./PlayersTab";
 import { useState } from "react";
-import { ChevronDown, Star } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { PlayDailyButton } from "./live/PlayDailyButton";
 import BackgroundPicture from "@/components/BackgroundPicture";
 
@@ -59,6 +59,9 @@ function App() {
                     <PlayOnlineButton mode="blitz" />
                     <PlayOnlineButton mode="endgame" />
                     <PlayOnlineButton mode="normandy" />
+                    <Button onClick={() => router.push("/editor")}>
+                      ✏️ Board Editor{" "}
+                    </Button>
                   </>
                 )}
               </div>
