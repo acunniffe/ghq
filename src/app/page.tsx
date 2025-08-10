@@ -36,7 +36,7 @@ function App() {
 
   return (
     <>
-      <BackgroundPicture src="/bg.png" alt="Background" />
+      <BackgroundPicture src="/bg-bombs.png" alt="Background" />
       <div className="p-2 flex flex-col gap-4 lg:px-48">
         <Header />
         {/* <LatestMessage /> */}
