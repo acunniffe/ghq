@@ -18,10 +18,10 @@ export default function UserMiniProfile({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fullUser, setFullUser] = useState<UserSummary | null>(null);
-  const { getToken } = useAuth();
+  const { isSignedIn, getToken } = useAuth();
 
   const fetchFullUser = async () => {
-    if (loading || fullUser) return;
+    if (loading || fullUser || !isSignedIn) return;
     setLoading(true);
     try {
       const data = await ghqFetch<{ user: UserSummary }>({
