@@ -744,6 +744,8 @@ export function isMoveCapture(move: AllowedMove) {
   return false;
 }
 
+export const isSkipMove = (move: AllowedMove) => move.name === "Skip";
+
 export function getCapturePreference(move: AllowedMove) {
   if (move.name === "Move" && move.args[2]) {
     return move.args[2];

@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AllowedMove, GHQState, isMoveCapture, Player } from "@/game/engine";
+import { useCallback, useEffect, useState } from "react";
+import {
+  AllowedMove,
+  GHQState,
+  isMoveCapture,
+  isSkipMove,
+  Player,
+} from "@/game/engine";
 import { BoardProps } from "boardgame.io/react";
 import { UserActionState } from "./state";
 import {
@@ -47,7 +53,7 @@ export default function useBoard({
 
           if (isMoveCapture(lastMove)) {
             playCaptureSound();
-          } else {
+          } else if (!isSkipMove(lastMove)) {
             playMoveSound();
           }
         });
@@ -100,7 +106,7 @@ export default function useBoard({
 
       if (isMoveCapture(lastMove)) {
         playCaptureSound();
-      } else {
+      } else if (!isSkipMove(lastMove)) {
         playMoveSound();
       }
     }
@@ -119,7 +125,7 @@ export default function useBoard({
 
       if (isMoveCapture(userActionState.chosenMove)) {
         playCaptureSound();
-      } else {
+      } else if (!isSkipMove(userActionState.chosenMove)) {
         playMoveSound();
       }
     }
