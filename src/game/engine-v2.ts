@@ -455,6 +455,7 @@ function applyBotOptions(state: GHQState) {
 function applyLocalOptions(state: GHQState) {
   state.timeControl = 0;
   state.bonusTime = 0;
+  state.isPassAndPlayMode = true;
 }
 
 export function numMovesThisTurn(G: GHQState) {
