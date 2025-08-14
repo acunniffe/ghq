@@ -13,7 +13,7 @@ import MobileHeader from "../MobileHeader";
 
 export function GHQBoardV2(props: BoardProps<GHQState>) {
   const [settings, setSettings] = useState<Settings>({
-    autoFlipBoard: true,
+    autoFlipBoard: false,
     confirmTurn: true,
   });
   const { isTutorial } = props.G;
