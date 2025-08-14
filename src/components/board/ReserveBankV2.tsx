@@ -43,8 +43,22 @@ export function ReserveBankV2(props: {
   });
 
   if (reserves.every((r) => r === null)) {
+    // Invisible placeholder that keeps the layout the same
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-500"></div>
+      <div className="opacity-0">
+        <ReserveBankButton
+          value="INFANTRY"
+          imageUrl={`/${
+            Units.HQ.imagePathPrefix
+          }-${props.player.toLowerCase()}.png`}
+          player={props.player}
+          selectable={props.selectable}
+          onSelect={props.selectReserve}
+          squareSize={props.squareSize}
+          selected={false}
+          count={0}
+        />
+      </div>
     );
   }
 

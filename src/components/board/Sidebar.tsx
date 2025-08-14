@@ -58,16 +58,16 @@ export default function Sidebar({
   }, [ctx.turn, ctx.gameover]);
 
   return (
-    <div className={classNames("w-full md:w-[450px] bg-white", className)}>
+    <div className={classNames("w-full md:w-[450px] bg-white/60", className)}>
       <div className="hidden sm:block">
         <Header />
       </div>
       {historyEval}
       {ctx.gameover ? (
-        <div className="flex flex-col items-center justify-center gap-1 justify-center items-center">
+        <div className="flex flex-col items-center justify-center gap-0 justify-center items-center">
           <h2
             className={classNames(
-              "text-center font-semibold text-2xl",
+              "text-center font-bold",
               ctx.gameover.status === "DRAW" && "text-gray-800",
               ctx.gameover.status === "WIN" && ctx.gameover.winner === "RED"
                 ? "text-red-500"
@@ -77,10 +77,12 @@ export default function Sidebar({
             {ctx.gameover.status === "DRAW" ? (
               "Draw!"
             ) : (
-              <>{ctx.gameover.winner === "RED" ? "Red " : "Blue"} Won!</>
+              <>{ctx.gameover.winner === "RED" ? "Red" : "Blue"} Won!</>
             )}
           </h2>
-          {ctx.gameover.reason && ctx.gameover.reason}
+          <div className="text-center text-gray-600">
+            {ctx.gameover.reason && ctx.gameover.reason}
+          </div>
           <div className="flex gap-1">
             <ShareGameDialog G={G} ctx={ctx} log={log} />
             <HomeButton />
