@@ -68,7 +68,7 @@ export default function PlayArea(
   }, [G.isPassAndPlayMode, playerID, currentPlayerTurn, settings]);
 
   const possibleAllowedMoves = useMemo(() => {
-    if (hasMoveLimitReachedV2(G)) {
+    if (hasMoveLimitReachedV2(G, currentPlayerTurn)) {
       return [];
     }
     return getAllowedMoves({
@@ -92,10 +92,10 @@ export default function PlayArea(
 
   // If the move limit has been reached and user has confirm disabled, automatically skip the turn.
   useEffect(() => {
-    if (!settings.confirmTurn && hasMoveLimitReached(ctx)) {
+    if (!settings.confirmTurn && hasMoveLimitReachedV2(G, currentPlayerTurn)) {
       moves.Skip();
     }
-  }, [ctx.numMoves]);
+  }, [ctx.numMoves, G, currentPlayerTurn, settings.confirmTurn, moves]);
 
   const { board, mostRecentMove, replay } = useBoard({
     ctx,
@@ -177,7 +177,7 @@ export default function PlayArea(
         {...props}
         isMyTurn={currentPlayer === currentPlayerTurn}
         hasMoveLimitReached={
-          currentPlayer === currentPlayerTurn && hasMoveLimitReachedV2(G)
+          currentPlayer === currentPlayerTurn && hasMoveLimitReachedV2(G, currentPlayerTurn)
         }
         cancel={() => setUserActionState({})}
         replay={() => replay()}

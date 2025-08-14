@@ -7,12 +7,14 @@ import classNames from "classnames";
 
 export default function MoveCounter({
   numMoves,
+  maxMoves = 3,
   active,
 }: {
   numMoves: number | undefined;
+  maxMoves?: number;
   active: boolean;
 }) {
-  const movesLeft = 3 - (numMoves ?? 0);
+  const movesLeft = maxMoves - (numMoves ?? 0);
 
   return (
     <HoverCard>

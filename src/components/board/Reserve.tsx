@@ -17,7 +17,7 @@ import ChatIcon from "./ChatIcon";
 import LatestChatMessage from "./LatestChatMessage";
 import { User } from "@/lib/types";
 import Username from "@/components/Username";
-import { numMovesThisTurn } from "@/game/engine-v2";
+import { numMovesThisTurn, maxPossibleMovesThisTurn } from "@/game/engine-v2";
 import { ReserveBankV2 } from "./ReserveBankV2";
 import { cn } from "@/lib/utils";
 
@@ -98,6 +98,7 @@ export default function Reserve({
           <div className="flex gap-2 justify-center items-center">
             <MoveCounter
               numMoves={numMovesThisTurn(G)}
+              maxMoves={maxPossibleMovesThisTurn(G, currentPlayerTurn)}
               active={currentPlayerTurn === player && !ctx.gameover}
             />
             <CountdownTimer
