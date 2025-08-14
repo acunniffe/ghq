@@ -157,7 +157,9 @@ export default function PlayArea(
         />
         <MoveProgressBar
           numMoves={
-            currentPlayer === currentPlayerTurn ? numMovesThisTurn(G) : 0
+            !G.isReplayMode && currentPlayer === currentPlayerTurn
+              ? numMovesThisTurn(G)
+              : 0
           }
         />
       </div>
