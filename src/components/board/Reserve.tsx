@@ -17,7 +17,7 @@ import ChatIcon from "./ChatIcon";
 import LatestChatMessage from "./LatestChatMessage";
 import { User } from "@/lib/types";
 import Username from "@/components/Username";
-import { numMovesThisTurn } from "@/game/engine-v2";
+import { hasMoveLimitReachedV2, numMovesThisTurn } from "@/game/engine-v2";
 import { ReserveBankV2 } from "./ReserveBankV2";
 import { cn } from "@/lib/utils";
 
@@ -117,7 +117,9 @@ export default function Reserve({
             player={player}
             reserve={player === "RED" ? G.redReserve : G.blueReserve}
             selectable={
-              player === currentPlayerTurn && player === currentPlayer
+              player === currentPlayerTurn &&
+              player === currentPlayer &&
+              !hasMoveLimitReachedV2(G)
             }
             selectedKind={
               player === currentPlayerTurn

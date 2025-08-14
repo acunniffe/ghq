@@ -9,8 +9,6 @@ import {
   type Board,
 } from "@/game/engine";
 import { bombardedSquares } from "@/game/move-logic";
-import { useMeasure } from "@uidotdev/usehooks";
-import { pieceSizes, squareSizes } from "@/game/constants";
 import { updateClick, updateHover, UserActionState } from "./state";
 import Square, { getSquareState } from "./Square";
 import BoardArrow from "@/game/BoardArrow";
@@ -20,6 +18,7 @@ import useRightClick from "./useRightClick";
 import { getBoardEngagements, getRecentCaptures } from "@/game/capture-logic";
 import { Ctx, LogEntry } from "boardgame.io";
 import PieceMouse from "./PieceMouse";
+import { hasMoveLimitReachedV2 } from "@/game/engine-v2";
 
 export default function Board({
   ctx,
@@ -62,6 +61,7 @@ export default function Board({
       getRecentCaptures({ turn: ctx.turn, systemMessages: G.historyLog, log }),
     [board]
   );
+  const hasMoveLimitReached = useMemo(() => hasMoveLimitReachedV2(G), [G]);
 
   const { boardArrows, rightClicked, handleRightClickDrag, clearRightClick } =
     useRightClick({ board });
@@ -82,13 +82,14 @@ export default function Board({
           possibleAllowedMoves,
           currentPlayer,
           currentPlayerTurn,
-          isMouseDown
+          isMouseDown,
+          hasMoveLimitReached
         )
       );
 
       clearRightClick();
     },
-    [board, possibleAllowedMoves, ctx.gameover]
+    [board, possibleAllowedMoves, ctx.gameover, hasMoveLimitReached]
   );
 
   const handleMouseOver = useCallback(([rowIndex, colIndex]: Coordinate) => {
