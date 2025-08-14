@@ -9,7 +9,7 @@ import {
 import useControls from "./Controls";
 import { BoardProps } from "boardgame.io/react";
 import { GHQState } from "@/game/engine";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Ctx, LogEntry } from "boardgame.io";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,6 @@ export default function ControlsView({
   replay,
   moves,
   isMyTurn,
-  log,
   cancel,
   hasMoveLimitReached,
 }: {
@@ -34,14 +33,14 @@ export default function ControlsView({
   isMyTurn: boolean;
   hasMoveLimitReached: boolean;
 }) {
-  const lastLog = useMemo(() => log.slice(-1)[0], [log]);
+  const [undoneMoves, setUndoneMoves] = useState<number>(0);
   const canUndo = useMemo(
     () => isMyTurn && ctx.numMoves && ctx.numMoves >= 0,
     [ctx.numMoves, isMyTurn]
   );
   const canRedo = useMemo(
-    () => isMyTurn && lastLog && lastLog.action.type === "UNDO",
-    [lastLog, isMyTurn]
+    () => isMyTurn && undoneMoves > 0,
+    [isMyTurn, undoneMoves]
   );
   const canSkip = useMemo(() => isMyTurn, [ctx.numMoves, isMyTurn]);
   const canReplay = useMemo(
@@ -49,18 +48,26 @@ export default function ControlsView({
     [ctx.turn, isMyTurn]
   );
 
+  useEffect(() => {
+    if (isMyTurn) {
+      setUndoneMoves(0);
+    }
+  }, [isMyTurn]);
+
   const doUndo = useCallback(() => {
     if (canUndo) {
       undo();
+      setUndoneMoves((v) => v + 1);
     }
     cancel();
-  }, [canUndo, undo, cancel]);
+  }, [canUndo, undo, cancel, setUndoneMoves]);
 
   const doRedo = useCallback(() => {
     if (canRedo) {
       redo();
+      setUndoneMoves((v) => v - 1);
     }
-  }, [canRedo, redo]);
+  }, [canRedo, redo, setUndoneMoves]);
 
   const doSkip = useCallback(() => {
     if (canSkip) {
