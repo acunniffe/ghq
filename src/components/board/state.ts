@@ -61,10 +61,11 @@ export function updateClick(
   possibleAllowedMoves: AllowedMove[],
   currentPlayer: Player,
   currentPlayerTurn: Player,
-  isMouseDown: boolean
+  isMouseDown: boolean,
+  hasMoveLimitReached: boolean
 ): UserActionState {
   // You can only play on your turn.
-  if (currentPlayer !== currentPlayerTurn) {
+  if (currentPlayer !== currentPlayerTurn || hasMoveLimitReached) {
     return self;
   }
 

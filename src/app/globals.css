@@ -49,9 +49,8 @@ body {
     45deg,
     /* Diagonal stripes */ rgb(248, 208, 208),
     /* Start with red */ rgb(248, 208, 208) 20px,
-    /* Wider red stripe width */ transparent 20px,
-    /* Start of transparent */ transparent 40px
-      /* Wider transparent stripe width */
+    /* Wider red stripe width */ white 20px,
+    /* Start of transparent */ white 40px /* Wider transparent stripe width */
   );
 }
 
@@ -61,9 +60,8 @@ body {
     45deg,
     /* Diagonal stripes */ rgb(191, 219, 254),
     /* Start with blue */ rgb(191, 219, 254) 20px,
-    /* Wider blue stripe width */ transparent 20px,
-    /* Start of transparent */ transparent 40px
-      /* Wider transparent stripe width */
+    /* Wider blue stripe width */ white 20px,
+    /* Start of transparent */ white 40px /* Wider transparent stripe width */
   );
 }
 
@@ -72,9 +70,8 @@ body {
     45deg,
     /* Diagonal stripes */ rgb(191, 219, 254),
     /* Start with blue */ rgb(191, 219, 254) 6px,
-    /* Wider blue stripe width */ transparent 6px,
-    /* Start of transparent */ transparent 12px
-      /* Wider transparent stripe width */
+    /* Wider blue stripe width */ white 6px,
+    /* Start of transparent */ white 12px /* Wider transparent stripe width */
   );
 }
 
@@ -175,5 +172,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
-

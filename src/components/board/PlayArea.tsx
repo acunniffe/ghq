@@ -7,13 +7,14 @@ import { getAllowedMoves, getOpponent } from "../../game/board-moves";
 
 import { updateReserveClick, UserActionState } from "./state";
 import Reserve from "./Reserve";
+import MoveProgressBar from "./MoveProgressBar";
 import Board from "./Board";
 import classNames from "classnames";
 import ControlsView from "./ControlsView";
 import useBoard from "./useBoard";
 import { Settings } from "./SettingsMenu";
 import { useUsers } from "./useUsers";
-import { hasMoveLimitReachedV2 } from "@/game/engine-v2";
+import { hasMoveLimitReachedV2, numMovesThisTurn } from "@/game/engine-v2";
 import { pieceSizes } from "@/game/constants";
 import { useMeasure } from "@uidotdev/usehooks";
 import { squareSizes } from "@/game/constants";
@@ -137,22 +138,31 @@ export default function PlayArea(
         chatMessages={chatMessages}
         squareSize={squareSize}
       />
-      <Board
-        G={G}
-        ctx={ctx}
-        log={log}
-        board={board}
-        mostRecentMove={mostRecentMove}
-        userActionState={userActionState}
-        setUserActionState={setUserActionState}
-        possibleAllowedMoves={possibleAllowedMoves}
-        currentPlayer={currentPlayer}
-        currentPlayerTurn={currentPlayerTurn}
-        isFlipped={isFlipped}
-        measureRef={measureRef}
-        squareSize={squareSize}
-        pieceSize={pieceSize}
-      />
+      <div className="flex flex-col">
+        <Board
+          G={G}
+          ctx={ctx}
+          log={log}
+          board={board}
+          mostRecentMove={mostRecentMove}
+          userActionState={userActionState}
+          setUserActionState={setUserActionState}
+          possibleAllowedMoves={possibleAllowedMoves}
+          currentPlayer={currentPlayer}
+          currentPlayerTurn={currentPlayerTurn}
+          isFlipped={isFlipped}
+          measureRef={measureRef}
+          squareSize={squareSize}
+          pieceSize={pieceSize}
+        />
+        <MoveProgressBar
+          numMoves={
+            !G.isReplayMode && currentPlayer === currentPlayerTurn
+              ? numMovesThisTurn(G)
+              : 0
+          }
+        />
+      </div>
       <Reserve
         G={G}
         ctx={ctx}
