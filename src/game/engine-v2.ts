@@ -468,11 +468,24 @@ export function maxPossibleMovesThisTurn(G: GHQState, player: "RED" | "BLUE") {
   // Count pieces on the board for this player
   let boardPieces = 0;
   for (let row = 0; row < G.board.length; row++) {
+    // Skip rows that are completely empty (optimization)
+    if (!G.board[row].some(piece => piece !== null)) {
+      continue;
+    }
+    
     for (let col = 0; col < G.board[row].length; col++) {
       const piece = G.board[row][col];
       if (piece && piece.player === player) {
         boardPieces++;
+        // Early exit: if we already have 3+ pieces, we know the max is 3
+        if (boardPieces >= 3) {
+          break;
+        }
       }
+    }
+    // Early exit: if we already have 3+ pieces, we know the max is 3
+    if (boardPieces >= 3) {
+      break;
     }
   }
   
