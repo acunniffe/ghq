@@ -61,7 +61,7 @@ export default function Board({
       getRecentCaptures({ turn: ctx.turn, systemMessages: G.historyLog, log }),
     [board]
   );
-  const hasMoveLimitReached = useMemo(() => hasMoveLimitReachedV2(G), [G]);
+  const hasMoveLimitReached = useMemo(() => hasMoveLimitReachedV2(G, currentPlayerTurn), [G, currentPlayerTurn]);
 
   const { boardArrows, rightClicked, handleRightClickDrag, clearRightClick } =
     useRightClick({ board });

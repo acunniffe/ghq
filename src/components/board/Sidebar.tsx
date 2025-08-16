@@ -17,7 +17,7 @@ import SettingsMenu, { Settings } from "./SettingsMenu";
 import { Swords } from "lucide-react";
 import { Ctx } from "boardgame.io";
 import { config } from "@/lib/config";
-import { numMovesThisTurn } from "@/game/engine-v2";
+import { numMovesThisTurn, maxPossibleMovesThisTurn } from "@/game/engine-v2";
 
 export default function Sidebar({
   G,
@@ -42,7 +42,11 @@ export default function Sidebar({
     () => (playerID === null ? currentPlayerTurn : playerIdToPlayer(playerID)),
     [currentPlayerTurn, playerID]
   );
-  const movesLeft = useMemo(() => 3 - numMovesThisTurn(G), [G]);
+  const movesLeft = useMemo(() => {
+    const maxMoves = maxPossibleMovesThisTurn(G, currentPlayerTurn);
+    const movesMade = numMovesThisTurn(G);
+    return maxMoves - movesMade;
+  }, [G, currentPlayerTurn]);
 
   const historyEval = useMemo(() => {
     return (
