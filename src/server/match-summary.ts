@@ -108,5 +108,7 @@ export async function getMatchSummary(
 
   summary.sort((a, b) => b.wins - a.wins);
 
-  return { summary };
+  const top10 = summary.slice(0, 15);
+
+  return { summary: top10 };
 }

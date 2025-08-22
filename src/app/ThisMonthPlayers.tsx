@@ -3,7 +3,6 @@
 import { API_URL } from "./live/config";
 import { ghqFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { useAuth } from "@clerk/nextjs";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { useMatchmaking } from "@/components/MatchmakingProvider";
 import { OnlineUser, UserBadge } from "@/lib/types";
@@ -68,8 +67,8 @@ export default function Leaderboard() {
 
       <div className="flex flex-col">
         {users.map((user: MatchSummary) => (
-          <div key={user.userId} className="rounded flex justify-between">
-            <div className="flex flex-row gap-2 items-center">
+          <div key={user.userId} className="rounded grid grid-cols-10 gap-4 items-center">
+            <div className="col-span-7 md:col-span-8 flex flex-row gap-2 items-center">
               <StatusIndicator status={user.status ?? "offline"} />
               <Username
                 user={{
@@ -80,12 +79,12 @@ export default function Leaderboard() {
                 }}
               />
             </div>
-            <div className="flex flex-row gap-2 items-center">
-              <span className="text-green-700">{user.wins}</span>
-              <span className="text-gray-300">|</span>
-              <span className="text-red-700">{user.losses}</span>
-              <span className="text-gray-300">|</span>
-              <span className="text-gray-700">{user.draws}</span>
+            <div className="col-span-3 md:col-span-2 grid grid-cols-5 gap-1 items-center text-right">
+              <span className="text-green-700 text-center">{user.wins}</span>
+              <span className="text-gray-500 text-center">|</span>
+              <span className="text-red-700 text-center">{user.losses}</span>
+              <span className="text-gray-500 text-center">|</span>
+              <span className="text-gray-700 text-center">{user.draws}</span>
             </div>
           </div>
         ))}
