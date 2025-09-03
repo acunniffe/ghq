@@ -15,12 +15,17 @@ import useBoard from "./useBoard";
 import { Settings } from "./SettingsMenu";
 import { useUsers } from "./useUsers";
 import { hasMoveLimitReachedV2, numMovesThisTurn } from "@/game/engine-v2";
+import { AllowedMove } from "@/game/engine";
 import { pieceSizes } from "@/game/constants";
 import { useMeasure } from "@uidotdev/usehooks";
 import { squareSizes } from "@/game/constants";
 
 export default function PlayArea(
-  props: BoardProps<GHQState> & { className: string; settings: Settings }
+  props: BoardProps<GHQState> & { 
+    className: string; 
+    settings: Settings;
+    possibleAllowedMoves: AllowedMove[];
+  }
 ) {
   const {
     ctx,
@@ -31,6 +36,7 @@ export default function PlayArea(
     moves,
     log,
     settings,
+    possibleAllowedMoves,
     sendChatMessage,
     chatMessages,
     plugins,
@@ -68,35 +74,14 @@ export default function PlayArea(
     }
   }, [G.isPassAndPlayMode, playerID, currentPlayerTurn, settings]);
 
-  const possibleAllowedMoves = useMemo(() => {
-    if (hasMoveLimitReachedV2(G)) {
-      return [];
-    }
-    return getAllowedMoves({
-      board: G.board,
-      redReserve: G.redReserve,
-      blueReserve: G.blueReserve,
-      currentPlayerTurn,
-      thisTurnMoves: G.thisTurnMoves,
-      enforceZoneOfControl: G.enforceZoneOfControl,
-      v2state: G.v2state,
-      engine: plugins?.engine?.api,
-    });
-  }, [
-    G.board,
-    G.redReserve,
-    G.blueReserve,
-    currentPlayerTurn,
-    G.thisTurnMoves,
-    ctx,
-  ]);
+
 
   // If the move limit has been reached and user has confirm disabled, automatically skip the turn.
   useEffect(() => {
-    if (!settings.confirmTurn && hasMoveLimitReached(ctx)) {
+    if (!settings.confirmTurn && hasMoveLimitReachedV2(G, currentPlayerTurn, possibleAllowedMoves)) {
       moves.Skip();
     }
-  }, [ctx.numMoves]);
+  }, [ctx.numMoves, G, currentPlayerTurn, settings.confirmTurn, moves]);
 
   const { board, mostRecentMove, replay } = useBoard({
     ctx,
@@ -127,6 +112,7 @@ export default function PlayArea(
         currentPlayerTurn={currentPlayerTurn}
         users={users}
         userActionState={userActionState}
+        possibleAllowedMoves={possibleAllowedMoves}
         selectReserve={(kind) =>
           setUserActionState((userActionState) =>
             updateReserveClick(userActionState, kind, possibleAllowedMoves)
@@ -172,6 +158,7 @@ export default function PlayArea(
         currentPlayerTurn={currentPlayerTurn}
         users={users}
         userActionState={userActionState}
+        possibleAllowedMoves={possibleAllowedMoves}
         selectReserve={(kind) =>
           setUserActionState((userActionState) =>
             updateReserveClick(userActionState, kind, possibleAllowedMoves)
@@ -187,7 +174,7 @@ export default function PlayArea(
         {...props}
         isMyTurn={currentPlayer === currentPlayerTurn}
         hasMoveLimitReached={
-          currentPlayer === currentPlayerTurn && hasMoveLimitReachedV2(G)
+          currentPlayer === currentPlayerTurn && hasMoveLimitReachedV2(G, currentPlayerTurn, possibleAllowedMoves)
         }
         cancel={() => setUserActionState({})}
         replay={() => replay()}

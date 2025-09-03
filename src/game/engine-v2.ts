@@ -464,6 +464,35 @@ export function numMovesThisTurn(G: GHQState) {
   ).length;
 }
 
-export function hasMoveLimitReachedV2(G: GHQState) {
-  return numMovesThisTurn(G) >= 3;
+export function maxPossibleMovesThisTurn(G: GHQState, player: "RED" | "BLUE", possibleAllowedMoves: AllowedMove[]) {
+  const squaresWithMoves = new Set<string>();
+  for (const move of possibleAllowedMoves) {
+    if (move.name === "Move") {
+      const [from] = move.args;
+      squaresWithMoves.add(`${from[0]},${from[1]}`);
+    } else if (move.name === "MoveAndOrient") {
+      const [from] = move.args;
+      squaresWithMoves.add(`${from[0]},${from[1]}`);
+    }
+  }
+  
+  // Count pieces on the board that can move
+  const boardPieces = squaresWithMoves.size;
+  
+  // Count pieces in reserve for this player
+  const reserve = player === "RED" ? G.redReserve : G.blueReserve;
+  const reservePieces = Object.values(reserve).reduce((sum, count) => sum + count, 0);
+  
+  // Total available pieces
+  const totalPieces = boardPieces + reservePieces;
+  
+  // Maximum moves is the lesser of 3 or total available pieces
+  return Math.min(3, totalPieces);
+}
+
+
+
+export function hasMoveLimitReachedV2(G: GHQState, player: "RED" | "BLUE", possibleAllowedMoves: AllowedMove[]) {
+  const maxMoves = maxPossibleMovesThisTurn(G, player, possibleAllowedMoves);
+  return numMovesThisTurn(G) >= maxMoves;
 }
