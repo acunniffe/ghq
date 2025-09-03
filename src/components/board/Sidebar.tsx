@@ -18,6 +18,7 @@ import { Swords } from "lucide-react";
 import { Ctx } from "boardgame.io";
 import { config } from "@/lib/config";
 import { numMovesThisTurn, maxPossibleMovesThisTurn } from "@/game/engine-v2";
+import { AllowedMove } from "@/game/engine";
 
 export default function Sidebar({
   G,
@@ -28,11 +29,13 @@ export default function Sidebar({
   className,
   settings,
   setSettings,
+  possibleAllowedMoves,
 }: BoardProps<GHQState> & {
   className: string;
   settings: Settings;
   setSettings: (settings: Settings) => void;
   ctx: Ctx;
+  possibleAllowedMoves: AllowedMove[];
 }) {
   const currentPlayerTurn = useMemo(
     () => playerIdToPlayer(ctx.currentPlayer),
@@ -43,10 +46,10 @@ export default function Sidebar({
     [currentPlayerTurn, playerID]
   );
   const movesLeft = useMemo(() => {
-    const maxMoves = maxPossibleMovesThisTurn(G, currentPlayerTurn);
+    const maxMoves = maxPossibleMovesThisTurn(G, currentPlayerTurn, possibleAllowedMoves);
     const movesMade = numMovesThisTurn(G);
     return maxMoves - movesMade;
-  }, [G, currentPlayerTurn]);
+  }, [G, currentPlayerTurn, possibleAllowedMoves]);
 
   const historyEval = useMemo(() => {
     return (

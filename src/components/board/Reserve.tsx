@@ -18,6 +18,7 @@ import LatestChatMessage from "./LatestChatMessage";
 import { User } from "@/lib/types";
 import Username from "@/components/Username";
 import { hasMoveLimitReachedV2, numMovesThisTurn, maxPossibleMovesThisTurn } from "@/game/engine-v2";
+import { AllowedMove } from "@/game/engine";
 import { ReserveBankV2 } from "./ReserveBankV2";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export default function Reserve({
   sendChatMessage,
   chatMessages,
   squareSize,
+  possibleAllowedMoves,
 }: {
   G: GHQState;
   ctx: Ctx;
@@ -47,6 +49,7 @@ export default function Reserve({
   users: User[];
   selectReserve: (kind: keyof ReserveFleet) => void;
   squareSize: number;
+  possibleAllowedMoves: AllowedMove[];
 }) {
   const playerIndex = player === "RED" ? 0 : 1;
   const defaultUsername = `Player ${playerIndex + 1}`;
@@ -98,7 +101,7 @@ export default function Reserve({
           <div className="flex gap-2 justify-center items-center">
             <MoveCounter
               numMoves={numMovesThisTurn(G)}
-              maxMoves={maxPossibleMovesThisTurn(G, currentPlayerTurn)}
+              maxMoves={maxPossibleMovesThisTurn(G, currentPlayerTurn, possibleAllowedMoves)}
               active={currentPlayerTurn === player && !ctx.gameover}
             />
             <CountdownTimer
@@ -120,7 +123,7 @@ export default function Reserve({
             selectable={
               player === currentPlayerTurn &&
               player === currentPlayer &&
-              !hasMoveLimitReachedV2(G, currentPlayerTurn)
+              !hasMoveLimitReachedV2(G, currentPlayerTurn, possibleAllowedMoves)
             }
             selectedKind={
               player === currentPlayerTurn
