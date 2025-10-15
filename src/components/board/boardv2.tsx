@@ -6,11 +6,10 @@ import { BoardProps } from "boardgame.io/react";
 import PlayArea from "./PlayArea";
 import Sidebar from "./Sidebar";
 import GameoverDialog from "./GameoverDialog";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import { useLatestMoveContext } from "@/components/LatestMoveContext";
 import MobileHeader from "../MobileHeader";
-import BackgroundPicture from "../BackgroundPicture";
 
 export function GHQBoardV2(props: BoardProps<GHQState>) {
   const [settings, setSettings] = useState<Settings>({
@@ -26,13 +25,8 @@ export function GHQBoardV2(props: BoardProps<GHQState>) {
     setMoves(props.log || []);
   }, [props.G.board, props.log]);
 
-  const showBackground = useMemo(() => {
-    return props.G.isReplayMode || props.ctx.gameover;
-  }, [props.G.isReplayMode, props.ctx.gameover]);
-
   return (
     <div className="flex flex-col md:flex-row">
-      {showBackground && <BackgroundPicture src="/bg-bombs.png" opacity={40} />}
       <div className="block sm:hidden mb-1">
         <MobileHeader />
       </div>
