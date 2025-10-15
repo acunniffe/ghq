@@ -1,6 +1,26 @@
+function getFirstTuesdayOfMonth(from: Date): Date {
+  const year = from.getFullYear();
+  const month = from.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysUntilTuesday = (2 - firstDay + 7) % 7;
+  return new Date(year, month, 1 + daysUntilTuesday);
+}
+
+function getNextFirstTuesday(today: Date): Date {
+  const currentMonthFirstTuesday = getFirstTuesdayOfMonth(today);
+
+  if (currentMonthFirstTuesday < today) {
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    return getFirstTuesdayOfMonth(nextMonth);
+  }
+
+  return currentMonthFirstTuesday;
+}
+
 export function GHQNight() {
-  const targetDate = new Date("2025-08-12");
+  // const today = new Date(2025, 10, 3); // for testing
   const today = new Date();
+  const targetDate = getNextFirstTuesday(today);
   const diffTime = targetDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
