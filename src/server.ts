@@ -127,9 +127,14 @@ server.router.post("/matchmaking", async (ctx) => {
   // TODO(tyler): clean up stale live games
 
   if (queue.size >= 2) {
-    const [player0, player1] = queue.keys();
-    queue.delete(player0);
-    queue.delete(player1);
+    const [firstPlayer, secondPlayer] = queue.keys();
+    queue.delete(firstPlayer);
+    queue.delete(secondPlayer);
+
+    const isRandomFirst = Math.random() < 0.5;
+    const player0 = isRandomFirst ? firstPlayer : secondPlayer;
+    const player1 = isRandomFirst ? secondPlayer : firstPlayer;
+
     console.log("Creating match with players", player0, player1);
 
     const user0 = await getOrCreateUser(player0);
