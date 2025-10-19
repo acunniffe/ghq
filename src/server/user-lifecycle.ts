@@ -2,11 +2,9 @@ import { OnlineUser, UsersOnline } from "@/lib/types";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { StorageAPI } from "boardgame.io";
 import {
-  blitzQueue,
-  endgameQueue,
+  getUserQueueStatus,
   inGameUsers,
-  normandyQueue,
-  rapidQueue,
+  listUserIdsInQueues,
 } from "./matchmaking";
 
 const ONLINE_USER_STALE_MS = 10_000;
@@ -40,13 +38,7 @@ export async function userLifecycle({
     users: [],
   };
 
-  const allUserIds = [];
-  for (const userId of blitzQueue.keys()) {
-    allUserIds.push(userId);
-  }
-  for (const userId of rapidQueue.keys()) {
-    allUserIds.push(userId);
-  }
+  const allUserIds = listUserIdsInQueues();
   for (const userId of usersOnline.keys()) {
     allUserIds.push(userId);
   }
@@ -66,14 +58,9 @@ export async function userLifecycle({
 
   for (const user of users) {
     let status: OnlineUser["status"] = "online";
-    if (isActiveInQueue(user.id, blitzQueue)) {
-      status = "in blitz queue";
-    } else if (isActiveInQueue(user.id, rapidQueue)) {
-      status = "in rapid queue";
-    } else if (isActiveInQueue(user.id, endgameQueue)) {
-      status = "in endgame queue";
-    } else if (isActiveInQueue(user.id, normandyQueue)) {
-      status = "in normandy queue";
+    const activeQueue = getUserQueueStatus(user.id);
+    if (activeQueue) {
+      status = activeQueue;
     } else if (isActiveInGame(user.id)) {
       status = "in game";
     }
@@ -104,15 +91,6 @@ export async function userLifecycle({
 
 export function addUserToOnlineUsers(userId: string) {
   usersOnline.set(userId, Date.now());
-}
-
-function isActiveInQueue(userId: string, queue: Map<string, number>): boolean {
-  const lastActive = queue.get(userId);
-  if (!lastActive) {
-    return false;
-  }
-
-  return lastActive > Date.now() - 5_000;
 }
 
 function isActiveInGame(userId: string): boolean {

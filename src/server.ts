@@ -26,13 +26,7 @@ import {
   getUsersOnlineResponse,
   userLifecycle,
 } from "./server/user-lifecycle";
-import {
-  blitzQueue,
-  endgameQueue,
-  getQueue,
-  normandyQueue,
-  rapidQueue,
-} from "./server/matchmaking";
+import { removeUserFromAllQueues, getQueue } from "./server/matchmaking";
 import { getUser } from "./lib/supabase";
 import { getMatchSummary } from "./server/match-summary";
 import { updateUserStats } from "./server/user-stats";
@@ -191,10 +185,7 @@ async function runServer() {
       throw new Error("userId is required");
     }
 
-    blitzQueue.delete(userId);
-    rapidQueue.delete(userId);
-    endgameQueue.delete(userId);
-    normandyQueue.delete(userId);
+    removeUserFromAllQueues(userId);
 
     ctx.body = JSON.stringify({});
   });
