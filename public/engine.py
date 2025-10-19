@@ -423,7 +423,9 @@ def is_infantry(piece_type: PieceType) -> bool:
 def is_airborne(piece_type: PieceType) -> bool:
     return piece_type == AIRBORNE_INFANTRY
 
-def is_armored(piece_type: PieceType) -> bool:
+def is_armored(piece_type: Optional[PieceType]) -> bool:
+    if piece_type is None:
+        return False
     return piece_type == ARMORED_INFANTRY or piece_type == ARMORED_ARTILLERY
 
 class Piece:
@@ -1572,7 +1574,10 @@ class BaseBoard:
             allowed_infantry_squares = unoccupied
             if BB_SQUARES[from_square] & squares_with_adjacent_enemy_infantry:
                 # only mask the immdiately adjacent squares, since an armored can disengage and re-engage
-                allowed_infantry_squares &= ~(BB_REGULAR_MOVES[from_square] & squares_with_adjacent_enemy_infantry)
+                if is_armored(self.piece_type_at(from_square)):
+                    allowed_infantry_squares &= ~(BB_REGULAR_MOVES[from_square] & squares_with_adjacent_enemy_infantry)
+                else:
+                    allowed_infantry_squares &= ~squares_with_adjacent_enemy_infantry
 
             moves = self.infantry_move_mask(from_square) & allowed_infantry_squares & to_mask
             for to_square in scan_reversed(moves):
