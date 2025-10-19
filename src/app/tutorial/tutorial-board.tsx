@@ -1,9 +1,7 @@
 "use client";
 
 import { Client } from "boardgame.io/react";
-import { shouldUseBoardV2 } from "@/components/board/board-switcher";
 import { GHQBoardV2 } from "@/components/board/boardv2";
-import { GHQBoard } from "@/game/board";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { newTutorialGHQGame } from "@/game/tutorial";
 import { useLatestMoveContext } from "@/components/LatestMoveContext";
@@ -15,11 +13,11 @@ import { MoveLog } from "@/app/tutorial/types";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export function TutorialBoard(props: { 
-  slug: string; 
-  nextLink: string; 
-  prev?: string; 
-  next?: string; 
+export function TutorialBoard(props: {
+  slug: string;
+  nextLink: string;
+  prev?: string;
+  next?: string;
 }) {
   const [client, setClient] = useState<any | null>(null);
   const router = useRouter();
@@ -59,7 +57,7 @@ export function TutorialBoard(props: {
           },
           isTutorial: true,
         }),
-        board: shouldUseBoardV2() ? GHQBoardV2 : GHQBoard,
+        board: GHQBoardV2,
       }),
     [key]
   );
@@ -137,7 +135,14 @@ export function TutorialBoard(props: {
         })
         .filter((i) => typeof i !== "undefined");
 
-      tutorialFrame.didMove(board, playerMessages, next, reset, setMessage, setEncourageAdvance);
+      tutorialFrame.didMove(
+        board,
+        playerMessages,
+        next,
+        reset,
+        setMessage,
+        setEncourageAdvance
+      );
     }
   }, [moves, board, tutorialFrame]);
 
@@ -163,9 +168,9 @@ export function TutorialBoard(props: {
       {/* Navigation */}
       <div className="flex justify-center gap-4 relative z-10 mb-[-10px]">
         {prevLink && (
-          <Link 
+          <Link
             className={`bg-blue-400 hover:bg-blue-500 text-gray-50 font-semibold py-2.5 rounded-2xl transition-colors duration-200 ${
-              !nextLink ? 'max-[500px]:px-2 px-10' : 'px-10'
+              !nextLink ? "max-[500px]:px-2 px-10" : "px-10"
             }`}
             href={prevLink}
           >
@@ -173,18 +178,18 @@ export function TutorialBoard(props: {
           </Link>
         )}
         {nextLink ? (
-          <Link 
+          <Link
             className={`text-gray-50 font-semibold py-2.5 px-10 rounded-2xl transition-colors duration-200 ${
-              encourageAdvance 
-                ? 'bg-blue-600 hover:bg-blue-700' 
-                : 'bg-blue-400 hover:bg-blue-500'
+              encourageAdvance
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-blue-400 hover:bg-blue-500"
             }`}
             href={nextLink}
           >
             Next ►
           </Link>
         ) : (
-          <Link 
+          <Link
             className="bg-green-500 hover:bg-green-600 text-gray-50 font-semibold py-2.5 px-10 rounded-2xl transition-colors duration-200 max-[500px]:px-2"
             href={`/bot`}
           >
@@ -192,7 +197,7 @@ export function TutorialBoard(props: {
           </Link>
         )}
       </div>
-      
+
       {/* Header */}
       <div className="p-5 bg-gray-200">
         <h1 className="text-2xl mb-4 font-bold">{tutorialFrame.heading}</h1>
@@ -202,9 +207,11 @@ export function TutorialBoard(props: {
       {/* Message */}
       <div className="h-12 flex items-center justify-center">
         {message && (
-          <h3 className={`text-md text-center ${
-            encourageAdvance ? 'text-green-700' : 'text-yellow-600'
-          }`}>
+          <h3
+            className={`text-md text-center ${
+              encourageAdvance ? "text-green-700" : "text-yellow-600"
+            }`}
+          >
             {message}
           </h3>
         )}
