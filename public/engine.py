@@ -1461,14 +1461,14 @@ class BaseBoard:
     def _all_artillery(self) -> Bitboard:
         return self.artillery | self.armored_artillery | self.heavy_artillery
 
-    def _get_armored_moves(self, square: Square) -> Bitboard:
+    def _get_armored_moves(self, square: Square, is_infantry: bool = True) -> Bitboard:
         moves = BB_ARMORED_MOVES[square]
 
         # similar to chess: include all queen moves that don't jump over pieces
         impassable_squares = self.occupied | self.bombarded_co[not self.turn]
 
         # if this is an armored infantry that is currently adjacent to enemy infantry, we can't move it to a square with adjacent enemy infantry
-        if BB_SQUARES[square] & self.adjacent_infantry_squares_co[not self.turn]:
+        if is_infantry and BB_SQUARES[square] & self.adjacent_infantry_squares_co[not self.turn]:
             impassable_squares |= self.adjacent_infantry_squares_co[not self.turn]
 
         moves &= (BB_RANK_ATTACKS[square][BB_RANK_MASKS[square] & impassable_squares] |
@@ -1496,7 +1496,7 @@ class BaseBoard:
         if bb_square & self.artillery:
             return BB_REGULAR_MOVES[square]
         elif bb_square & self.armored_artillery:
-            return self._get_armored_moves(square)
+            return self._get_armored_moves(square, is_infantry=False)
         elif self.heavy_artillery & bb_square:
             return BB_REGULAR_MOVES[square]
 
