@@ -1571,7 +1571,8 @@ class BaseBoard:
             # if the infantry piece is on a square with adjacent enemy infantry, we can't move it to a square with adjacent enemy infantry
             allowed_infantry_squares = unoccupied
             if BB_SQUARES[from_square] & squares_with_adjacent_enemy_infantry:
-                allowed_infantry_squares = unoccupied & ~squares_with_adjacent_enemy_infantry
+                # only mask the immdiately adjacent squares, since an armored can disengage and re-engage
+                allowed_infantry_squares &= ~(BB_REGULAR_MOVES[from_square] & squares_with_adjacent_enemy_infantry)
 
             moves = self.infantry_move_mask(from_square) & allowed_infantry_squares & to_mask
             for to_square in scan_reversed(moves):
