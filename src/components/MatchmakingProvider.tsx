@@ -18,7 +18,8 @@ import { UsersOnline } from "@/lib/types";
 
 interface MatchmakingContextType {
   matchmakingMode: keyof typeof TIME_CONTROLS | null;
-  startMatchmaking: (mode: keyof typeof TIME_CONTROLS) => void;
+  matchmakingRated: boolean;
+  startMatchmaking: (mode: keyof typeof TIME_CONTROLS, rated: boolean) => void;
   cancelMatchmaking: () => void;
   usersOnline: UsersOnline | null;
 }
@@ -49,6 +50,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
   const [matchmakingMode, setMatchmakingMode] = useState<
     keyof typeof TIME_CONTROLS | null
   >(null);
+  const [rated, setRated] = useState<boolean>(true);
   const { isSignedIn, getToken } = useAuth();
   const [usersOnline, setUsersOnline] = useState<UsersOnline | null>(null);
   const router = useRouter();
@@ -56,7 +58,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
   const checkMatchmaking = useCallback(async () => {
     try {
       const data = await ghqFetch<MatchmakingData>({
-        url: `${API_URL}/matchmaking?mode=${matchmakingMode}`,
+        url: `${API_URL}/matchmaking?mode=${matchmakingMode}&rated=${rated}`,
         getToken,
         method: "POST",
       });
@@ -68,7 +70,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
     } catch (error) {
       console.error("Error polling matchmaking API:", error);
     }
-  }, [router, matchmakingMode]);
+  }, [router, matchmakingMode, rated]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -85,8 +87,12 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
     };
   }, [matchmakingMode, checkMatchmaking]);
 
-  const startMatchmaking = (mode: keyof typeof TIME_CONTROLS) => {
+  const startMatchmaking = (
+    mode: keyof typeof TIME_CONTROLS,
+    rated: boolean
+  ) => {
     setMatchmakingMode(mode);
+    setRated(rated);
   };
 
   const cancelMatchmaking = () => {
@@ -125,6 +131,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
   return (
     <MatchmakingContext.Provider
       value={{
+        matchmakingRated: rated,
         matchmakingMode,
         startMatchmaking,
         cancelMatchmaking,

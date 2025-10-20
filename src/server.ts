@@ -104,7 +104,7 @@ async function runServer() {
       return;
     }
 
-    const queue = getQueue(mode);
+    const queue = getQueue(mode, rated);
 
     // Iterate through the queue and remove stale users
     const now = Date.now();

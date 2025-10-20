@@ -9,14 +9,14 @@ import LiveGamesList from "./LiveGamesList";
 import { GHQNight } from "@/components/GHQNight";
 import CorrespondenceView from "./CorrespondenceView";
 import PlayersTab from "./PlayersTab";
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+// import { useState } from "react";
+// import { ChevronDown } from "lucide-react";
 import { PlayDailyButton } from "./live/PlayDailyButton";
 import BackgroundPicture from "@/components/BackgroundPicture";
 
 function App() {
   const router = useRouter();
-  const [showVariants, setShowVariants] = useState(false);
+  // const [showVariants, setShowVariants] = useState(false);
 
   async function playLocal() {
     router.push("/local");
@@ -49,23 +49,20 @@ function App() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 place-items-center">
                 <PlayDailyButton />
-                <PlayOnlineButton mode="rapid" />
+                <PlayOnlineButton />
                 <Button onClick={playBot}>🤖 Play Bot</Button>
                 <Button onClick={playLocal}>👨‍💻 Pass n&apos; Play</Button>
                 <Button onClick={startTutorial}>🙋‍♂️ Learn to Play</Button>
                 <Button onClick={goLearn}>📚 Rules & Puzzles</Button>
-                {showVariants && (
+                <Button onClick={() => router.push("/editor")}>
+                  ✏️ Board Editor{" "}
+                </Button>
+                {/* {showVariants && (
                   <>
-                    <PlayOnlineButton mode="blitz" />
-                    <PlayOnlineButton mode="endgame" />
-                    <PlayOnlineButton mode="normandy" />
-                    <Button onClick={() => router.push("/editor")}>
-                      ✏️ Board Editor{" "}
-                    </Button>
                   </>
-                )}
+                )} */}
               </div>
-              <div
+              {/* <div
                 className="text-sm cursor-pointer text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 mt-2 justify-center"
                 onClick={() => setShowVariants(!showVariants)}
               >
@@ -75,7 +72,7 @@ function App() {
                   }`}
                 />
                 View {showVariants ? "less" : "more"} game modes
-              </div>
+              </div> */}
             </div>
 
             <div className="p-4 flex flex-col gap-2">
