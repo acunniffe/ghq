@@ -1,19 +1,27 @@
 "use client";
 
-import Button from "./ButtonV2";
+import Button from "./ButtonV3";
 import { useAuth } from "@clerk/nextjs";
 import { useMatchmaking } from "@/components/MatchmakingProvider";
 import { TIME_CONTROLS } from "@/game/constants";
 
-export function PlayOnlineButton({
-  mode,
-}: {
-  mode: keyof typeof TIME_CONTROLS;
-}) {
+interface Mode {
+  id: string;
+  timeControl: keyof typeof TIME_CONTROLS;
+  rated: boolean;
+}
+
+const allModes: Mode[] = [
+  { id: "rapid:rated", timeControl: "rapid", rated: true },
+  { id: "blitz:rated", timeControl: "blitz", rated: true },
+  { id: "rapid:unrated", timeControl: "rapid", rated: false },
+  { id: "endgame:unrated", timeControl: "endgame", rated: false },
+  { id: "normandy:unrated", timeControl: "normandy", rated: false },
+];
+
+export function PlayOnlineButton({}: {}) {
   const { isSignedIn } = useAuth();
   const { startMatchmaking } = useMatchmaking();
-
-  const timeControl = TIME_CONTROLS[mode];
 
   function openSignInDialog() {
     if (!isSignedIn) {
@@ -24,24 +32,42 @@ export function PlayOnlineButton({
     }
   }
 
-  async function playOnline() {
+  async function playOnline(modeId: string) {
     if (!isSignedIn) {
       openSignInDialog();
       return;
     }
 
-    startMatchmaking(mode);
+    const mode = allModes.find((mode) => mode.id === modeId);
+    if (!mode) {
+      return;
+    }
+
+    startMatchmaking(mode.timeControl, mode.rated);
   }
 
+  const options = allModes.map((mode) => ({
+    id: mode.id,
+    body: (
+      <>
+        <div className="w-full flex justify-center items-center gap-1 h-6 overflow-clip truncate">
+          <div className="font-bold">
+            {mode.rated ? "🫅" : "🧩"} {toTitleCase(mode.timeControl)}
+          </div>
+          <div className="text-xs">•</div>
+          <div className="text-xs">{mode.rated ? "Rated" : "Unrated"}</div>
+          <div className="text-xs">•</div>
+          <div className="text-xs">
+            {TIME_CONTROLS[mode.timeControl].time / 60 / 1000}+
+            {TIME_CONTROLS[mode.timeControl].bonus / 1000}
+          </div>
+        </div>
+      </>
+    ),
+  }));
+
   return (
-    <>
-      <Button onClick={playOnline} loadingText="Searching...">
-        🌎 Play {toTitleCase(mode)}{" "}
-        <span className="font-medium text-xs">
-          ({timeControl.time / 60 / 1000}+{timeControl.bonus / 1000})
-        </span>
-      </Button>
-    </>
+    <Button options={options} onClick={playOnline} loadingText="Searching..." />
   );
 }
 

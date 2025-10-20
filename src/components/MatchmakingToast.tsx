@@ -8,7 +8,8 @@ import { Circle, Maximize2, Minimize2 } from "lucide-react";
 import { TIME_CONTROLS } from "@/game/constants";
 
 export default function MatchmakingToast() {
-  const { matchmakingMode, cancelMatchmaking } = useMatchmaking();
+  const { matchmakingMode, matchmakingRated, cancelMatchmaking } =
+    useMatchmaking();
   const [toastId, setToastId] = useState<string | number | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -23,6 +24,7 @@ export default function MatchmakingToast() {
       toastId = toast(
         <ToastContent
           matchmakingMode={matchmakingMode}
+          matchmakingRated={matchmakingRated}
           cancelMatchmaking={cancelMatchmaking}
           onMinimize={() => setIsMinimized(true)}
         />,
@@ -41,7 +43,7 @@ export default function MatchmakingToast() {
         toast.dismiss(toastId);
       }
     };
-  }, [matchmakingMode]);
+  }, [matchmakingMode, matchmakingRated]);
 
   useEffect(() => {
     if (!toastId) {
@@ -62,6 +64,7 @@ export default function MatchmakingToast() {
       toast(
         <ToastContent
           matchmakingMode={matchmakingMode}
+          matchmakingRated={matchmakingRated}
           cancelMatchmaking={cancelMatchmaking}
           onMinimize={() => setIsMinimized(true)}
         />,
@@ -79,10 +82,12 @@ export default function MatchmakingToast() {
 }
 function ToastContent({
   matchmakingMode,
+  matchmakingRated,
   cancelMatchmaking,
   onMinimize,
 }: {
   matchmakingMode: keyof typeof TIME_CONTROLS | null;
+  matchmakingRated: boolean;
   cancelMatchmaking: () => void;
   onMinimize: () => void;
 }) {
@@ -100,7 +105,10 @@ function ToastContent({
       <div className="flex flex-col gap-1">
         <div>
           We&apos;re finding someone suitable for you to play{" "}
-          <strong>{matchmakingMode}</strong>. This may take a moment.
+          <strong>
+            {matchmakingMode} {matchmakingRated ? "(rated)" : "(unrated)"}
+          </strong>
+          . This may take a moment.
         </div>
         <div>Feel free to play a bot or review lessons while you wait!</div>
       </div>

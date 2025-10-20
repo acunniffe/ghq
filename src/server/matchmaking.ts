@@ -4,15 +4,18 @@ const blitzQueue: Map<string, number> = new Map();
 const rapidQueue: Map<string, number> = new Map();
 const endgameQueue: Map<string, number> = new Map();
 const normandyQueue: Map<string, number> = new Map();
+const rapidUnratedQueue: Map<string, number> = new Map();
 export const inGameUsers: Map<string, number> = new Map();
 
-export function getQueue(mode: string) {
+export function getQueue(mode: string, rated: boolean) {
   if (mode === "blitz") {
     return blitzQueue;
   } else if (mode === "endgame") {
     return endgameQueue;
   } else if (mode === "normandy") {
     return normandyQueue;
+  } else if (mode === "rapid" && !rated) {
+    return rapidUnratedQueue;
   } else {
     return rapidQueue;
   }
@@ -23,6 +26,7 @@ export function removeUserFromAllQueues(userId: string) {
   rapidQueue.delete(userId);
   endgameQueue.delete(userId);
   normandyQueue.delete(userId);
+  rapidUnratedQueue.delete(userId);
 }
 
 export function listUserIdsInQueues(): string[] {
@@ -44,9 +48,11 @@ export function getUserQueueStatus(
   } else if (isActiveInQueue(userId, rapidQueue)) {
     return "in rapid queue";
   } else if (isActiveInQueue(userId, endgameQueue)) {
-    return "in endgame queue";
+    return "in endgame queue (unrated)";
   } else if (isActiveInQueue(userId, normandyQueue)) {
-    return "in normandy queue";
+    return "in normandy queue (unrated)";
+  } else if (isActiveInQueue(userId, rapidUnratedQueue)) {
+    return "in rapid queue (unrated)";
   }
   return null;
 }
