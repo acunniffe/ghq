@@ -133,7 +133,7 @@ export interface PythonPlayer {
 export interface NewGameOptions {
   engine: GameEngine;
   fen?: string;
-  type: "local" | "bot";
+  type: "local" | "bot" | "online";
 }
 
 export function newGHQGameV2({
