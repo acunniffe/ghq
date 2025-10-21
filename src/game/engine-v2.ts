@@ -5,11 +5,14 @@ import { useEffect, useState } from "react";
 import { useScript } from "usehooks-ts";
 import {
   AllowedMove,
+  Board,
   ctxPlayerToPlayer,
+  GameoverState,
   getCapturePreference,
   GHQGame,
   GHQState,
-  Player,
+  Orientation,
+  ReserveFleet,
   SkipMove,
   Square,
   UnitType,
@@ -21,6 +24,8 @@ import { calculateEval } from "./eval";
 import { LogAPI } from "boardgame.io/src/plugins/plugin-log";
 import { getGameoverState } from "./gameover-logic";
 import { printWelcome } from "@/lib/console";
+
+export type Player = "RED" | "BLUE";
 
 printWelcome();
 
@@ -124,6 +129,23 @@ export interface PythonBoard {
   is_red_turn: () => boolean;
   is_blue_turn: () => boolean;
   outcome: () => { winner?: boolean; termination: string } | undefined;
+  copy(): PythonBoard;
+  turn_moves: number;
+  reserves: PythonReserveFleet[];
+  // move_stack: PythonMove[]
+  piece_at: (squareIndex: number) => PythonPiece | undefined;
+}
+
+interface PythonReserveFleet {
+  // Returns the reserves as an array of integers.
+  // [INFANTRY, ARMORED_INFANTRY, AIRBORNE_INFANTRY, ARTILLERY, ARMORED_ARTILLERY, HEAVY_ARTILLERY]
+  to_ints: () => [number, number, number, number, number, number];
+}
+
+interface PythonPiece {
+  piece_type: 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = HQ, 2 = INFANTRY, 3 = ARMORED_INFANTRY, 4 = AIRBORNE_INFANTRY, 5 = ARTILLERY, 6 = ARMORED_ARTILLERY, 7 = HEAVY_ARTILLERY
+  color: boolean; // false = RED, true = BLUE
+  orientation: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7; // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
 }
 
 export interface PythonPlayer {
@@ -466,4 +488,363 @@ export function numMovesThisTurn(G: GHQState) {
 
 export function hasMoveLimitReachedV2(G: GHQState) {
   return numMovesThisTurn(G) >= 3;
+}
+
+export interface GameClientOptions {
+  engine: GameEngine;
+  fen?: string;
+  isTutorial: boolean;
+  isReplayMode: boolean;
+  isPassAndPlayMode: boolean;
+  id?: string; // implies isOnline
+}
+
+export class GameClient {
+  private engine: GameEngine;
+  private boards: PythonBoard[];
+  private currentBoardIndex: number;
+  private turn: number;
+
+  public isTutorial: boolean;
+  public isReplayMode: boolean;
+  public isPassAndPlayMode: boolean;
+  public isOnline: boolean;
+  public id?: string;
+  public chatMessages: any[]; // TODO(tyler): not implemented
+
+  // Note: playerID is null in local play (non-multiplayer, non-bot), also when spectating, replaying, and tutorials.
+  public playerID: string | null; // bgio backwards compat
+  private localPlayerColor: Player; // bgio backwards compat
+
+  // True if the current turn has been confirmed by the user before ending the turn.
+  public needsTurnConfirmation: boolean;
+  public moves: AllowedMove[];
+  private undoMoves: AllowedMove[];
+
+  // Time control
+  public totalTimeAllowed: number;
+  public bonusTime: number;
+  public startTimeMs: number;
+  public elapsedMs: {
+    RED: number;
+    BLUE: number;
+  };
+
+  public userIds: {
+    "0": string;
+    "1": string;
+  };
+
+  constructor({
+    engine,
+    fen,
+    isTutorial,
+    isReplayMode,
+    isPassAndPlayMode,
+    id,
+  }: GameClientOptions) {
+    this.engine = engine;
+    const board = this.engine.BaseBoard(fen);
+    this.boards = [board];
+    this.currentBoardIndex = 0;
+    this.isTutorial = isTutorial;
+    this.isReplayMode = isReplayMode;
+    this.isPassAndPlayMode = isPassAndPlayMode;
+    this.isOnline = !!id;
+    this.id = id;
+    this.chatMessages = [];
+    this.playerID = null;
+    this.localPlayerColor = "RED";
+    this.undoMoves = [];
+    this.turn = 1;
+    this.userIds = {
+      "0": "",
+      "1": "",
+    };
+    this.totalTimeAllowed = 0;
+    this.bonusTime = 0;
+    this.startTimeMs = 0;
+    this.elapsedMs = {
+      RED: 0,
+      BLUE: 0,
+    };
+    this.needsTurnConfirmation = false;
+    this.moves = [];
+  }
+
+  private board(): PythonBoard {
+    return this.boards[this.currentBoardIndex];
+  }
+
+  currentPlayer(): Player {
+    if (this.isPassAndPlayMode) {
+      return this.currentPlayerTurn();
+    }
+
+    return this.playerID === "0" ? "RED" : "BLUE";
+  }
+
+  isMyTurn(): boolean {
+    return this.currentPlayer() === this.currentPlayerTurn();
+  }
+
+  currentPlayerTurn(): Player {
+    const currentPlayerTurn = this.board().is_red_turn() ? "RED" : "BLUE";
+    if (this.needsTurnConfirmation) {
+      return currentPlayerTurn === "RED" ? "BLUE" : "RED";
+    }
+    return currentPlayerTurn;
+  }
+
+  numTurns(): number {
+    return this.boards.length;
+  }
+
+  numMovesThisTurn(): number {
+    if (this.needsTurnConfirmation) {
+      return 3;
+    }
+    return this.board().turn_moves;
+  }
+
+  hasMoveLimitReached(): boolean {
+    return this.numMovesThisTurn() >= 3;
+  }
+
+  currentTurn(): number {
+    return this.turn;
+  }
+
+  reserves(player: Player): ReserveFleet {
+    const reserves = this.board().reserves[player === "RED" ? 0 : 1].to_ints();
+    return {
+      INFANTRY: reserves[0] || 0,
+      ARMORED_INFANTRY: reserves[1] || 0,
+      AIRBORNE_INFANTRY: reserves[2] || 0,
+      ARTILLERY: reserves[3] || 0,
+      ARMORED_ARTILLERY: reserves[4] || 0,
+      HEAVY_ARTILLERY: reserves[5] || 0,
+    };
+  }
+
+  getAllowedMoves(): AllowedMove[] {
+    const moves = this.board().generate_legal_moves();
+    const ghqMoves = Array.from(moves).map((move) =>
+      allowedMoveFromUci(move.uci())
+    );
+    return ghqMoves;
+  }
+
+  _push(ghqMove: AllowedMove) {
+    const move = this.engine.Move.from_uci(allowedMoveToUci(ghqMove));
+    const newBoard = this.engine.BaseBoard.deserialize(
+      this.board().serialize()
+    ); // TODO(tyler): figure out why copy() doesn't work
+    newBoard.push(move);
+    this.boards.push(newBoard);
+    this.currentBoardIndex++;
+  }
+
+  push(ghqMove: AllowedMove, clearnUndoMoves: boolean = true) {
+    if (clearnUndoMoves) {
+      this.undoMoves = [];
+    }
+
+    const prevPlayer = this.currentPlayerTurn();
+
+    this._push(ghqMove);
+    this.moves.push(ghqMove);
+
+    // If the player has changed, we need to wait to confirm the turn before ending it.
+    const newPlayer = this.currentPlayerTurn();
+    if (newPlayer !== prevPlayer) {
+      this.needsTurnConfirmation = true;
+    }
+  }
+
+  gameover(): GameoverState | undefined {
+    // return this.game.getGameoverState(this.states[this.currentStateIndex]);
+    return undefined;
+  }
+
+  sendChatMessage({ message, time }: { message: string; time: number }) {
+    throw new Error("not implemented");
+  }
+
+  canUndo(): boolean {
+    return this.isMyTurn() && this.numMovesThisTurn() > 0;
+  }
+
+  undo() {
+    if (!this.canUndo()) {
+      throw new Error("cannot undo");
+    }
+
+    const latestMove = this.moves.pop();
+    if (latestMove) {
+      this.undoMoves.push(latestMove);
+      this.boards.pop();
+      this.currentBoardIndex--;
+      this.needsTurnConfirmation = false;
+    }
+  }
+
+  canRedo(): boolean {
+    return this.isMyTurn() && this.undoMoves.length > 0;
+  }
+
+  redo() {
+    if (!this.canRedo()) {
+      throw new Error("cannot redo");
+    }
+
+    const latestMove = this.undoMoves.pop();
+    if (latestMove) {
+      this.push(latestMove, false);
+    }
+  }
+
+  canEndTurn(): boolean {
+    return true;
+  }
+
+  endTurn() {
+    if (this.needsTurnConfirmation) {
+      this.needsTurnConfirmation = false;
+    } else {
+      this._push({ name: "Skip", args: [] });
+    }
+
+    this.turn++;
+  }
+
+  pieceAt(squareIndex: number): Square {
+    const p = this.board().piece_at(squareIndex);
+    if (!p) {
+      return null;
+    }
+    return pieceToSquare(p);
+  }
+
+  getV1Board(): Board {
+    const gp = (i: number) => this.pieceAt(i);
+
+    return [
+      [gp(56), gp(57), gp(58), gp(59), gp(60), gp(61), gp(62), gp(63)],
+      [gp(48), gp(49), gp(50), gp(51), gp(52), gp(53), gp(54), gp(55)],
+      [gp(40), gp(41), gp(42), gp(43), gp(44), gp(45), gp(46), gp(47)],
+      [gp(32), gp(33), gp(34), gp(35), gp(36), gp(37), gp(38), gp(39)],
+      [gp(24), gp(25), gp(26), gp(27), gp(28), gp(29), gp(30), gp(31)],
+      [gp(16), gp(17), gp(18), gp(19), gp(20), gp(21), gp(22), gp(23)],
+      [gp(8), gp(9), gp(10), gp(11), gp(12), gp(13), gp(14), gp(15)],
+      [gp(0), gp(1), gp(2), gp(3), gp(4), gp(5), gp(6), gp(7)],
+    ];
+  }
+
+  fen(): string {
+    return this.board().board_fen();
+  }
+
+  pgn(): string {
+    return this.moves.map(allowedMoveToUci).join(" ");
+  }
+
+  eval(): number {
+    return calculateEval({
+      board: this.getV1Board(),
+    });
+  }
+
+  resign() {
+    throw new Error("not implemented");
+  }
+
+  reset() {
+    this.boards = [this.engine.BaseBoard()];
+    this.currentBoardIndex = 0;
+    this.turn = 1;
+    this.moves = [];
+    this.undoMoves = [];
+    this.needsTurnConfirmation = false;
+    this.elapsedMs = {
+      RED: 0,
+      BLUE: 0,
+    };
+    this.totalTimeAllowed = 0;
+    this.bonusTime = 0;
+    this.startTimeMs = 0;
+  }
+
+  applyMoves(pgn: string, index: number = 0) {
+    if (index === 0) {
+      this.reset();
+    }
+
+    if (index > 0) {
+      if (index > this.boards.length) {
+        throw new Error(
+          `index is out of bounds: ${index} > ${this.boards.length}`
+        );
+      }
+    }
+
+    let currentIndex = index;
+    const moves = pgn
+      .split(" ")
+      .filter((move) => move !== "")
+      .map((move) => allowedMoveFromUci(move));
+    for (const move of moves) {
+      currentIndex++;
+
+      // skip if we already have this index in the boards array
+      if (currentIndex <= this.currentBoardIndex) {
+        continue;
+      }
+
+      // otherwise push the move
+      this.push(move);
+    }
+  }
+}
+
+export function hasMoveLimitReached(g: GameClient): boolean {
+  // TODO(tyler): implement this
+  return false;
+}
+
+export type NonNullSquare = Exclude<Square, null>;
+
+function pieceToSquare(piece: PythonPiece): Square {
+  return {
+    type: pieceTypeToUnitType(piece),
+    player: piece.color ? "BLUE" : "RED",
+    orientation: orientationToOrientation(piece.orientation),
+  };
+}
+
+function pieceTypeToUnitType(piece: PythonPiece): UnitType {
+  switch (piece.piece_type) {
+    case 1:
+      return "HQ";
+    case 2:
+      return "INFANTRY";
+    case 3:
+      return "ARMORED_INFANTRY";
+    case 4:
+      return "AIRBORNE_INFANTRY";
+    case 5:
+      return "ARTILLERY";
+    case 6:
+      return "ARMORED_ARTILLERY";
+    case 7:
+      return "HEAVY_ARTILLERY";
+    default:
+      throw new Error(`Invalid piece type: ${piece.piece_type}`);
+  }
+}
+
+function orientationToOrientation(
+  orientation: PythonPiece["orientation"]
+): Orientation {
+  return (orientation * 45) as Orientation; // 0 = N, 45 = NE, 90 = E, 135 = SE, 180 = S, 225 = SW, 270 = W, 315 = NW
 }

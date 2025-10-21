@@ -12,10 +12,10 @@ const unitScores: Record<string, number> = {
 
 export interface EvalBoardState {
   board: Board;
-  redReserve: ReserveFleet;
-  blueReserve: ReserveFleet;
-  currentPlayerTurn: Player;
-  thisTurnMoves: AllowedMove[];
+  redReserve?: ReserveFleet;
+  blueReserve?: ReserveFleet;
+  currentPlayerTurn?: Player;
+  thisTurnMoves?: AllowedMove[];
   isReplayMode?: boolean;
   enforceZoneOfControl?: boolean;
 }
