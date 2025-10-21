@@ -718,27 +718,18 @@ export class GameClient {
     this.turn++;
   }
 
-  pieceAt(squareIndex: number): Square {
-    const p = this.board().piece_at(squareIndex);
-    if (!p) {
-      return null;
-    }
-    return pieceToSquare(p);
+  getV1Board(): Board {
+    return getV1Board(this.board());
   }
 
-  getV1Board(): Board {
-    const gp = (i: number) => this.pieceAt(i);
+  getLastTurnBoards(): Board[] {
+    // TODO(tyler): implement this correctly
+    return this.boards.slice(-3).map(getV1Board);
+  }
 
-    return [
-      [gp(56), gp(57), gp(58), gp(59), gp(60), gp(61), gp(62), gp(63)],
-      [gp(48), gp(49), gp(50), gp(51), gp(52), gp(53), gp(54), gp(55)],
-      [gp(40), gp(41), gp(42), gp(43), gp(44), gp(45), gp(46), gp(47)],
-      [gp(32), gp(33), gp(34), gp(35), gp(36), gp(37), gp(38), gp(39)],
-      [gp(24), gp(25), gp(26), gp(27), gp(28), gp(29), gp(30), gp(31)],
-      [gp(16), gp(17), gp(18), gp(19), gp(20), gp(21), gp(22), gp(23)],
-      [gp(8), gp(9), gp(10), gp(11), gp(12), gp(13), gp(14), gp(15)],
-      [gp(0), gp(1), gp(2), gp(3), gp(4), gp(5), gp(6), gp(7)],
-    ];
+  getLastTurnMoves(): AllowedMove[] {
+    // TODO(tyler): implement this correctly
+    return this.moves.slice(-3);
   }
 
   fen(): string {
@@ -814,7 +805,10 @@ export function hasMoveLimitReached(g: GameClient): boolean {
 
 export type NonNullSquare = Exclude<Square, null>;
 
-function pieceToSquare(piece: PythonPiece): Square {
+function pieceToSquare(piece: PythonPiece | undefined): Square | null {
+  if (!piece) {
+    return null;
+  }
   return {
     type: pieceTypeToUnitType(piece),
     player: piece.color ? "BLUE" : "RED",
@@ -847,4 +841,19 @@ function orientationToOrientation(
   orientation: PythonPiece["orientation"]
 ): Orientation {
   return (orientation * 45) as Orientation; // 0 = N, 45 = NE, 90 = E, 135 = SE, 180 = S, 225 = SW, 270 = W, 315 = NW
+}
+
+function getV1Board(board: PythonBoard): Board {
+  const gp = (i: number) => pieceToSquare(board.piece_at(i));
+
+  return [
+    [gp(56), gp(57), gp(58), gp(59), gp(60), gp(61), gp(62), gp(63)],
+    [gp(48), gp(49), gp(50), gp(51), gp(52), gp(53), gp(54), gp(55)],
+    [gp(40), gp(41), gp(42), gp(43), gp(44), gp(45), gp(46), gp(47)],
+    [gp(32), gp(33), gp(34), gp(35), gp(36), gp(37), gp(38), gp(39)],
+    [gp(24), gp(25), gp(26), gp(27), gp(28), gp(29), gp(30), gp(31)],
+    [gp(16), gp(17), gp(18), gp(19), gp(20), gp(21), gp(22), gp(23)],
+    [gp(8), gp(9), gp(10), gp(11), gp(12), gp(13), gp(14), gp(15)],
+    [gp(0), gp(1), gp(2), gp(3), gp(4), gp(5), gp(6), gp(7)],
+  ];
 }

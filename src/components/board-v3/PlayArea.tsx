@@ -67,21 +67,12 @@ export default function PlayArea({
     return game.getAllowedMoves();
   }, [game]);
 
-  useEffect(() => {
-    if (userActionState.chosenMove) {
-      game.push(userActionState.chosenMove);
-    }
-  }, [userActionState.chosenMove]);
-
-  // const { board, mostRecentMove, replay } = useBoard({
-  //   game,
-  //   isReplayMode,
-  //   userActionState,
-  //   currentPlayer,
-  //   currentPlayerTurn,
-  // });
-  const replay = () => {};
-  const mostRecentMove = undefined;
+  const { animatedBoard, mostRecentMove, replay } = useBoard({
+    game,
+    userActionState,
+  });
+  // const animatedBoard = useMemo(() => game.getV1Board(), [game]);
+  // const mostRecentMove = undefined;
 
   return (
     <div
@@ -115,6 +106,7 @@ export default function PlayArea({
       <div className="flex flex-col">
         <Board
           game={game}
+          board={animatedBoard}
           mostRecentMove={mostRecentMove}
           userActionState={userActionState}
           setUserActionState={setUserActionState}

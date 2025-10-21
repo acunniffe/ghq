@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   AllowedMove,
+  Board,
   GHQState,
   isMoveCapture,
   isSkipMove,
@@ -15,37 +16,39 @@ import {
   playNextTurnSound,
 } from "@/game/audio";
 import { GameClient } from "@/game/engine-v2";
+import { allowedMoveToUci } from "@/game/notation-uci";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function useBoard({
   game,
-  isReplayMode,
   userActionState,
-  currentPlayer,
-  currentPlayerTurn,
 }: {
   game: GameClient;
-  isReplayMode: boolean;
-  currentPlayer: Player;
-  currentPlayerTurn: Player;
   userActionState: UserActionState;
 }) {
-  const [board, setBoard] = useState<GameClient>(G.board);
+  const [animatedBoard, setAnimatedBoard] = useState<Board>(game.getV1Board());
   const [mostRecentMove, setMostRecentMove] = useState<
     AllowedMove | undefined
   >();
-  const skipAnimations = isReplayMode; // || G.isPassAndPlayMode;
+  const skipAnimations = game.isReplayMode; // || G.isPassAndPlayMode;
+  const currentPlayer = game.currentPlayer();
+  const currentPlayerTurn = game.currentPlayerTurn();
 
   const animateOpponentsTurnToLatestBoardState = useCallback(() => {
     // Only animate when it's our turn (opponent's move has ended)
-    if (currentPlayerTurn === currentPlayer) {
-      // Slowly re-apply the state to allow for animations.
-      for (const [i, board] of G.lastTurnBoards.entries()) {
-        sleep(i * 250).then(() => {
-          setBoard(board);
+    if (game.isMyTurn()) {
+      const lastTurnBoards = game.getLastTurnBoards();
+      const lastTurnMoves = game.getLastTurnMoves();
+      console.log("lastTurnBoards", lastTurnBoards);
+      console.log("lastTurnMoves", lastTurnMoves.map(allowedMoveToUci));
 
-          const lastMove = G.lastPlayerMoves[i];
+      // Slowly re-apply the state to allow for animations.
+      for (let i = 0; i < lastTurnBoards.length; i++) {
+        sleep(i * 250).then(() => {
+          setAnimatedBoard(lastTurnBoards[i]);
+
+          const lastMove = lastTurnMoves[i];
           setMostRecentMove(lastMove);
 
           if (isMoveCapture(lastMove)) {
@@ -57,12 +60,12 @@ export default function useBoard({
       }
 
       // Wait for all the animations to finish before setting the final board state.
-      sleep(G.lastTurnBoards.length * 250).then(() => {
+      sleep(lastTurnBoards.length * 250).then(() => {
         setMostRecentMove(undefined);
-        setBoard(G.board);
+        setAnimatedBoard(game.getV1Board());
       });
     }
-  }, [currentPlayerTurn, currentPlayer, G.lastTurnBoards, G.board]);
+  }, [currentPlayerTurn, currentPlayer, game.isMyTurn()]);
 
   // Change the board state when the current turn changes or it's game over.
   useEffect(() => {
@@ -71,32 +74,32 @@ export default function useBoard({
     }
 
     animateOpponentsTurnToLatestBoardState();
-  }, [currentPlayerTurn, ctx.gameover]);
+  }, [currentPlayerTurn, game.gameover()]);
 
   useEffect(() => {
     // Animate when it's our turn (i.e. we just made move 1 or 2, or hit undo to go to move 0)
-    if (currentPlayerTurn === currentPlayer && G.thisTurnMoves.length >= 0) {
-      setBoard(G.board);
+    if (currentPlayerTurn === currentPlayer && game.numMovesThisTurn() >= 0) {
+      setAnimatedBoard(game.getV1Board());
     }
 
     // Also if it's our opponents turn and they have made 0 moves (i.e. we just made our move)
-    if (currentPlayerTurn !== currentPlayer && G.thisTurnMoves.length === 0) {
-      setBoard(G.board);
+    if (!game.isMyTurn() && game.numMovesThisTurn() === 0) {
+      setAnimatedBoard(game.getV1Board());
       playNextTurnSound();
     }
-  }, [currentPlayerTurn, G.thisTurnMoves]);
+  }, [currentPlayerTurn, game]);
 
   // In replay mode, don't animate the board state when the game state changes, just set it immediately.
   useEffect(() => {
     if (skipAnimations) {
-      setBoard(G.board);
+      setAnimatedBoard(game.getV1Board());
     }
-  }, [G.board]);
+  }, [skipAnimations, game]);
 
   // In replay mode, don't animate the board state when the game state changes, just set it immediately.
   useEffect(() => {
     if (skipAnimations) {
-      const lastMove = G.thisTurnMoves[G.thisTurnMoves.length - 1];
+      const lastMove = game.moves[game.moves.length - 1];
       if (!lastMove) {
         return;
       }
@@ -107,13 +110,11 @@ export default function useBoard({
         playMoveSound();
       }
     }
-  }, [G.thisTurnMoves]);
+  }, [game]);
 
   // Actually make the move that's been chosen by the user.
   useEffect(() => {
     if (userActionState.chosenMove) {
-      const { name, args } = userActionState.chosenMove;
-
       game.push(userActionState.chosenMove);
 
       if (isMoveCapture(userActionState.chosenMove)) {
@@ -126,16 +127,17 @@ export default function useBoard({
 
   // Play capture sounds when a start-of-turn capture has occurred.
   useEffect(() => {
-    const startOfTurnCaptures = G.historyLog?.find(
-      ({ turn, isCapture }) => turn === ctx.turn && isCapture
-    );
-    if (startOfTurnCaptures) {
-      playCaptureSound();
-    }
-  }, [ctx.turn]);
+    // TODO(tyler)
+    // const startOfTurnCaptures = G.historyLog?.find(
+    //   ({ turn, isCapture }) => turn === ctx.turn && isCapture
+    // );
+    // if (startOfTurnCaptures) {
+    //   playCaptureSound();
+    // }
+  }, [game]);
 
   return {
-    board,
+    animatedBoard,
     mostRecentMove,
     replay: () => animateOpponentsTurnToLatestBoardState(),
   };

@@ -16,6 +16,7 @@ import { PlayerPiece } from "@/game/board-moves";
 
 export default function Board({
   game,
+  board,
   mostRecentMove,
   userActionState,
   setUserActionState,
@@ -28,6 +29,7 @@ export default function Board({
   pieceSize,
 }: {
   game: GameClient;
+  board: Board;
   mostRecentMove: AllowedMove | undefined;
   currentPlayer: Player;
   currentPlayerTurn: Player;
@@ -39,7 +41,6 @@ export default function Board({
   squareSize: number;
   pieceSize: number;
 }) {
-  const board = useMemo(() => game.getV1Board(), [game]);
   const bombarded = useMemo(() => bombardedSquares(board), [board]);
   const recentMoves: Coordinate[] = [];
   const recentCaptures: PlayerPiece[] = [];
