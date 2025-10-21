@@ -643,17 +643,17 @@ export class GameClient {
     newBoard.push(move);
     this.boards.push(newBoard);
     this.currentBoardIndex++;
+    this.moves.push(ghqMove);
   }
 
-  push(ghqMove: AllowedMove, clearnUndoMoves: boolean = true) {
-    if (clearnUndoMoves) {
+  push(ghqMove: AllowedMove, clearUndoMoves: boolean = true) {
+    if (clearUndoMoves) {
       this.undoMoves = [];
     }
 
     const prevPlayer = this.currentPlayerTurn();
 
     this._push(ghqMove);
-    this.moves.push(ghqMove);
 
     // If the player has changed, we need to wait to confirm the turn before ending it.
     const newPlayer = this.currentPlayerTurn();
