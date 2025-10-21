@@ -10,18 +10,17 @@ import useControls from "./Controls";
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { GameClient } from "@/game/engine-v2";
+import { SeekFunc } from "./useSeek";
 
 export default function ControlsView({
-  realGame: game,
-  simGame,
-  setShowSim,
+  game,
   replay,
+  seek,
   cancel,
 }: {
-  realGame: GameClient;
-  simGame: GameClient;
-  setShowSim: (show: boolean) => void;
+  game: GameClient;
   replay: () => void;
+  seek: SeekFunc;
   cancel: () => void;
 }) {
   const canReplay = useMemo(
@@ -55,34 +54,14 @@ export default function ControlsView({
     cancel();
   }, [replay, cancel]);
 
-  const [seekIndex, setSeekIndex] = useState(-1);
-  const doSeek = useCallback(
-    (delta: number) => {
-      const newSeek =
-        seekIndex === -1 ? game.moves.length - 1 : seekIndex + delta;
-      if (newSeek < 0) {
-        return;
-      }
-      if (newSeek > game.moves.length) {
-        return;
-      }
-      const pgn = game.pgn();
-      const moves = pgn.split(" ").slice(0, newSeek).join(" ");
-      simGame.applyMoves(moves);
-      setSeekIndex(newSeek);
-      setShowSim(true);
-    },
-    [simGame, game, seekIndex, setSeekIndex, setShowSim]
-  );
-
   useControls({
     undo: doUndo,
     redo: doRedo,
     cancel,
     skip: doSkip,
     replay: doReplay,
-    backward: () => doSeek(-1),
-    forward: () => doSeek(1),
+    backward: () => seek({ delta: -1 }),
+    forward: () => seek({ delta: 1 }),
   });
 
   return (

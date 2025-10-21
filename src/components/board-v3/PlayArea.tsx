@@ -16,29 +16,23 @@ import { GameClient, Player } from "@/game/engine-v2";
 import { pieceSizes } from "@/game/constants";
 import { useMeasure } from "@uidotdev/usehooks";
 import { squareSizes } from "@/game/constants";
+import { SeekFunc } from "./useSeek";
 
 interface PlayAreaProps {
   className: string;
   game: GameClient;
-  simGame: GameClient;
+  seek: SeekFunc;
   settings: Settings;
 }
 
 export default function PlayArea({
   className,
-  game: realGame,
-  simGame,
+  game,
+  seek,
   settings,
 }: PlayAreaProps) {
   const [userActionState, setUserActionState] = useState<UserActionState>({});
   const [viewPlayerPref, setViewPlayerPref] = useState<Player>("RED");
-  const [showSim, setShowSim] = useState(false);
-  const game = useMemo(() => {
-    if (showSim) {
-      return simGame;
-    }
-    return realGame;
-  }, [showSim, realGame, simGame]);
   const currentPlayerTurn = useMemo(() => game.currentPlayerTurn(), [game]);
   const { isReplayMode, isTutorial, isPassAndPlayMode, playerID } = game;
   const { measureRef, squareSize, pieceSize } = useBoardDimensions(isTutorial);
@@ -159,9 +153,8 @@ export default function PlayArea({
         squareSize={squareSize}
       />
       <ControlsView
-        realGame={realGame}
-        simGame={simGame}
-        setShowSim={setShowSim}
+        game={game}
+        seek={seek}
         cancel={() => setUserActionState({})}
         replay={() => replay()}
       />

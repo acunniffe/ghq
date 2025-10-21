@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState } from "react";
 import { GameClient, GameEngine } from "@/game/engine-v2";
-import { AllowedMove } from "@/game/engine";
 
 interface UseGameClientOptions {
   engine: GameEngine | null;

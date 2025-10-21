@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import { ReactNode, useCallback, useEffect } from "react";
 import { GameClient } from "@/game/engine-v2";
 import {
   AllowedMove,
@@ -16,21 +16,34 @@ import {
   Ship,
   SkipForward,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { SeekFunc } from "./useSeek";
 
-export function HistoryLog({ game }: { game: GameClient }) {
+export function HistoryLog({
+  game,
+  seek,
+}: {
+  game: GameClient;
+  seek: SeekFunc;
+}) {
   const gameover = game.gameover();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const messagesDiv = document.querySelector("#history-log-list");
     if (messagesDiv) {
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
   }, [game.moves.length]);
 
+  const onMoveClick = useCallback(
+    (index: number) => {
+      seek({ index });
+    },
+    [seek]
+  );
+
   return (
     <div className="flex flex-col gap-1 p-2 h-[350px]">
-      <div className="font-bold text-lg">Activity</div>
+      <div className="font-bold text-gray-800">Activity</div>
       <div
         id="history-log-list"
         className="overflow-y-auto border h-[600px] flex flex-col rounded"
@@ -45,6 +58,7 @@ export function HistoryLog({ game }: { game: GameClient }) {
               key={index}
               className="inline-flex space-x-3 items-center hover:bg-gray-100 py-0.5 px-2 text-sm"
               title={readable}
+              onClick={() => onMoveClick(index + 1)}
             >
               <span className="text-gray-600 text-xs">{turnNumber}</span>
               <div className="inline-flex items-center space-x-1">

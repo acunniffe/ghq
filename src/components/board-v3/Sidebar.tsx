@@ -14,14 +14,17 @@ import { Swords } from "lucide-react";
 import { config } from "@/lib/config";
 import { GameClient } from "@/game/engine-v2";
 import ShareGameDialog from "./ShareGameDialog";
+import { SeekFunc } from "./useSeek";
 
 export default function Sidebar({
   game,
+  seek,
   className,
   settings,
   setSettings,
 }: {
   game: GameClient;
+  seek: SeekFunc;
   className: string;
   settings: Settings;
   setSettings: (settings: Settings) => void;
@@ -34,7 +37,7 @@ export default function Sidebar({
     return (
       <>
         <EvalBar evalValue={game.eval()} />
-        <HistoryLog game={game} />
+        <HistoryLog game={game} seek={seek} />
       </>
     );
   }, [game]);
@@ -42,7 +45,12 @@ export default function Sidebar({
   const gameover = useMemo(() => game.gameover(), [game]);
 
   return (
-    <div className={classNames("w-full md:w-[450px] bg-white/60", className)}>
+    <div
+      className={classNames(
+        "w-full md:w-[450px] bg-white/80 h-screen shadow-lg transition-shadow duration-300 shadow-slate-400 space-y-3",
+        className
+      )}
+    >
       <div className="hidden sm:block">
         <Header />
       </div>
@@ -117,9 +125,6 @@ export default function Sidebar({
           </div>
         </div>
       )}
-      {/* <div className="mt-4">
-        <HowToPlayView />
-      </div> */}
     </div>
   );
 }
