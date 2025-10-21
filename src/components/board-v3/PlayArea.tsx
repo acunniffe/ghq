@@ -71,8 +71,6 @@ export default function PlayArea({
     game,
     userActionState,
   });
-  // const animatedBoard = useMemo(() => game.getV1Board(), [game]);
-  // const mostRecentMove = undefined;
 
   return (
     <div

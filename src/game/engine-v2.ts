@@ -522,11 +522,10 @@ export class GameClient {
   public isPassAndPlayMode: boolean;
   public isOnline: boolean;
   public id?: string;
-  public chatMessages: any[]; // TODO(tyler): not implemented
+  public chatMessages: any[]; // TODO(tyler): implement this
 
   // Note: playerID is null in local play (non-multiplayer, non-bot), also when spectating, replaying, and tutorials.
   public playerID: string | null; // bgio backwards compat
-  private localPlayerColor: Player; // bgio backwards compat
 
   // True if the current turn has been confirmed by the user before ending the turn.
   public needsTurnConfirmation: boolean;
@@ -572,7 +571,6 @@ export class GameClient {
     this.id = id;
     this.chatMessages = [];
     this.playerID = null;
-    this.localPlayerColor = "RED";
     this.undoMoves = [];
     this.turn = 1;
     this.userIds = {
@@ -688,11 +686,13 @@ export class GameClient {
   }
 
   gameover(): GameoverState | undefined {
+    // TODO(tyler): implement this
     // return this.game.getGameoverState(this.states[this.currentStateIndex]);
     return undefined;
   }
 
   sendChatMessage({ message, time }: { message: string; time: number }) {
+    // TODO(tyler): implement this
     throw new Error("not implemented");
   }
 
@@ -785,6 +785,7 @@ export class GameClient {
   }
 
   resign() {
+    // TODO(tyler): implement this
     throw new Error("not implemented");
   }
 
@@ -838,11 +839,6 @@ export class GameClient {
       this.push(move);
     }
   }
-}
-
-export function hasMoveLimitReached(g: GameClient): boolean {
-  // TODO(tyler): implement this
-  return false;
 }
 
 export type NonNullSquare = Exclude<Square, null>;

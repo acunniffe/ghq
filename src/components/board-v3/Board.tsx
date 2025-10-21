@@ -50,7 +50,7 @@ export default function Board({
         .filter((square) => square !== undefined),
     [game]
   );
-  const recentCaptures: PlayerPiece[] = [];
+  const recentCaptures: PlayerPiece[] = []; // TODO(tyler): implement this
   const hasMoveLimitReached = useMemo(() => game.hasMoveLimitReached(), [game]);
 
   const { boardArrows, rightClicked, handleRightClickDrag, clearRightClick } =
