@@ -40,8 +40,6 @@ export default function useBoard({
     if (game.isMyTurn()) {
       const lastTurnBoards = game.getLastTurnBoards();
       const lastTurnMoves = game.getLastTurnMoves();
-      console.log("lastTurnBoards", lastTurnBoards);
-      console.log("lastTurnMoves", lastTurnMoves.map(allowedMoveToUci));
 
       // Slowly re-apply the state to allow for animations.
       for (let i = 0; i < lastTurnBoards.length; i++) {

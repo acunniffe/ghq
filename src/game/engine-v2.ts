@@ -521,6 +521,12 @@ export class GameClient {
   public moves: AllowedMove[];
   private undoMoves: AllowedMove[];
 
+  // Used for animations.
+  private lastTurnBoards: PythonBoard[];
+  private lastTurnMoves: AllowedMove[];
+  private thisTurnBoards: PythonBoard[];
+  private thisTurnMoves: AllowedMove[];
+
   // Time control
   public totalTimeAllowed: number;
   public bonusTime: number;
@@ -570,6 +576,10 @@ export class GameClient {
     };
     this.needsTurnConfirmation = false;
     this.moves = [];
+    this.thisTurnBoards = [];
+    this.thisTurnMoves = [];
+    this.lastTurnBoards = [];
+    this.lastTurnMoves = [];
   }
 
   private board(): PythonBoard {
@@ -636,6 +646,9 @@ export class GameClient {
   }
 
   _push(ghqMove: AllowedMove) {
+    this.thisTurnBoards.push(this.board());
+    this.thisTurnMoves.push(ghqMove);
+
     const move = this.engine.Move.from_uci(allowedMoveToUci(ghqMove));
     const newBoard = this.engine.BaseBoard.deserialize(
       this.board().serialize()
@@ -716,20 +729,31 @@ export class GameClient {
     }
 
     this.turn++;
+    this.lastTurnBoards = this.thisTurnBoards;
+    this.lastTurnMoves = this.thisTurnMoves;
+    this.thisTurnBoards = [];
+    this.thisTurnMoves = [];
   }
+
+  // clearBombardments() {
+  //       const allowedMoves = board.generateLegalMoves(G.v2state);
+  //       for (const move of allowedMoves) {
+  //         if (move.name === "AutoCapture" && move.args[0] === "bombard") {
+  //           pushAndUpdateState(ctx, G, log, move);
+  //         }
+  //       }
+  // }
 
   getV1Board(): Board {
     return getV1Board(this.board());
   }
 
   getLastTurnBoards(): Board[] {
-    // TODO(tyler): implement this correctly
-    return this.boards.slice(-3).map(getV1Board);
+    return this.lastTurnBoards.map(getV1Board);
   }
 
   getLastTurnMoves(): AllowedMove[] {
-    // TODO(tyler): implement this correctly
-    return this.moves.slice(-3);
+    return this.lastTurnMoves;
   }
 
   fen(): string {
@@ -764,6 +788,10 @@ export class GameClient {
     this.totalTimeAllowed = 0;
     this.bonusTime = 0;
     this.startTimeMs = 0;
+    this.thisTurnBoards = [];
+    this.thisTurnMoves = [];
+    this.lastTurnBoards = [];
+    this.lastTurnMoves = [];
   }
 
   applyMoves(pgn: string, index: number = 0) {
