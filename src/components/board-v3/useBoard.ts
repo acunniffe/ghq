@@ -1,14 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  AllowedMove,
-  Board,
-  GHQState,
-  isMoveCapture,
-  isSkipMove,
-  Player,
-} from "@/game/engine";
+import { AllowedMove, Board, isMoveCapture, isSkipMove } from "@/game/engine";
 import { UserActionState } from "./state";
 import {
   playCaptureSound,
@@ -16,7 +9,6 @@ import {
   playNextTurnSound,
 } from "@/game/audio";
 import { GameClient } from "@/game/engine-v2";
-import { allowedMoveToUci } from "@/game/notation-uci";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -125,13 +117,15 @@ export default function useBoard({
 
   // Play capture sounds when a start-of-turn capture has occurred.
   useEffect(() => {
-    // TODO(tyler)
-    // const startOfTurnCaptures = G.historyLog?.find(
-    //   ({ turn, isCapture }) => turn === ctx.turn && isCapture
-    // );
-    // if (startOfTurnCaptures) {
-    //   playCaptureSound();
-    // }
+    const latestMove = game.moves[game.moves.length - 1];
+    if (!latestMove) {
+      return;
+    }
+    const startOfTurnCaptures =
+      latestMove.name === "AutoCapture" && latestMove.args[0] === "bombard";
+    if (startOfTurnCaptures) {
+      playCaptureSound();
+    }
   }, [game]);
 
   return {

@@ -116,8 +116,20 @@ export class GameV2 {
   }
 }
 
+type PythonColor = boolean; // false = RED, true = BLUE
+type PythonUnitType = 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = HQ, 2 = INFANTRY, 3 = ARMORED_INFANTRY, 4 = AIRBORNE_INFANTRY, 5 = ARTILLERY, 6 = ARMORED_ARTILLERY, 7 = HEAVY_ARTILLERY
+type PythonSquare = number; // 0-63
+type PythonOrientation = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7; // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
+
 export interface PythonMove {
   uci: () => string;
+  name: "Reinforce" | "Move" | "MoveAndOrient" | "AutoCapture" | "Skip";
+  from_square?: PythonSquare;
+  to_square?: PythonSquare;
+  unit_type?: PythonUnitType;
+  orientation?: PythonOrientation;
+  capture_preference?: PythonSquare;
+  auto_capture_type?: "bombard" | "free";
 }
 
 export interface PythonBoard {
@@ -143,9 +155,9 @@ interface PythonReserveFleet {
 }
 
 interface PythonPiece {
-  piece_type: 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = HQ, 2 = INFANTRY, 3 = ARMORED_INFANTRY, 4 = AIRBORNE_INFANTRY, 5 = ARTILLERY, 6 = ARMORED_ARTILLERY, 7 = HEAVY_ARTILLERY
-  color: boolean; // false = RED, true = BLUE
-  orientation: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7; // 0 = N, 1 = NE, 2 = E, 3 = SE, 4 = S, 5 = SW, 6 = W, 7 = NW
+  piece_type: PythonUnitType;
+  color: PythonColor;
+  orientation: PythonOrientation;
 }
 
 export interface PythonPlayer {
@@ -733,16 +745,18 @@ export class GameClient {
     this.lastTurnMoves = this.thisTurnMoves;
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
+
+    this.clearBombardments();
   }
 
-  // clearBombardments() {
-  //       const allowedMoves = board.generateLegalMoves(G.v2state);
-  //       for (const move of allowedMoves) {
-  //         if (move.name === "AutoCapture" && move.args[0] === "bombard") {
-  //           pushAndUpdateState(ctx, G, log, move);
-  //         }
-  //       }
-  // }
+  clearBombardments() {
+    const allowedMoves = this.board().generate_legal_moves();
+    for (const move of allowedMoves) {
+      if (move.name === "AutoCapture" && move.auto_capture_type === "bombard") {
+        this._push(allowedMoveFromUci(move.uci()));
+      }
+    }
+  }
 
   getV1Board(): Board {
     return getV1Board(this.board());
