@@ -3,57 +3,64 @@
 import PlayArea from "./PlayArea";
 import Sidebar from "./Sidebar";
 import GameoverDialog from "./GameoverDialog";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Settings } from "./SettingsMenu";
-import { useLatestMoveContext } from "@/components/LatestMoveContext";
 import MobileHeader from "../MobileHeader";
-import { GameEngine } from "@/game/engine-v2";
+import { GameClientOptions, useEngine } from "@/game/engine-v2";
 import { Loader2 } from "lucide-react";
 import { useGameClient } from "./useGameClient";
 import useSeek from "./useSeek";
 import { cn } from "@/lib/utils";
+import { BotMultiplayer } from "@/game/engine-v2-multiplayer";
 
-interface GHQBoardV3Props {
-  engine: GameEngine | null;
-  isTutorial: boolean;
+export interface GHQBoardV3Props extends GameClientOptions {
+  bot?: boolean;
 }
 
-export function GHQBoardV3({ engine, isTutorial }: GHQBoardV3Props) {
+export function GHQBoardV3(opts: GHQBoardV3Props) {
+  const { engine } = useEngine();
+
   const [settings, setSettings] = useState<Settings>({
     autoFlipBoard: false,
     confirmTurn: true,
   });
 
+  const multiplayer = useMemo(() => {
+    if (!engine || !opts.bot) {
+      return;
+    }
+
+    return new BotMultiplayer(engine, opts.fen);
+  }, [opts.bot, opts.fen, engine]);
+
   const realGame = useGameClient({
+    ...opts,
     engine,
-    isTutorial,
-    isReplayMode: false,
-    isPassAndPlayMode: true,
+    multiplayer,
   });
 
   const simGame = useGameClient({
+    ...opts,
     engine,
-    isTutorial: false,
     isReplayMode: true,
-    isPassAndPlayMode: false,
+    isPassAndPlayMode: true,
   });
+
+  // Hack so we can debug in the console
+  if (typeof window !== "undefined") {
+    (window as any).realGame = realGame;
+    (window as any).simGame = simGame;
+  }
 
   const { seek, game, showSim } = useSeek({ realGame, simGame });
 
-  // const { setBoard, setMoves } = useLatestMoveContext();
-
-  // useEffect(() => {
-  //   setBoard(props.G.board);
-  //   setMoves(props.log || []);
-  // }, [props.G.board, props.log]);
-
   if (!game) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
         <div className="text-lg font-bold text-blue-500">
           Loading GHQ Game Engine...
         </div>
-        <Loader2 className="h-32 w-32 animate-spin text-blue-500" />
+        <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
       </div>
     );
   }
@@ -65,7 +72,7 @@ export function GHQBoardV3({ engine, isTutorial }: GHQBoardV3Props) {
       <div className="block sm:hidden mb-1">
         <MobileHeader />
       </div>
-      {!isTutorial && (
+      {!opts.isTutorial && (
         <Sidebar
           game={game}
           seek={seek}

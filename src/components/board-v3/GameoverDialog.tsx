@@ -5,7 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import HomeButton from "./HomeButton";
 import ShareGameDialog from "./ShareGameDialog";
 import { GameClient } from "@/game/engine-v2";
@@ -13,7 +13,7 @@ import { GameClient } from "@/game/engine-v2";
 export default function GameoverDialog({ game }: { game: GameClient }) {
   const [open, setOpen] = useState(false);
 
-  const gameover = game.gameover();
+  const gameover = useMemo(() => game.gameover(), [game.turn, game.moves]);
 
   useEffect(() => {
     setOpen(!!gameover);

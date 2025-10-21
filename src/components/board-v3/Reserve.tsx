@@ -1,7 +1,6 @@
 "use client";
 
 import { Player, ReserveFleet } from "@/game/engine";
-import CountdownTimer from "@/game/countdown";
 
 import MoveCounter from "../../game/MoveCounter";
 import { ChatMessage } from "boardgame.io";
@@ -19,6 +18,7 @@ import Username from "@/components/Username";
 import { GameClient } from "@/game/engine-v2";
 import { ReserveBankV2 } from "./ReserveBankV2";
 import { cn } from "@/lib/utils";
+import CountdownTimer from "./CountdownTimer";
 
 export default function Reserve({
   game,
@@ -79,6 +79,7 @@ export default function Reserve({
       >
         <div className="flex justify-between gap-1 w-full">
           <div className="flex gap-2 items-center flex-1">
+            {/* TODO(tyler): implement this */}
             {/* {matchData?.[playerIndex]?.isConnected !== undefined && (
               <ConnectionStatus
                 isConnected={matchData[playerIndex].isConnected}
@@ -102,10 +103,7 @@ export default function Reserve({
                 !game.isReplayMode
               }
               player={player}
-              elapsed={game.elapsedMs[player]}
-              startDate={game.startTimeMs}
-              totalTimeAllowed={game.totalTimeAllowed}
-              isReplayMode={game.isReplayMode ?? false}
+              game={game}
             />
           </div>
         </div>

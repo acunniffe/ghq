@@ -24,8 +24,8 @@ export default function ControlsView({
   cancel: () => void;
 }) {
   const canReplay = useMemo(
-    () => game.isMyTurn() && game.currentTurn() > 1,
-    [game]
+    () => game.isMyTurn() && game.turn > 1,
+    [game.turn]
   );
 
   const doUndo = useCallback(() => {

@@ -29,9 +29,15 @@ export default function Sidebar({
   settings: Settings;
   setSettings: (settings: Settings) => void;
 }) {
-  const currentPlayerTurn = useMemo(() => game.currentPlayerTurn(), [game]);
-  const currentPlayer = useMemo(() => game.currentPlayer(), [game]);
-  const movesLeft = useMemo(() => 3 - game.numMovesThisTurn(), [game]);
+  const currentPlayerTurn = useMemo(
+    () => game.currentPlayerTurn(),
+    [game.turn]
+  );
+  const currentPlayer = useMemo(() => game.currentPlayer(), [game.turn]);
+  const movesLeft = useMemo(
+    () => 3 - game.numMovesThisTurn(),
+    [game.moves, game.turn]
+  );
 
   const historyEval = useMemo(() => {
     return (
@@ -40,9 +46,9 @@ export default function Sidebar({
         <HistoryLog game={game} seek={seek} />
       </>
     );
-  }, [game]);
+  }, [game.moves]);
 
-  const gameover = useMemo(() => game.gameover(), [game]);
+  const gameover = game.gameover();
 
   return (
     <div
@@ -72,10 +78,10 @@ export default function Sidebar({
               <>{gameover.winner === "RED" ? "Red" : "Blue"} Won!</>
             )}
           </h2>
-          <div className="text-center text-gray-600">
+          <div className="text-center text-gray-800 text-sm">
             {gameover.reason && gameover.reason}
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 mt-3">
             <ShareGameDialog game={game} />
             <HomeButton />
           </div>
@@ -89,7 +95,7 @@ export default function Sidebar({
             )}
           >
             <div className="flex items-center gap-1 font-semibold">
-              <Swords className="w-5 h-5" /> {game.currentTurn()}{" "}
+              <Swords className="w-5 h-5" /> {game.turn}{" "}
             </div>
             <div>
               {currentPlayer === currentPlayerTurn ? "Your" : "Their"} Turn

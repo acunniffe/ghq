@@ -48,10 +48,16 @@ export default function Board({
         .getLastTurnMoves()
         .map((move) => move.args[1])
         .filter((square) => square !== undefined),
-    [game]
+    [game.moves, game.turn]
   );
-  const recentCaptures: PlayerPiece[] = []; // TODO(tyler): implement this
-  const hasMoveLimitReached = useMemo(() => game.hasMoveLimitReached(), [game]);
+  const recentCaptures: PlayerPiece[] = useMemo(
+    () => game.getRecentCaptures(),
+    [game.moves, game.turn]
+  );
+  const hasMoveLimitReached = useMemo(
+    () => game.hasMoveLimitReached(),
+    [game.moves, game.turn]
+  );
 
   const { boardArrows, rightClicked, handleRightClickDrag, clearRightClick } =
     useRightClick({ board });
@@ -79,7 +85,7 @@ export default function Board({
 
       clearRightClick();
     },
-    [board, possibleAllowedMoves, game, hasMoveLimitReached]
+    [board, possibleAllowedMoves, game.turn, game.moves, hasMoveLimitReached]
   );
 
   const handleMouseOver = useCallback(([rowIndex, colIndex]: Coordinate) => {
@@ -91,7 +97,7 @@ export default function Board({
   const boardEngagements = useMemo(
     () =>
       getBoardEngagements(board, userActionState?.selectedPiece?.coordinate),
-    [board, userActionState.selectedPiece]
+    [board, userActionState.selectedPiece, game.turn, game.moves]
   );
 
   return (

@@ -6,11 +6,14 @@ import { useScript } from "usehooks-ts";
 import {
   AllowedMove,
   Board,
+  Coordinate,
   ctxPlayerToPlayer,
   GameoverState,
   getCapturePreference,
   GHQGame,
   GHQState,
+  isMoveCapture,
+  NonNullSquare,
   Orientation,
   ReserveFleet,
   SkipMove,
@@ -24,6 +27,9 @@ import { calculateEval } from "./eval";
 import { LogAPI } from "boardgame.io/src/plugins/plugin-log";
 import { getGameoverState } from "./gameover-logic";
 import { printWelcome } from "@/lib/console";
+import { createPGN, pgnToTurns } from "./pgn";
+import { TimeControl } from "./constants";
+import { Multiplayer } from "./engine-v2-multiplayer";
 
 export type Player = "RED" | "BLUE";
 
@@ -31,7 +37,7 @@ printWelcome();
 
 export interface GameEngine {
   Move: {
-    from_uci: (uci: string) => any;
+    from_uci: (uci: string) => PythonMove;
   };
   BaseBoard: {
     (fen?: string): PythonBoard;
@@ -140,12 +146,12 @@ export interface PythonBoard {
   is_legal: (move: PythonMove) => boolean;
   is_red_turn: () => boolean;
   is_blue_turn: () => boolean;
-  outcome: () => { winner?: boolean; termination: string } | undefined;
   copy(): PythonBoard;
   turn_moves: number;
   reserves: PythonReserveFleet[];
   // move_stack: PythonMove[]
   piece_at: (squareIndex: number) => PythonPiece | undefined;
+  outcome: () => PythonOutcome | undefined;
 }
 
 interface PythonReserveFleet {
@@ -158,6 +164,11 @@ interface PythonPiece {
   piece_type: PythonUnitType;
   color: PythonColor;
   orientation: PythonOrientation;
+}
+
+interface PythonOutcome {
+  winner?: boolean; // false = RED, true = BLUE, undefined = DRAW
+  termination: string;
 }
 
 export interface PythonPlayer {
@@ -502,12 +513,25 @@ export function hasMoveLimitReachedV2(G: GHQState) {
   return numMovesThisTurn(G) >= 3;
 }
 
+export interface PlayerPiece {
+  piece: NonNullSquare;
+  coordinate: Coordinate;
+}
+export interface Turn {
+  turn: number;
+  moves: AllowedMove[];
+  elapsedSecs: number;
+}
+
 export interface GameClientOptions {
-  engine: GameEngine;
+  engine?: GameEngine | null;
+  multiplayer?: Multiplayer;
+  playerId?: string;
   fen?: string;
-  isTutorial: boolean;
-  isReplayMode: boolean;
-  isPassAndPlayMode: boolean;
+  isTutorial?: boolean;
+  isReplayMode?: boolean;
+  isPassAndPlayMode?: boolean;
+  timeControl?: TimeControl;
   id?: string; // implies isOnline
 }
 
@@ -515,7 +539,6 @@ export class GameClient {
   private engine: GameEngine;
   private boards: PythonBoard[];
   private currentBoardIndex: number;
-  private turn: number;
 
   public isTutorial: boolean;
   public isReplayMode: boolean;
@@ -524,33 +547,39 @@ export class GameClient {
   public id?: string;
   public chatMessages: any[]; // TODO(tyler): implement this
 
-  // Note: playerID is null in local play (non-multiplayer, non-bot), also when spectating, replaying, and tutorials.
-  public playerID: string | null; // bgio backwards compat
+  // Note: playerId is undefinend in local play (non-multiplayer, non-bot), also when spectating, replaying, and tutorials.
+  public playerId?: string;
 
   // True if the current turn has been confirmed by the user before ending the turn.
   public needsTurnConfirmation: boolean;
+  public turn: number;
   public moves: AllowedMove[];
+  public turns: Turn[];
   private undoMoves: AllowedMove[];
 
   // Used for animations.
   private lastTurnBoards: PythonBoard[];
   private lastTurnMoves: AllowedMove[];
+  private lastTurnCaptures: PlayerPiece[];
   private thisTurnBoards: PythonBoard[];
   private thisTurnMoves: AllowedMove[];
+  private thisTurnCaptures: PlayerPiece[];
+  private movePieces: (NonNullSquare | null)[]; // same length as moves
 
   // Time control
-  public totalTimeAllowed: number;
-  public bonusTime: number;
-  public startTimeMs: number;
-  public elapsedMs: {
-    RED: number;
-    BLUE: number;
-  };
+  public timeControl?: TimeControl;
+  private turnStartTimeMs: number;
+
+  // Multiplayer
+  private multiplayer?: Multiplayer;
+  public _uuid: string;
 
   public userIds: {
     "0": string;
     "1": string;
   };
+
+  private listeners: Set<() => void> = new Set();
 
   constructor({
     engine,
@@ -559,41 +588,90 @@ export class GameClient {
     isReplayMode,
     isPassAndPlayMode,
     id,
+    timeControl,
+    multiplayer,
+    playerId,
   }: GameClientOptions) {
+    if (!engine) {
+      throw new Error("engine is required");
+    }
     this.engine = engine;
+    this.multiplayer = multiplayer;
     const board = this.engine.BaseBoard(fen);
     this.boards = [board];
     this.currentBoardIndex = 0;
-    this.isTutorial = isTutorial;
-    this.isReplayMode = isReplayMode;
-    this.isPassAndPlayMode = isPassAndPlayMode;
+    this.isTutorial = isTutorial ?? false;
+    this.isReplayMode = isReplayMode ?? false;
+    this.isPassAndPlayMode = isPassAndPlayMode ?? false;
     this.isOnline = !!id;
     this.id = id;
     this.chatMessages = [];
-    this.playerID = null;
+    this.playerId = playerId;
     this.undoMoves = [];
     this.turn = 1;
     this.userIds = {
       "0": "",
       "1": "",
     };
-    this.totalTimeAllowed = 0;
-    this.bonusTime = 0;
-    this.startTimeMs = 0;
-    this.elapsedMs = {
-      RED: 0,
-      BLUE: 0,
-    };
+    this.timeControl = timeControl;
     this.needsTurnConfirmation = false;
     this.moves = [];
+    this.turns = [];
+    this.turnStartTimeMs = Date.now();
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
+    this.thisTurnCaptures = [];
     this.lastTurnBoards = [];
     this.lastTurnMoves = [];
+    this.lastTurnCaptures = [];
+    this.movePieces = [];
+    this._uuid = crypto.randomUUID();
+    this.setupMultiplayer();
+  }
+
+  setupMultiplayer() {
+    if (!this.multiplayer) {
+      return;
+    }
+
+    this.multiplayer.onTurnPlayed((turn) => {
+      if (turn.turn !== this.turn) {
+        console.log(
+          `[GHQ] Skipping turn ${turn.turn}, expected turn ${this.turn}`
+        );
+        return;
+      }
+
+      this.pushTurn(turn);
+    });
+  }
+
+  // used for react components to re-render when the game state changes
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private notify() {
+    this.listeners.forEach((listener) => listener());
   }
 
   private board(): PythonBoard {
     return this.boards[this.currentBoardIndex];
+  }
+
+  private getTurn(): Turn {
+    const t = this.turns[this.turn - 1];
+    if (!t) {
+      this.turns[this.turn - 1] = {
+        turn: this.turn,
+        moves: [],
+        elapsedSecs: 0,
+      };
+    }
+    return this.turns[this.turn - 1];
   }
 
   currentPlayer(): Player {
@@ -601,7 +679,7 @@ export class GameClient {
       return this.currentPlayerTurn();
     }
 
-    return this.playerID === "0" ? "RED" : "BLUE";
+    return this.playerId === "0" ? "RED" : "BLUE";
   }
 
   isMyTurn(): boolean {
@@ -610,6 +688,8 @@ export class GameClient {
 
   currentPlayerTurn(): Player {
     const currentPlayerTurn = this.board().is_red_turn() ? "RED" : "BLUE";
+
+    // If the player needs to confirm the turn, the other player is the current player.
     if (this.needsTurnConfirmation) {
       return currentPlayerTurn === "RED" ? "BLUE" : "RED";
     }
@@ -631,10 +711,6 @@ export class GameClient {
     return this.numMovesThisTurn() >= 3;
   }
 
-  currentTurn(): number {
-    return this.turn;
-  }
-
   reserves(player: Player): ReserveFleet {
     const reserves = this.board().reserves[player === "RED" ? 0 : 1].to_ints();
     return {
@@ -648,6 +724,9 @@ export class GameClient {
   }
 
   getAllowedMoves(): AllowedMove[] {
+    if (!this.isMyTurn() || this.needsTurnConfirmation) {
+      return [];
+    }
     const moves = this.board().generate_legal_moves();
     const ghqMoves = Array.from(moves).map((move) =>
       allowedMoveFromUci(move.uci())
@@ -656,17 +735,39 @@ export class GameClient {
   }
 
   _push(ghqMove: AllowedMove) {
+    // NB(tyler): be careful to undo any state changes here in undo()
+
+    const move = this.engine.Move.from_uci(allowedMoveToUci(ghqMove));
+
+    // Update animation state
     this.thisTurnBoards.push(this.board());
     this.thisTurnMoves.push(ghqMove);
 
-    const move = this.engine.Move.from_uci(allowedMoveToUci(ghqMove));
+    if (move.from_square) {
+      this.movePieces.push(
+        pieceToSquare(this.board().piece_at(move.from_square))
+      );
+    } else {
+      this.movePieces.push(null);
+    }
+
+    if (move.capture_preference) {
+      this.thisTurnCaptures.push({
+        piece: pieceToSquare(this.board().piece_at(move.capture_preference))!,
+        coordinate: coordinateFromPythonSquare(move.capture_preference),
+      });
+    }
+
+    // Update game state
     const newBoard = this.engine.BaseBoard.deserialize(
       this.board().serialize()
     ); // TODO(tyler): figure out why copy() doesn't work
     newBoard.push(move);
     this.boards.push(newBoard);
     this.currentBoardIndex++;
-    this.moves.push(ghqMove);
+    this.moves = [...this.moves, ghqMove];
+    this.getTurn().moves.push(ghqMove);
+    this.notify();
   }
 
   push(ghqMove: AllowedMove, clearUndoMoves: boolean = true) {
@@ -686,8 +787,42 @@ export class GameClient {
   }
 
   gameover(): GameoverState | undefined {
-    // TODO(tyler): implement this
-    // return this.game.getGameoverState(this.states[this.currentStateIndex]);
+    if (this.isReplayMode) {
+      return undefined;
+    }
+
+    const currentPlayer = this.currentPlayerTurn();
+    const currentPlayerTimeLeftMs = this.getPlayerTimeLeftMs(
+      currentPlayer,
+      true
+    );
+    if (currentPlayerTimeLeftMs !== null && currentPlayerTimeLeftMs <= 0) {
+      return {
+        status: "WIN",
+        winner: currentPlayer === "RED" ? "BLUE" : "RED", // Opponent wins by time out
+        reason: "on time",
+      };
+    }
+
+    const outcome = this.board().outcome();
+    if (outcome) {
+      let status: "WIN" | "DRAW" = "DRAW";
+      let winner: Player | undefined;
+
+      if (outcome.winner === false) {
+        winner = "RED";
+        status = "WIN";
+      } else if (outcome.winner === true) {
+        winner = "BLUE";
+        status = "WIN";
+      }
+      return {
+        status,
+        winner,
+        reason: `by ${outcome.termination}`,
+      };
+    }
+
     return undefined;
   }
 
@@ -705,12 +840,21 @@ export class GameClient {
       throw new Error("cannot undo");
     }
 
-    const latestMove = this.moves.pop();
+    const latestMove = this.moves[this.moves.length - 1];
+    this.moves = this.moves.slice(0, -1);
     if (latestMove) {
       this.undoMoves.push(latestMove);
+      this.getTurn().moves.pop();
       this.boards.pop();
+      this.thisTurnBoards.pop();
+      this.thisTurnMoves.pop();
+      if (isMoveCapture(latestMove)) {
+        this.thisTurnCaptures.pop();
+      }
+      this.movePieces.pop();
       this.currentBoardIndex--;
       this.needsTurnConfirmation = false;
+      this.notify();
     }
   }
 
@@ -734,19 +878,46 @@ export class GameClient {
   }
 
   endTurn() {
-    if (this.needsTurnConfirmation) {
-      this.needsTurnConfirmation = false;
-    } else {
+    if (!this.needsTurnConfirmation) {
       this._push({ name: "Skip", args: [] });
     }
 
-    this.turn++;
+    this.getTurn().elapsedSecs =
+      Math.round((Date.now() - this.turnStartTimeMs) / 100) / 10;
+    this.turnStartTimeMs = Date.now();
+
+    const turn = this.getTurn();
+    this.finishTurn();
+
+    if (this.multiplayer) {
+      this.multiplayer.sendTurn(turn);
+    }
+  }
+
+  pushTurn(turn: Turn) {
+    for (const move of turn.moves) {
+      this.push(move);
+    }
+
+    this.getTurn().elapsedSecs = turn.elapsedSecs;
+
+    this.finishTurn();
+  }
+
+  finishTurn() {
+    if (this.needsTurnConfirmation) {
+      this.needsTurnConfirmation = false;
+    }
+
+    this.turn = this.turn + 1;
     this.lastTurnBoards = this.thisTurnBoards;
     this.lastTurnMoves = this.thisTurnMoves;
+    this.lastTurnCaptures = this.thisTurnCaptures;
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
-
+    this.thisTurnCaptures = [];
     this.clearBombardments();
+    this.notify();
   }
 
   clearBombardments() {
@@ -756,6 +927,31 @@ export class GameClient {
         this._push(allowedMoveFromUci(move.uci()));
       }
     }
+  }
+
+  getPlayerTimeLeftMs(player: Player, isLive: boolean = false): number | null {
+    if (!this.timeControl) {
+      return null;
+    }
+
+    const currentTurnElapsedMs =
+      isLive && player === this.currentPlayerTurn()
+        ? Date.now() - this.turnStartTimeMs
+        : 0;
+
+    const useEvens = player === "RED";
+    const completedPlayerTurns = this.turns
+      .filter((_, i) => (useEvens ? i % 2 === 0 : i % 2 === 1))
+      .filter((turn) => turn.elapsedSecs > 0);
+
+    const bonusMs = completedPlayerTurns.length * this.timeControl.bonus;
+
+    const elapsedMs =
+      completedPlayerTurns.reduce((acc, turn) => {
+        return acc + turn.elapsedSecs;
+      }, 0) * 1000;
+
+    return this.timeControl.time - elapsedMs - currentTurnElapsedMs + bonusMs;
   }
 
   getV1Board(): Board {
@@ -770,12 +966,16 @@ export class GameClient {
     return this.lastTurnMoves;
   }
 
+  getRecentCaptures(): PlayerPiece[] {
+    return [...this.lastTurnCaptures, ...this.thisTurnCaptures];
+  }
+
   fen(): string {
     return this.board().board_fen();
   }
 
   pgn(): string {
-    return this.moves.map(allowedMoveToUci).join(" ");
+    return createPGN(this.turns);
   }
 
   eval(): number {
@@ -794,54 +994,39 @@ export class GameClient {
     this.currentBoardIndex = 0;
     this.turn = 1;
     this.moves = [];
+    this.turns = [];
     this.undoMoves = [];
     this.needsTurnConfirmation = false;
-    this.elapsedMs = {
-      RED: 0,
-      BLUE: 0,
-    };
-    this.totalTimeAllowed = 0;
-    this.bonusTime = 0;
-    this.startTimeMs = 0;
+    this.turnStartTimeMs = Date.now();
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
+    this.thisTurnCaptures = [];
     this.lastTurnBoards = [];
     this.lastTurnMoves = [];
+    this.lastTurnCaptures = [];
+    this.movePieces = [];
+    this.notify();
   }
 
-  applyMoves(pgn: string, index: number = 0) {
-    if (index === 0) {
-      this.reset();
-    }
+  applyMoves(pgn: string, seekIndex: number = 0) {
+    this.reset();
 
-    if (index > 0) {
-      if (index > this.boards.length) {
-        throw new Error(
-          `index is out of bounds: ${index} > ${this.boards.length}`
-        );
+    let i = 0;
+    const turns = pgnToTurns(pgn);
+    for (const turn of turns) {
+      if (i >= seekIndex) {
+        break;
       }
-    }
-
-    let currentIndex = index;
-    const moves = pgn
-      .split(" ")
-      .filter((move) => move !== "")
-      .map((move) => allowedMoveFromUci(move));
-    for (const move of moves) {
-      currentIndex++;
-
-      // skip if we already have this index in the boards array
-      if (currentIndex <= this.currentBoardIndex) {
-        continue;
+      for (const move of turn.moves) {
+        if (i >= seekIndex) {
+          break;
+        }
+        this.push(move);
+        i++;
       }
-
-      // otherwise push the move
-      this.push(move);
     }
   }
 }
-
-export type NonNullSquare = Exclude<Square, null>;
 
 function pieceToSquare(piece: PythonPiece | undefined): Square | null {
   if (!piece) {
@@ -881,6 +1066,73 @@ function orientationToOrientation(
   return (orientation * 45) as Orientation; // 0 = N, 45 = NE, 90 = E, 135 = SE, 180 = S, 225 = SW, 270 = W, 315 = NW
 }
 
+const coordinateMapping: Coordinate[] = [
+  [7, 0],
+  [7, 1],
+  [7, 2],
+  [7, 3],
+  [7, 4],
+  [7, 5],
+  [7, 6],
+  [7, 7],
+  [6, 0],
+  [6, 1],
+  [6, 2],
+  [6, 3],
+  [6, 4],
+  [6, 5],
+  [6, 6],
+  [6, 7],
+  [5, 0],
+  [5, 1],
+  [5, 2],
+  [5, 3],
+  [5, 4],
+  [5, 5],
+  [5, 6],
+  [5, 7],
+  [4, 0],
+  [4, 1],
+  [4, 2],
+  [4, 3],
+  [4, 4],
+  [4, 5],
+  [4, 6],
+  [4, 7],
+  [3, 0],
+  [3, 1],
+  [3, 2],
+  [3, 3],
+  [3, 4],
+  [3, 5],
+  [3, 6],
+  [3, 7],
+  [2, 0],
+  [2, 1],
+  [2, 2],
+  [2, 3],
+  [2, 4],
+  [2, 5],
+  [2, 6],
+  [2, 7],
+  [1, 0],
+  [1, 1],
+  [1, 2],
+  [1, 3],
+  [1, 4],
+  [1, 5],
+  [1, 6],
+  [1, 7],
+  [0, 0],
+  [0, 1],
+  [0, 2],
+  [0, 3],
+  [0, 4],
+  [0, 5],
+  [0, 6],
+  [0, 7],
+];
+
 function getV1Board(board: PythonBoard): Board {
   const gp = (i: number) => pieceToSquare(board.piece_at(i));
 
@@ -894,4 +1146,8 @@ function getV1Board(board: PythonBoard): Board {
     [gp(8), gp(9), gp(10), gp(11), gp(12), gp(13), gp(14), gp(15)],
     [gp(0), gp(1), gp(2), gp(3), gp(4), gp(5), gp(6), gp(7)],
   ];
+}
+
+function coordinateFromPythonSquare(square: PythonSquare): Coordinate {
+  return coordinateMapping[square];
 }

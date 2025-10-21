@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import { Label } from "@/components/ui/label";
 import { GameClient } from "@/game/engine-v2";
+import { Textarea } from "../ui/textarea";
 
 export default function ShareGameDialog({ game }: { game: GameClient }) {
   const fen = game.fen();
@@ -80,13 +81,13 @@ export default function ShareGameDialog({ game }: { game: GameClient }) {
                 }
               />
             </div>
-            <div>
+            <div className="flex flex-col gap-2">
               <Label htmlFor="pgn">PGN</Label>
-              <Input
+              <Textarea
                 readOnly
+                rows={3}
                 spellCheck={false}
-                className="font-mono"
-                type="text"
+                className="font-mono resize-none w-full text-sm"
                 id="pgn"
                 placeholder=""
                 value={game.pgn()}

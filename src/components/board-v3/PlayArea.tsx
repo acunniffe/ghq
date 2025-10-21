@@ -33,39 +33,40 @@ export default function PlayArea({
 }: PlayAreaProps) {
   const [userActionState, setUserActionState] = useState<UserActionState>({});
   const [viewPlayerPref, setViewPlayerPref] = useState<Player>("RED");
-  const currentPlayerTurn = useMemo(() => game.currentPlayerTurn(), [game]);
-  const { isReplayMode, isTutorial, isPassAndPlayMode, playerID } = game;
+  const currentPlayerTurn = useMemo(
+    () => game.currentPlayerTurn(),
+    [game.turn]
+  );
+  const { isReplayMode, isTutorial, isPassAndPlayMode, playerId } = game;
   const { measureRef, squareSize, pieceSize } = useBoardDimensions(isTutorial);
 
   // TODO(tyler): allow spectators to choose which side to view
   const defaultPlayerPOV = "RED";
 
-  // Note: playerID is null in local play (non-multiplayer, non-bot), also when spectating, replaying, and tutorials.
+  // Note: playerId is null in local play (non-multiplayer, non-bot), also when spectating, replaying, and tutorials.
   const currentPlayer = useMemo(() => {
     if (isReplayMode) {
       return defaultPlayerPOV;
     }
-    return playerID === null ? currentPlayerTurn : playerIdToPlayer(playerID);
-  }, [currentPlayerTurn, playerID, isReplayMode]);
+    return !playerId ? currentPlayerTurn : playerIdToPlayer(playerId);
+  }, [currentPlayerTurn, playerId, isReplayMode, game.turn]);
   const { users } = useUsers({ userIds: [] }); // TODO(tyler): implement this
 
   const isFlipped = useMemo(() => viewPlayerPref === "BLUE", [viewPlayerPref]);
 
   useEffect(() => {
     // If G.isPassAndPlayMode, then viewPlayerPref should snap to currentPlayerTurn.
-    if (isPassAndPlayMode && settings.autoFlipBoard && playerID === null) {
+    if (isPassAndPlayMode && settings.autoFlipBoard && playerId === null) {
       setViewPlayerPref(currentPlayerTurn);
-    } else if (playerID !== null) {
-      setViewPlayerPref(playerIdToPlayer(playerID));
+    } else if (playerId) {
+      setViewPlayerPref(playerIdToPlayer(playerId));
     }
-  }, [isPassAndPlayMode, playerID, currentPlayerTurn, settings]);
+  }, [isPassAndPlayMode, playerId, currentPlayerTurn, settings]);
 
-  const possibleAllowedMoves = useMemo(() => {
-    if (game.needsTurnConfirmation) {
-      return [];
-    }
-    return game.getAllowedMoves();
-  }, [game]);
+  const possibleAllowedMoves = useMemo(
+    () => game.getAllowedMoves(),
+    [game.moves, game.turn]
+  );
 
   const { animatedBoard, mostRecentMove, replay } = useBoard({
     game,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AllowedMove, Board, isMoveCapture, isSkipMove } from "@/game/engine";
 import { UserActionState } from "./state";
 import {
@@ -55,7 +55,7 @@ export default function useBoard({
         setAnimatedBoard(game.getV1Board());
       });
     }
-  }, [currentPlayerTurn, currentPlayer, game.isMyTurn()]);
+  }, [currentPlayerTurn, currentPlayer, game.turn]);
 
   // Change the board state when the current turn changes or it's game over.
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function useBoard({
     }
 
     animateOpponentsTurnToLatestBoardState();
-  }, [currentPlayerTurn, game.gameover()]);
+  }, [skipAnimations, game.turn]);
 
   useEffect(() => {
     // Animate when it's our turn (i.e. we just made move 1 or 2, or hit undo to go to move 0)
@@ -77,14 +77,14 @@ export default function useBoard({
       setAnimatedBoard(game.getV1Board());
       playNextTurnSound();
     }
-  }, [currentPlayerTurn, game]);
+  }, [currentPlayerTurn, game.moves]);
 
   // In replay mode, don't animate the board state when the game state changes, just set it immediately.
   useEffect(() => {
     if (skipAnimations) {
       setAnimatedBoard(game.getV1Board());
     }
-  }, [skipAnimations, game]);
+  }, [skipAnimations, game.moves]);
 
   // In replay mode, don't animate the board state when the game state changes, just set it immediately.
   useEffect(() => {
@@ -100,7 +100,7 @@ export default function useBoard({
         playMoveSound();
       }
     }
-  }, [game]);
+  }, [game.moves, skipAnimations]);
 
   // Actually make the move that's been chosen by the user.
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function useBoard({
     if (startOfTurnCaptures) {
       playCaptureSound();
     }
-  }, [game]);
+  }, [game.moves]);
 
   return {
     animatedBoard,

@@ -42,9 +42,7 @@ export default function useSeek({ realGame, simGame }: UseSeekOptions) {
         setShowSim(false);
         return;
       }
-      const pgn = realGame.pgn();
-      const moves = pgn.split(" ").slice(0, newSeek).join(" ");
-      simGame.applyMoves(moves);
+      simGame.applyMoves(realGame.pgn(), newSeek);
       setSeekIndex(newSeek);
       setShowSim(true);
     },

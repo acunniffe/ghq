@@ -69,7 +69,7 @@ export function HistoryLog({
         })}
 
         {gameover && (
-          <div className="inline-flex space-x-2 items-center py-0.5 px-1 font-semibold">
+          <div className="inline-flex space-x-2 items-center py-0.5 px-1 font-semibold text-sm">
             {gameover.status === "DRAW" && "Game ended in a draw"}
             {gameover.winner && (
               <>
