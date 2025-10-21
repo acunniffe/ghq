@@ -50,7 +50,10 @@ export function GHQBoardV3({ engine, isTutorial }: GHQBoardV3Props) {
   if (!game) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
-        <Loader2 className="h-32 w-32 animate-spin" />
+        <div className="text-lg font-bold text-blue-500">
+          Loading GHQ Game Engine...
+        </div>
+        <Loader2 className="h-32 w-32 animate-spin text-blue-500" />
       </div>
     );
   }

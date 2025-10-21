@@ -42,7 +42,14 @@ export default function Board({
   pieceSize: number;
 }) {
   const bombarded = useMemo(() => bombardedSquares(board), [board]);
-  const recentMoves: Coordinate[] = [];
+  const recentMoves: Coordinate[] = useMemo(
+    () =>
+      game
+        .getLastTurnMoves()
+        .map((move) => move.args[1])
+        .filter((square) => square !== undefined),
+    [game]
+  );
   const recentCaptures: PlayerPiece[] = [];
   const hasMoveLimitReached = useMemo(() => game.hasMoveLimitReached(), [game]);
 
