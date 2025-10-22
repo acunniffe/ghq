@@ -1,3 +1,5 @@
+import { Turn } from "@/game/engine-v2";
+
 interface FetchOptions extends RequestInit {
   getToken: () => Promise<string | null>;
   url: string;
@@ -23,4 +25,10 @@ export async function ghqFetch<T>({
   }
 
   return (await response.json()) as T;
+}
+
+export interface SendTurnRequest {
+  turn: Turn;
+  playerId: string;
+  credentials: string;
 }

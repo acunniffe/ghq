@@ -3,7 +3,7 @@
 import PlayArea from "./PlayArea";
 import Sidebar from "./Sidebar";
 import GameoverDialog from "./GameoverDialog";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import MobileHeader from "../MobileHeader";
 import { GameClientOptions, useEngine } from "@/game/engine-v2";
@@ -11,27 +11,54 @@ import { Loader2 } from "lucide-react";
 import { useGameClient } from "./useGameClient";
 import useSeek from "./useSeek";
 import { cn } from "@/lib/utils";
-import { BotMultiplayer } from "@/game/engine-v2-multiplayer";
+import {
+  BotMultiplayer,
+  Multiplayer,
+  OnlineMultiplayer,
+} from "@/game/engine-v2-multiplayer";
+import { useAuth } from "@clerk/nextjs";
 
 export interface GHQBoardV3Props extends GameClientOptions {
   bot?: boolean;
+  credentials?: string;
 }
 
 export function GHQBoardV3(opts: GHQBoardV3Props) {
   const { engine } = useEngine();
+  const { isSignedIn, getToken } = useAuth();
+  const [multiplayer, setMultiplayer] = useState<Multiplayer | undefined>(
+    undefined
+  );
 
   const [settings, setSettings] = useState<Settings>({
     autoFlipBoard: false,
     confirmTurn: true,
   });
 
-  const multiplayer = useMemo(() => {
-    if (!engine || !opts.bot) {
+  useEffect(() => {
+    if (!engine) {
       return;
     }
 
-    return new BotMultiplayer(engine, opts.fen);
-  }, [opts.bot, opts.fen, engine]);
+    if (opts.bot) {
+      const multiplayer = new BotMultiplayer(engine, opts.fen);
+      setMultiplayer(multiplayer);
+      return;
+    }
+
+    if (opts.credentials && opts.id && isSignedIn && opts.playerId) {
+      const multiplayer = new OnlineMultiplayer(
+        opts.id,
+        opts.credentials,
+        opts.playerId,
+        getToken
+      );
+      setMultiplayer(multiplayer);
+      return () => {
+        multiplayer.disconnect();
+      };
+    }
+  }, [opts.bot, opts.fen, engine, isSignedIn, getToken]);
 
   const realGame = useGameClient({
     ...opts,

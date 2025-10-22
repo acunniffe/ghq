@@ -634,8 +634,12 @@ export class GameClient {
       return;
     }
 
+    this.multiplayer.initGame();
+
     this.multiplayer.onTurnPlayed((turn) => {
       if (turn.turn !== this.turn) {
+        // TODO(tyler): if this is a turn in the past, we should verify that it matches our history,
+        // otherwise we have a mismatch between client and server game state.
         console.log(
           `[GHQ] Skipping turn ${turn.turn}, expected turn ${this.turn}`
         );
@@ -986,6 +990,11 @@ export class GameClient {
 
   resign() {
     // TODO(tyler): implement this
+    // const gameover: GameoverState = {
+    //   status: "WIN",
+    //   winner: this.currentPlayerTurn() === "RED" ? "BLUE" : "RED",
+    //   reason: "by resignation",
+    // };
     throw new Error("not implemented");
   }
 
