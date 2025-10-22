@@ -89,3 +89,9 @@ export interface MatchV3Info {
     credentials: string;
   };
 }
+
+export interface ActiveMatch {
+  id: string;
+  playerId: "0" | "1";
+  credentials: string;
+}

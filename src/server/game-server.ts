@@ -5,8 +5,14 @@ import Router from "@koa/router";
 import { Server } from "boardgame.io";
 import { nanoid } from "nanoid";
 import { PassThrough } from "stream";
-import { MatchV3, MatchV3Info, User } from "@/lib/types";
+import { MatchV3Info, User } from "@/lib/types";
 import { createPGN, pgnToTurns } from "@/game/pgn";
+import {
+  createActiveMatchesFromMatchV3,
+  createMatchV3,
+  fetchMatchV3,
+  getActiveMatchForUser,
+} from "./matchv3-store";
 
 interface Listener {
   id: string;
@@ -64,7 +70,7 @@ export function sendGameTurns(
 }
 
 async function sendInitialTurns(listenerId: string, gameId: string) {
-  const game = matches[gameId as keyof typeof matches];
+  const game = await fetchMatchV3(gameId);
   if (!game) {
     return;
   }
@@ -76,7 +82,7 @@ async function sendInitialTurns(listenerId: string, gameId: string) {
 export function addGameServerRoutes(router: Router<any, Server.AppCtx>) {
   router.get("/v3/match/:id", async (ctx) => {
     const gameId = ctx.params.id as string;
-    const game = matches[gameId as keyof typeof matches];
+    const game = await fetchMatchV3(gameId);
     if (!game) {
       ctx.throw(404, "Game not found");
       return;
@@ -93,7 +99,7 @@ export function addGameServerRoutes(router: Router<any, Server.AppCtx>) {
 
   router.get("/v3/match/:id/turns", async (ctx) => {
     const gameId = ctx.params.id as string;
-    const game = matches[gameId as keyof typeof matches];
+    const game = await fetchMatchV3(gameId);
     if (!game) {
       ctx.throw(404, "Game not found");
       return;
@@ -133,9 +139,9 @@ export function addGameServerRoutes(router: Router<any, Server.AppCtx>) {
     await sendInitialTurns(listenerId, gameId);
   });
 
-  router.post("/v3/match/:id/turns", (ctx) => {
+  router.post("/v3/match/:id/turns", async (ctx) => {
     const id = ctx.params.id as string;
-    const match = matches[id];
+    const match = await fetchMatchV3(id);
     if (!match) {
       ctx.throw(404, "Game not found");
       return;
@@ -143,7 +149,20 @@ export function addGameServerRoutes(router: Router<any, Server.AppCtx>) {
 
     const { turn, playerId, credentials } = ctx.request.body as SendTurnRequest;
 
-    // TODO(tyler): verify credentials and playerId
+    if (!credentials) {
+      ctx.throw(401, "Unauthorized");
+      return;
+    }
+
+    if (playerId === "0" && credentials !== match.player0Credentials) {
+      ctx.throw(401, "Unauthorized");
+      return;
+    }
+    if (playerId === "1" && credentials !== match.player1Credentials) {
+      ctx.throw(401, "Unauthorized");
+      return;
+    }
+
     // TODO(tyler): validate that the turn can be applied onto the game successfully
 
     const turns = pgnToTurns(match.pgn);
@@ -152,6 +171,8 @@ export function addGameServerRoutes(router: Router<any, Server.AppCtx>) {
     match.pgn = createPGN(turns);
 
     sendTurnsToListeners(id, [turn], turnIndex);
+
+    // TODO(tyler): check for on game end
 
     ctx.body = JSON.stringify({ success: true });
   });
@@ -166,8 +187,6 @@ export interface CreateNewV3MatchOptions {
   isCorrespondence: boolean;
   startingFen?: string;
 }
-
-const matches: Record<string, MatchV3> = {};
 
 export async function createNewV3Match({
   user0,
@@ -196,7 +215,8 @@ export async function createNewV3Match({
     startingFen,
     pgn: "",
   };
-  matches[matchId] = match;
+  await createMatchV3(match);
+  await createActiveMatchesFromMatchV3(match);
 }
 
 export interface ActiveMatch {
@@ -208,30 +228,15 @@ export interface ActiveMatch {
 export async function getActiveV3Match(
   userId: string
 ): Promise<ActiveMatch | null> {
-  for (const match of Object.values(matches)) {
-    if (match.player0UserId === userId) {
-      return {
-        id: match.id,
-        playerId: "0",
-        credentials: match.player0Credentials,
-      };
-    }
-    if (match.player1UserId === userId) {
-      return {
-        id: match.id,
-        playerId: "1",
-        credentials: match.player1Credentials,
-      };
-    }
-  }
-  return null;
+  const activeMatch = await getActiveMatchForUser(userId);
+  return activeMatch ?? null;
 }
 
 export async function getV3MatchInfo(
   id: string,
   userId?: string
 ): Promise<MatchV3Info | null> {
-  const match = matches[id as keyof typeof matches];
+  const match = await fetchMatchV3(id);
   if (!match) {
     return null;
   }
