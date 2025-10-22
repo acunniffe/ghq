@@ -8,11 +8,12 @@ import { PassThrough } from "stream";
 import { MatchV3Info, User } from "@/lib/types";
 import { createPGN, pgnToTurns } from "@/game/pgn";
 import {
-  createActiveMatchesFromMatchV3,
+  createActiveMatches,
   createMatchV3,
   fetchMatchV3,
   getActiveMatchForUser,
 } from "./matchv3-store";
+import { createHash } from "crypto";
 
 interface Listener {
   id: string;
@@ -154,11 +155,17 @@ export function addGameServerRoutes(router: Router<any, Server.AppCtx>) {
       return;
     }
 
-    if (playerId === "0" && credentials !== match.player0Credentials) {
+    if (
+      playerId === "0" &&
+      hashCredentials(credentials) !== match.player0CredentialsHash
+    ) {
       ctx.throw(401, "Unauthorized");
       return;
     }
-    if (playerId === "1" && credentials !== match.player1Credentials) {
+    if (
+      playerId === "1" &&
+      hashCredentials(credentials) !== match.player1CredentialsHash
+    ) {
       ctx.throw(401, "Unauthorized");
       return;
     }
@@ -170,9 +177,11 @@ export function addGameServerRoutes(router: Router<any, Server.AppCtx>) {
     turns.push(turn);
     match.pgn = createPGN(turns);
 
+    // TODO(tyler): check for on game end
+
     sendTurnsToListeners(id, [turn], turnIndex);
 
-    // TODO(tyler): check for on game end
+    // TODO(tyler): write to database, and add a separate db listener for sending to listeners
 
     ctx.body = JSON.stringify({ success: true });
   });
@@ -202,10 +211,11 @@ export async function createNewV3Match({
   const player1Creds = nanoid();
   const match = {
     id: matchId,
+    createdAt: new Date().toISOString(),
     player0UserId: user0.id,
-    player0Credentials: player0Creds,
+    player0CredentialsHash: hashCredentials(player0Creds),
     player1UserId: user1.id,
-    player1Credentials: player1Creds,
+    player1CredentialsHash: hashCredentials(player1Creds),
     timeControlName,
     timeControlAllowedTime: timeControl.time,
     timeControlBonus: timeControl.bonus,
@@ -216,7 +226,17 @@ export async function createNewV3Match({
     pgn: "",
   };
   await createMatchV3(match);
-  await createActiveMatchesFromMatchV3(match);
+  await createActiveMatches({
+    matchId,
+    player0UserId: user0.id,
+    player1UserId: user1.id,
+    player0Credentials: player0Creds,
+    player1Credentials: player1Creds,
+  });
+}
+
+function hashCredentials(credentials: string): string {
+  return createHash("sha256").update(credentials).digest("hex");
 }
 
 export interface ActiveMatch {

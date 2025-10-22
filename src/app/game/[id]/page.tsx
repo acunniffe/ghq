@@ -2,6 +2,7 @@
 
 import { API_URL } from "@/app/live/config";
 import { GHQBoardV3 } from "@/components/board-v3/boardv3";
+import { TimeControl } from "@/game/constants";
 import { ghqFetch } from "@/lib/api";
 import { MatchV3Info } from "@/lib/types";
 import { useAuth } from "@clerk/nextjs";
@@ -32,12 +33,24 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     fetchMatchInfo().then((data) => setMatchInfo(data));
   }, [fetchMatchInfo]);
 
+  const timeControl: TimeControl | undefined = useMemo(() => {
+    if (!matchInfo) {
+      return undefined;
+    }
+    return {
+      time: matchInfo.match.timeControlAllowedTime,
+      bonus: matchInfo.match.timeControlBonus,
+      variant: matchInfo.match.timeControlVariant,
+    };
+  }, [matchInfo]);
+
   return (
     <div>
       <GHQBoardV3
         playerId={matchInfo?.playerInfo?.playerId}
         id={id}
         credentials={matchInfo?.playerInfo?.credentials}
+        timeControl={timeControl}
       />
     </div>
   );

@@ -216,7 +216,6 @@ export class OnlineMultiplayer implements Multiplayer {
   }
 
   disconnect(): void {
-    console.log("disconnecting from online multiplayer");
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = undefined;

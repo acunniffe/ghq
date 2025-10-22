@@ -11,18 +11,31 @@ export async function fetchMatchV3(id: string): Promise<MatchV3 | undefined> {
   return matches[id];
 }
 
-export async function createActiveMatchesFromMatchV3(
-  match: MatchV3
-): Promise<void> {
-  activeMatches[match.player0UserId] = {
-    id: match.id,
+interface CreateActiveMatchesOptions {
+  matchId: string;
+  player0UserId: string;
+  player1UserId: string;
+  player0Credentials: string;
+  player1Credentials: string;
+}
+
+export async function createActiveMatches({
+  matchId,
+  player0UserId,
+  player1UserId,
+  player0Credentials,
+  player1Credentials,
+}: CreateActiveMatchesOptions): Promise<void> {
+  // TODO(tyler): use active_user_matches table to create active matches here and below
+  activeMatches[player0UserId] = {
+    id: matchId,
     playerId: "0",
-    credentials: match.player0Credentials,
+    credentials: player0Credentials,
   };
-  activeMatches[match.player1UserId] = {
-    id: match.id,
+  activeMatches[player1UserId] = {
+    id: matchId,
     playerId: "1",
-    credentials: match.player1Credentials,
+    credentials: player1Credentials,
   };
 }
 

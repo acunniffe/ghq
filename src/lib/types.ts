@@ -68,10 +68,11 @@ export function badgeToGamesPlayed(badge: UserBadge): number {
 
 export interface MatchV3 {
   id: string;
+  createdAt: string;
   player0UserId: string;
-  player0Credentials: string;
+  player0CredentialsHash: string;
   player1UserId: string;
-  player1Credentials: string;
+  player1CredentialsHash: string;
   timeControlName: string;
   timeControlAllowedTime: number;
   timeControlBonus: number;
