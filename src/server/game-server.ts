@@ -214,8 +214,10 @@ export async function createNewV3Match({
     createdAt: new Date().toISOString(),
     player0UserId: user0.id,
     player0CredentialsHash: hashCredentials(player0Creds),
+    player0Elo: user0.elo,
     player1UserId: user1.id,
     player1CredentialsHash: hashCredentials(player1Creds),
+    player1Elo: user1.elo,
     timeControlName,
     timeControlAllowedTime: timeControl.time,
     timeControlBonus: timeControl.bonus,
@@ -232,6 +234,7 @@ export async function createNewV3Match({
     player1UserId: user1.id,
     player0Credentials: player0Creds,
     player1Credentials: player1Creds,
+    isCorrespondence,
   });
 }
 
@@ -245,13 +248,6 @@ export interface ActiveMatch {
   credentials: string;
 }
 
-export async function getActiveV3Match(
-  userId: string
-): Promise<ActiveMatch | null> {
-  const activeMatch = await getActiveMatchForUser(userId);
-  return activeMatch ?? null;
-}
-
 export async function getV3MatchInfo(
   id: string,
   userId?: string
@@ -262,7 +258,7 @@ export async function getV3MatchInfo(
   }
 
   if (userId) {
-    const activeMatch = await getActiveV3Match(userId);
+    const activeMatch = await getActiveMatchForUser(userId);
     if (activeMatch) {
       return {
         match,

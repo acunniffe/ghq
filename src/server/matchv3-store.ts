@@ -1,14 +1,31 @@
+import { createClient } from "@supabase/supabase-js";
 import { ActiveMatch, MatchV3 } from "@/lib/types";
+import { matchToSupabaseMatch, supabaseMatchToMatchV3 } from "./supabase";
 
-const matches: Record<string, MatchV3> = {};
-const activeMatches: Record<string, ActiveMatch> = {};
+const supabase = createClient(
+  "https://wjucmtrnmjcaatbtktxo.supabase.co",
+  process.env.SUPABASE_SECRET_KEY!
+);
 
 export async function createMatchV3(match: MatchV3): Promise<void> {
-  matches[match.id] = match;
+  const { error } = await supabase
+    .from("matches")
+    .insert(matchToSupabaseMatch(match));
+  if (error) {
+    throw error;
+  }
 }
 
 export async function fetchMatchV3(id: string): Promise<MatchV3 | undefined> {
-  return matches[id];
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) {
+    throw error;
+  }
+  return supabaseMatchToMatchV3(data);
 }
 
 interface CreateActiveMatchesOptions {
@@ -17,6 +34,7 @@ interface CreateActiveMatchesOptions {
   player1UserId: string;
   player0Credentials: string;
   player1Credentials: string;
+  isCorrespondence: boolean;
 }
 
 export async function createActiveMatches({
@@ -25,22 +43,41 @@ export async function createActiveMatches({
   player1UserId,
   player0Credentials,
   player1Credentials,
+  isCorrespondence,
 }: CreateActiveMatchesOptions): Promise<void> {
-  // TODO(tyler): use active_user_matches table to create active matches here and below
-  activeMatches[player0UserId] = {
-    id: matchId,
-    playerId: "0",
-    credentials: player0Credentials,
-  };
-  activeMatches[player1UserId] = {
-    id: matchId,
-    playerId: "1",
-    credentials: player1Credentials,
-  };
+  const { error } = await supabase.from("active_user_matches").insert([
+    {
+      user_id: player0UserId,
+      match_id: matchId,
+      player_id: "0",
+      credentials: player0Credentials,
+      is_correspondence: isCorrespondence,
+    },
+    {
+      user_id: player1UserId,
+      match_id: matchId,
+      player_id: "1",
+      credentials: player1Credentials,
+      is_correspondence: isCorrespondence,
+    },
+  ]);
+  if (error) throw error;
 }
 
 export async function getActiveMatchForUser(
   userId: string
 ): Promise<ActiveMatch | undefined> {
-  return activeMatches[userId];
+  const { data, error } = await supabase
+    .from("active_user_matches")
+    .select("match_id, player_id, credentials")
+    .eq("user_id", userId)
+    .eq("is_correspondence", false) // distinguish between live and correspondence, correspondence allows multiple simultaneous games
+    .single();
+  if (error) return undefined;
+
+  return {
+    id: data?.match_id || "",
+    playerId: data?.player_id,
+    credentials: data?.credentials,
+  };
 }

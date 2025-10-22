@@ -32,11 +32,7 @@ import { getMatchSummary } from "./server/match-summary";
 import { updateUserStats } from "./server/user-stats";
 import { getUserSummary } from "./server/user-summary";
 import { getActivePlayersInLast30Days, listMatches } from "./server/matches";
-import {
-  addGameServerRoutes,
-  createNewV3Match,
-  getActiveV3Match,
-} from "./server/game-server";
+import { addGameServerRoutes, createNewV3Match } from "./server/game-server";
 
 async function runServer() {
   const supabase = createClient(
@@ -103,15 +99,6 @@ async function runServer() {
       ctx.request.query.rated === undefined
         ? true
         : (ctx.request.query.rated as string) === "true";
-
-    // NB(tyler): For now, we only support V3 matches for unrated games.
-    if (!rated) {
-      const match = await getActiveV3Match(userId);
-      if (match) {
-        ctx.body = JSON.stringify({ match });
-        return;
-      }
-    }
 
     // If user is already in a match, return the match id
     const activeMatch = await getActiveMatch(userId);

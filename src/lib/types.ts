@@ -71,8 +71,10 @@ export interface MatchV3 {
   createdAt: string;
   player0UserId: string;
   player0CredentialsHash: string;
+  player0Elo: number;
   player1UserId: string;
   player1CredentialsHash: string;
+  player1Elo: number;
   timeControlName: string;
   timeControlAllowedTime: number;
   timeControlBonus: number;
