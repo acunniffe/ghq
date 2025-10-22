@@ -17,6 +17,7 @@ import {
   OnlineMultiplayer,
 } from "@/game/engine-v2-multiplayer";
 import { useAuth } from "@clerk/nextjs";
+import GameLoader from "./GameLoader";
 
 export interface GHQBoardV3Props extends GameClientOptions {
   bot?: boolean;
@@ -82,14 +83,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
   const { seek, game, showSim } = useSeek({ realGame, simGame });
 
   if (!game) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen gap-4">
-        <div className="text-lg font-bold text-blue-500">
-          Loading GHQ Game Engine...
-        </div>
-        <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
-      </div>
-    );
+    return <GameLoader message="Loading engine..." />;
   }
 
   return (

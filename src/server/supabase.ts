@@ -14,14 +14,14 @@ export interface SupabaseMatch {
   rated: boolean;
 
   // TODO(tyler): add these to the sql
-  player_0_credentials_hash: string;
-  player_1_credentials_hash: string;
-  time_control_name: string;
-  time_control_allowed_time: number;
-  time_control_bonus: number;
+  player_0_credentials_hash: string | null;
+  player_1_credentials_hash: string | null;
+  time_control_name: string | null;
+  time_control_allowed_time: number | null;
+  time_control_bonus: number | null;
   time_control_variant: string | null;
   starting_fen: string | null;
-  pgn: string;
+  pgn: string | null;
 }
 
 export interface SupabaseActiveUserMatch {
@@ -61,20 +61,20 @@ export function matchToSupabaseMatch(
 export function supabaseMatchToMatchV3(supabaseMatch: SupabaseMatch): MatchV3 {
   return {
     id: supabaseMatch.id,
-    createdAt: supabaseMatch.created_at.toISOString(),
+    createdAt: new Date(supabaseMatch.created_at).toISOString(),
     player0UserId: supabaseMatch.player0_id,
     player0Elo: supabaseMatch.player0_elo,
-    player0CredentialsHash: supabaseMatch.player_0_credentials_hash,
+    player0CredentialsHash: supabaseMatch.player_0_credentials_hash ?? "",
     player1UserId: supabaseMatch.player1_id,
     player1Elo: supabaseMatch.player1_elo,
-    player1CredentialsHash: supabaseMatch.player_1_credentials_hash,
+    player1CredentialsHash: supabaseMatch.player_1_credentials_hash ?? "",
     rated: supabaseMatch.rated,
     isCorrespondence: supabaseMatch.is_correspondence ?? false,
-    timeControlName: supabaseMatch.time_control_name,
-    timeControlAllowedTime: supabaseMatch.time_control_allowed_time,
-    timeControlBonus: supabaseMatch.time_control_bonus,
+    timeControlName: supabaseMatch.time_control_name ?? "",
+    timeControlAllowedTime: supabaseMatch.time_control_allowed_time ?? 0,
+    timeControlBonus: supabaseMatch.time_control_bonus ?? 0,
     timeControlVariant: supabaseMatch.time_control_variant ?? undefined,
     startingFen: supabaseMatch.starting_fen ?? undefined,
-    pgn: supabaseMatch.pgn,
+    pgn: supabaseMatch.pgn || "",
   };
 }

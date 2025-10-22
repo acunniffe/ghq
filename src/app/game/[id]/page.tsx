@@ -2,10 +2,12 @@
 
 import { API_URL } from "@/app/live/config";
 import { GHQBoardV3 } from "@/components/board-v3/boardv3";
+import GameLoader from "@/components/board-v3/GameLoader";
 import { TimeControl } from "@/game/constants";
 import { ghqFetch } from "@/lib/api";
 import { MatchV3Info } from "@/lib/types";
 import { useAuth } from "@clerk/nextjs";
+import { Loader2 } from "lucide-react";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
@@ -44,12 +46,23 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     };
   }, [matchInfo]);
 
+  const playerId = useMemo(() => {
+    return matchInfo?.playerInfo?.playerId;
+  }, [matchInfo]);
+  const credentials = useMemo(() => {
+    return matchInfo?.playerInfo?.credentials;
+  }, [matchInfo]);
+
+  if (!playerId || !credentials || !timeControl) {
+    return <GameLoader message="Fetching game data..." />;
+  }
+
   return (
     <div>
       <GHQBoardV3
-        playerId={matchInfo?.playerInfo?.playerId}
+        playerId={playerId}
         id={id}
-        credentials={matchInfo?.playerInfo?.credentials}
+        credentials={credentials}
         timeControl={timeControl}
       />
     </div>
