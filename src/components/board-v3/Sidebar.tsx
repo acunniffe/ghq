@@ -12,13 +12,15 @@ import AbandonButton from "./AbandonButton";
 import SettingsMenu, { Settings } from "./SettingsMenu";
 import { Swords } from "lucide-react";
 import { config } from "@/lib/config";
-import { GameClient } from "@/game/engine-v2";
+import { GameClient, gameoverReason } from "@/game/engine-v2";
 import ShareGameDialog from "./ShareGameDialog";
 import { SeekFunc } from "./useSeek";
+import { GameoverState } from "@/game/engine";
 
 export default function Sidebar({
   game,
   seek,
+  gameover,
   seekIndex,
   className,
   settings,
@@ -26,6 +28,7 @@ export default function Sidebar({
 }: {
   game: GameClient;
   seek: SeekFunc;
+  gameover: GameoverState | undefined;
   seekIndex: number;
   className: string;
   settings: Settings;
@@ -45,12 +48,15 @@ export default function Sidebar({
     return (
       <>
         <EvalBar evalValue={game.eval()} />
-        <HistoryLog game={game} seek={seek} seekIndex={seekIndex} />
+        <HistoryLog
+          game={game}
+          gameover={gameover}
+          seek={seek}
+          seekIndex={seekIndex}
+        />
       </>
     );
   }, [game.moves, seekIndex]);
-
-  const gameover = game.gameover();
 
   return (
     <div
@@ -81,7 +87,7 @@ export default function Sidebar({
             )}
           </h2>
           <div className="text-center text-gray-800 text-sm">
-            {gameover.reason && gameover.reason}
+            {gameoverReason(gameover)}
           </div>
           <div className="flex gap-1 mt-3">
             <ShareGameDialog game={game} />

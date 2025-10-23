@@ -6,7 +6,7 @@ import GameoverDialog from "./GameoverDialog";
 import { useEffect, useMemo, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import MobileHeader from "../MobileHeader";
-import { GameClientOptions, useEngine } from "@/game/engine-v2";
+import { GameClient, GameClientOptions, useEngine } from "@/game/engine-v2";
 import { useGameClient } from "./useGameClient";
 import useSeek from "./useSeek";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { useAuth } from "@clerk/nextjs";
 import GameLoader from "./GameLoader";
 import { MatchV3 } from "@/lib/types";
 import { useUsers } from "./useUsers";
+import { GameoverState } from "@/game/engine";
 
 export interface GHQBoardV3Props extends GameClientOptions {
   bot?: boolean;
@@ -91,6 +92,10 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
   }, [opts.match]);
   const { users } = useUsers({ userIds });
 
+  const gameover = useMemo(() => {
+    return getGameover(realGame, opts.match);
+  }, [realGame, opts.match, realGame?.ended]);
+
   // Hack so we can debug in the console
   if (typeof window !== "undefined") {
     (window as any).realGame = realGame;
@@ -114,6 +119,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
         <Sidebar
           game={realGame || game}
           seek={seek}
+          gameover={gameover}
           seekIndex={seekIndex}
           className="order-3 md:order-1 mt-8 md:mt-0"
           settings={settings}
@@ -131,8 +137,36 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
       <GameoverDialog
         game={realGame || game}
         match={opts.match}
+        gameover={gameover}
         users={users}
       />
     </div>
   );
+}
+
+function getGameover(
+  game: GameClient | null,
+  match?: MatchV3
+): GameoverState | undefined {
+  if (!game) {
+    return undefined;
+  }
+
+  // If the match object from the database is available, use it to get the gameover state first.
+  if (match?.status && match.gameoverReason) {
+    const winner =
+      match.status === "WIN"
+        ? match.player0UserId === match.winnerUserId
+          ? "RED"
+          : "BLUE"
+        : undefined;
+    return {
+      winner,
+      status: match.status as "WIN" | "DRAW",
+      reason: match.gameoverReason,
+    };
+  }
+
+  // Otherwise use the gameover from the game client.
+  return game.gameover();
 }

@@ -104,12 +104,12 @@ export default function Reserve({
           <div className="flex gap-2 justify-center items-center">
             <MoveCounter
               numMoves={game.numMovesThisTurn()}
-              active={currentPlayerTurn === player && !game.gameover()}
+              active={currentPlayerTurn === player && !game.ended}
             />
             <CountdownTimer
               active={
                 currentPlayerTurn === player &&
-                !game.gameover() &&
+                !game.ended &&
                 !game.isReplayMode
               }
               player={player}

@@ -26,6 +26,7 @@ export default function ControlsView({
   cancel: () => void;
   togglePOV: () => void;
 }) {
+  const [justSkipped, setJustSkipped] = useState(false);
   const canReplay = useMemo(
     () => game.isMyTurn() && game.turn > 1,
     [game.turn]
@@ -44,11 +45,22 @@ export default function ControlsView({
     }
   }, [game]);
 
-  const doSkip = useCallback(() => {
-    if (game.canEndTurn()) {
-      game.endTurn();
+  const canSkip = useMemo(() => {
+    if (justSkipped) {
+      return false;
     }
-  }, [game]);
+    return game.canEndTurn();
+  }, [game.moves, justSkipped]);
+  const doSkip = useCallback(() => {
+    if (canSkip) {
+      setJustSkipped(true);
+      game.endTurn();
+
+      setTimeout(() => {
+        setJustSkipped(false);
+      }, 1000); // NB(tyler): disable skipping for 1 second to prevent accidental skips
+    }
+  }, [game, canSkip]);
 
   const doReplay = useCallback(() => {
     if (canReplay) {
@@ -67,8 +79,6 @@ export default function ControlsView({
     forward: () => seek({ delta: 1 }),
     togglePOV,
   });
-
-  // TODO(tyler): after game is over, we can just have forward/backward buttons
 
   return (
     <div className="flex flex-wrap gap-1 m-1 justify-center">
@@ -109,7 +119,7 @@ export default function ControlsView({
             text={game.needsTurnConfirmation ? "Confirm" : "Skip"}
             tooltip="Skip or confirm remainder of turn. If both players skip, it's a draw"
             onClick={doSkip}
-            disabled={!game.canEndTurn()}
+            disabled={!canSkip}
             shortcut="⏎"
             className={
               game.needsTurnConfirmation

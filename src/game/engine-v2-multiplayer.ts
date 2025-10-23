@@ -103,6 +103,8 @@ export class OnlineMultiplayer implements Multiplayer {
       return;
     }
 
+    // TODO(tyler): seems like tokens are expiring, we should figure out how to refresh the connection or do something else.
+
     try {
       const token = await this.getToken();
       this.abortController = new AbortController();

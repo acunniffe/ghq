@@ -2,14 +2,16 @@ import { ReactNode, useCallback, useEffect, useMemo } from "react";
 import { GameClient, Turn } from "@/game/engine-v2";
 import {
   AllowedMove,
+  GameoverState,
   Orientation,
   Player,
+  Square,
   Units,
   UnitType,
 } from "@/game/engine";
 import { coordinateToAlgebraic, degreesToCardinal } from "@/game/notation";
 import {
-  ArrowBigRightDash,
+  ArrowBigRight,
   Bomb,
   Crosshair,
   RotateCw,
@@ -23,19 +25,29 @@ export function HistoryLog({
   game,
   seek,
   seekIndex,
+  gameover,
 }: {
   game: GameClient;
   seek: SeekFunc;
   seekIndex: number;
+  gameover: GameoverState | undefined;
 }) {
-  const gameover = game.gameover();
-
   useEffect(() => {
     const messagesDiv = document.querySelector("#history-log-list");
     if (messagesDiv) {
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
   }, [game.moves.length]);
+
+  useEffect(() => {
+    const highlightedElement = document.getElementById(`move-${seekIndex - 1}`);
+    if (highlightedElement) {
+      highlightedElement.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [seekIndex]);
 
   const onMoveClick = useCallback(
     (index: number) => {
@@ -86,18 +98,23 @@ export function HistoryLog({
       <div className="font-bold text-gray-800">Activity</div>
       <div
         id="history-log-list"
-        className="overflow-y-auto border h-[600px] flex flex-col rounded bg-gray-50"
+        className="overflow-y-auto border h-[600px] flex flex-col rounded"
       >
         {detailedMoves.map(
           ({ turn, turnIndex, move, moveIndex }, overallMoveIndex) => {
-            const readable = moveToReadableString(move);
+            const readable = moveToReadableString(
+              game.movePieces[overallMoveIndex],
+              move
+            );
             const player = turnIndex % 2 === 0 ? "RED" : "BLUE";
 
             return (
               <div
                 key={overallMoveIndex}
+                id={`move-${overallMoveIndex}`}
                 className={cn(
                   "inline-flex justify-between items-center hover:bg-gray-200 px-2 py-0.5 text-xs text-gray-800",
+                  turnIndex % 2 === 0 ? "bg-gray-50" : "",
                   overallMoveIndex === seekIndex - 1 && "bg-gray-200",
                   moveIndex === turn.moves.length - 1 && turn.elapsedSecs > 0
                     ? "border-b border-gray-200"
@@ -107,11 +124,15 @@ export function HistoryLog({
                 onClick={() => onMoveClick(overallMoveIndex + 1)}
               >
                 <div className="flex items-center space-x-3">
-                  <span className="text-gray-600 text-xxs">
-                    {turnIndex + 1}
+                  <span className="text-gray-800/70 text-xxs w-2">
+                    {moveIndex === turn.moves.length - 1 && turnIndex + 1}
                   </span>
-                  <div className="inline-flex items-center space-x-1">
-                    {renderMove(game, move, player)}
+                  <div className="inline-flex items-center space-x-1 text-gray-800">
+                    {renderMove(
+                      game.movePieces[overallMoveIndex],
+                      move,
+                      player
+                    )}
                   </div>
                 </div>
 
@@ -140,7 +161,7 @@ export function HistoryLog({
               <>
                 {gameover.winner.charAt(0).toUpperCase() +
                   gameover.winner.slice(1).toLowerCase()}{" "}
-                won {gameover.reason}!
+                won!
               </>
             )}
           </div>
@@ -150,7 +171,7 @@ export function HistoryLog({
   );
 }
 
-function moveToReadableString(move: AllowedMove): string {
+function moveToReadableString(square: Square, move: AllowedMove): string {
   if (move.name === "Skip") {
     return "Skipped rest of turn";
   }
@@ -173,7 +194,9 @@ function moveToReadableString(move: AllowedMove): string {
     const [from, to, capturePreference] = move.args;
     const fromNotation = coordinateToAlgebraic(from);
     const toNotation = coordinateToAlgebraic(to);
-    let description = `Moved piece from ${fromNotation} to ${toNotation}`;
+    let description = `Moved ${unitTypeToReadableString(
+      square?.type
+    )} from ${fromNotation} to ${toNotation}`;
 
     if (capturePreference) {
       const captureNotation = coordinateToAlgebraic(capturePreference);
@@ -188,7 +211,9 @@ function moveToReadableString(move: AllowedMove): string {
     const fromNotation = coordinateToAlgebraic(from);
     const toNotation = coordinateToAlgebraic(to);
     const direction = degreesToCardinal(orientation as Orientation);
-    return `Moved piece from ${fromNotation} to ${toNotation} and rotated ${direction}`;
+    return `Moved ${unitTypeToReadableString(
+      square?.type
+    )} from ${fromNotation} to ${toNotation} and rotated ${direction}`;
   }
 
   if (move.name === "AutoCapture") {
@@ -206,14 +231,14 @@ function moveToReadableString(move: AllowedMove): string {
 }
 
 function renderMove(
-  game: GameClient,
+  square: Square,
   move: AllowedMove,
   player: Player
 ): ReactNode {
   if (move.name === "Skip") {
     return (
       <>
-        <SkipForward className="w-3 h-3" />
+        <SkipForward className="w-2 h-2" />
         <span>skip</span>
       </>
     );
@@ -240,8 +265,9 @@ function renderMove(
     const [from, to, capturePreference] = move.args;
     return (
       <>
+        {square && <PieceIcon player={player} unitType={square?.type} />}
         <span>{coordinateToAlgebraic(from)}</span>
-        <ArrowBigRightDash className="w-3 h-3" />
+        <ArrowBigRight className="w-3 h-3" />
         <span>{coordinateToAlgebraic(to)}</span>
         {capturePreference && (
           <>
@@ -257,8 +283,9 @@ function renderMove(
     const [from, to, orientation] = move.args;
     return (
       <>
+        {square && <PieceIcon player={player} unitType={square?.type} />}
         <span>{coordinateToAlgebraic(from)}</span>
-        <ArrowBigRightDash className="w-3 h-3" />
+        <ArrowBigRight className="w-3 h-3" />
         <span>{coordinateToAlgebraic(to)}</span>
         <RotateCw className="w-3 h-3" />
         <span>{degreesToCardinal(orientation as Orientation)}</span>
@@ -297,7 +324,7 @@ function PieceIcon({
 }) {
   return (
     <img
-      className="inline-block"
+      className="inline-block mr-1"
       src={`/${Units[unitType].imagePathPrefix}-${player.toLowerCase()}.png`}
       width={10}
       height={10}
@@ -334,4 +361,14 @@ function DurationIndicator({
       )}
     ></div>
   );
+}
+
+function unitTypeToReadableString(unitType?: UnitType): string {
+  if (!unitType) {
+    return "piece";
+  }
+  if (typeof unitType === "number") {
+    return "piece";
+  }
+  return unitType.toLowerCase().replace(/_/g, " ");
 }

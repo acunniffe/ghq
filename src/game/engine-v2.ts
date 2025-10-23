@@ -568,8 +568,7 @@ export class GameClient {
   private thisTurnBoards: PythonBoard[];
   private thisTurnMoves: AllowedMove[];
   private thisTurnCaptures: PlayerPiece[];
-  private movePieces: (NonNullSquare | null)[]; // same length as moves
-  private isProcessingMoves: boolean = false; // true if we the game is processing moves, e.g. from onTurnPlayed()
+  public movePieces: Square[]; // same length as moves
 
   // Time control
   public timeControl?: TimeControl;
@@ -634,11 +633,9 @@ export class GameClient {
       return;
     }
 
-    this.isProcessingMoves = true;
     this.multiplayer.initGame();
 
     this.multiplayer.onTurnPlayed((turn) => {
-      this.isProcessingMoves = true;
       if (turn.turn !== this.turn) {
         // TODO(tyler): if this is a turn in the past, we should verify that it matches our history,
         // otherwise we have a mismatch between client and server game state.
@@ -649,7 +646,6 @@ export class GameClient {
       }
 
       this.pushTurn(turn);
-      this.isProcessingMoves = false;
     });
   }
 
@@ -759,10 +755,15 @@ export class GameClient {
     }
 
     if (move.capture_preference) {
-      this.thisTurnCaptures.push({
-        piece: pieceToSquare(this.board().piece_at(move.capture_preference))!,
-        coordinate: coordinateFromPythonSquare(move.capture_preference),
-      });
+      const captureSquare = pieceToSquare(
+        this.board().piece_at(move.capture_preference)
+      );
+      if (captureSquare) {
+        this.thisTurnCaptures.push({
+          piece: captureSquare,
+          coordinate: coordinateFromPythonSquare(move.capture_preference),
+        });
+      }
     }
 
     // Update game state
@@ -798,13 +799,7 @@ export class GameClient {
       return undefined;
     }
 
-    // Don't show gameover state until we've processed all turns, to avoid accidentally thinking its a timeout or something.
-    if (this.isProcessingMoves) {
-      return undefined;
-    }
-
     if (this.playerResigned) {
-      this.ended = true;
       return {
         status: "WIN",
         winner: this.playerResigned === "0" ? "BLUE" : "RED",
@@ -818,7 +813,6 @@ export class GameClient {
       true
     );
     if (currentPlayerTimeLeftMs !== null && currentPlayerTimeLeftMs <= 0) {
-      this.ended = true;
       return {
         status: "WIN",
         winner: currentPlayer === "RED" ? "BLUE" : "RED", // Opponent wins by time out
@@ -839,7 +833,6 @@ export class GameClient {
         status = "WIN";
       }
 
-      this.ended = true;
       return {
         status,
         winner,
@@ -943,6 +936,10 @@ export class GameClient {
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
     this.thisTurnCaptures = [];
+
+    if (this.gameover()) {
+      this.ended = true;
+    }
     this.notify();
   }
 
@@ -1198,4 +1195,11 @@ function getV1Board(board: PythonBoard): Board {
 
 function coordinateFromPythonSquare(square: PythonSquare): Coordinate {
   return coordinateMapping[square];
+}
+
+export function gameoverReason(gameover?: GameoverState): string {
+  if (!gameover) {
+    return "";
+  }
+  return (gameover.reason || "").replace("hq", "HQ");
 }

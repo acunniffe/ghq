@@ -115,18 +115,12 @@ export default function useBoard({
     }
   }, [userActionState.chosenMove]);
 
-  // Play capture sounds when a start-of-turn capture has occurred.
+  // Clear bombardments for the user when the turn starts.
   useEffect(() => {
-    const latestMove = game.moves[game.moves.length - 1];
-    if (!latestMove) {
-      return;
+    if (game.isMyTurn()) {
+      game.clearBombardments();
     }
-    const startOfTurnCaptures =
-      latestMove.name === "AutoCapture" && latestMove.args[0] === "bombard";
-    if (startOfTurnCaptures) {
-      playCaptureSound();
-    }
-  }, [game.moves]);
+  }, [game.turn]);
 
   return {
     animatedBoard,

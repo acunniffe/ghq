@@ -8,17 +8,20 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import HomeButton from "./HomeButton";
 import ShareGameDialog from "./ShareGameDialog";
-import { GameClient, Player } from "@/game/engine-v2";
+import { GameClient, gameoverReason, Player } from "@/game/engine-v2";
 import { MatchV3, User } from "@/lib/types";
 import Username from "../Username";
+import { GameoverState } from "@/game/engine";
 
 export default function GameoverDialog({
   game,
   match,
+  gameover,
   users,
 }: {
   game: GameClient;
   match?: MatchV3;
+  gameover: GameoverState | undefined;
   users: User[];
 }) {
   const [open, setOpen] = useState(false);
@@ -35,26 +38,6 @@ export default function GameoverDialog({
 
   const redPlayer = useMemo(() => getUser("RED"), [getUser]);
   const bluePlayer = useMemo(() => getUser("BLUE"), [getUser]);
-
-  const gameover = useMemo(() => {
-    // If the match object from the database is available, use it to get the gameover state first.
-    if (match?.status && match.gameoverReason) {
-      const winner =
-        match.status === "WIN"
-          ? match.player0UserId === match.winnerUserId
-            ? "RED"
-            : "BLUE"
-          : undefined;
-      return {
-        winner,
-        status: match.status,
-        reason: match.gameoverReason,
-      };
-    }
-
-    // Otherwise use the gameover from the game client.
-    return game.gameover();
-  }, [game.turn, game.moves, match, game.ended]);
 
   useEffect(() => {
     setOpen(!!gameover);
@@ -86,7 +69,9 @@ export default function GameoverDialog({
                   ? `${toTitleCase(gameover.winner)} won!`
                   : "It's a draw!"}
               </div>
-              <div className="text-xs text-gray-600">{gameover?.reason}</div>
+              <div className="text-xs text-gray-600">
+                {gameoverReason(gameover)}
+              </div>
             </div>
 
             <div className="flex gap-2">

@@ -168,29 +168,14 @@ export function addGameServerRoutes(
       return;
     }
 
-    const { turn, playerId, credentials } = ctx.request.body as SendTurnRequest;
+    const turnReq = ctx.request.body as SendTurnRequest;
 
-    if (!credentials) {
+    if (!isTurnAuthorized(userId, turnReq, match)) {
       ctx.throw(401, "Unauthorized");
       return;
     }
 
-    if (
-      playerId === "0" &&
-      (match.player0UserId !== userId ||
-        hashCredentials(credentials) !== match.player0CredentialsHash)
-    ) {
-      ctx.throw(401, "Unauthorized");
-      return;
-    }
-    if (
-      playerId === "1" &&
-      (match.player1UserId !== userId ||
-        hashCredentials(credentials) !== match.player1CredentialsHash)
-    ) {
-      ctx.throw(401, "Unauthorized");
-      return;
-    }
+    const { turn } = turnReq;
 
     const updatedMatch = await updateMatchPGN(id, (match): SupabaseMatch => {
       const turns = pgnToTurns(match.pgn || "");
@@ -442,14 +427,15 @@ function isTurnAuthorized(
   return (
     authenticatedUserId === requiredPlayerId &&
     hashCredentials(credentials) === requiredHashCredentials &&
-    requiredTurnValidator(turn.turn)
+    // either they're playing the correct order turn or they've resigned
+    (requiredTurnValidator(turn) || turn.playerResigned === playerId)
   );
 }
 
-function isEven(turn: number): boolean {
-  return turn % 2 === 0;
+function isEven(turn: Turn): boolean {
+  return turn.turn % 2 === 0;
 }
 
-function isOdd(turn: number): boolean {
-  return turn % 2 === 1;
+function isOdd(turn: Turn): boolean {
+  return turn.turn % 2 === 1;
 }
