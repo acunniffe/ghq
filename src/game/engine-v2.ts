@@ -646,7 +646,7 @@ export class GameClient {
         return;
       }
 
-      this.pushTurn(turn, true);
+      this.pushTurn(turn);
       this.isProcessingMoves = false;
     });
   }
@@ -911,7 +911,7 @@ export class GameClient {
     }
   }
 
-  pushTurn(turn: Turn, skipBombardments: boolean = false) {
+  pushTurn(turn: Turn) {
     if (turn.isResignation) {
       this.playerResigned = turn.turn % 2 === 0 ? "0" : "1"; // 0 is red, 1 is blue
     }
@@ -922,10 +922,10 @@ export class GameClient {
 
     this.getTurn().elapsedSecs = turn.elapsedSecs;
 
-    this.finishTurn(skipBombardments);
+    this.finishTurn();
   }
 
-  finishTurn(skipBombardments: boolean = false) {
+  finishTurn() {
     if (this.needsTurnConfirmation) {
       this.needsTurnConfirmation = false;
     }
@@ -937,9 +937,6 @@ export class GameClient {
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
     this.thisTurnCaptures = [];
-    if (!skipBombardments) {
-      this.clearBombardments();
-    }
     this.notify();
   }
 
@@ -1053,7 +1050,7 @@ export class GameClient {
 
       const movesLeftToAdd = seekIndex - i;
       if (movesLeftToAdd > turn.moves.length) {
-        this.pushTurn(turn, true);
+        this.pushTurn(turn);
         i += turn.moves.length;
         continue;
       }

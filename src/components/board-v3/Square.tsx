@@ -428,7 +428,7 @@ function getMoveAndCaptureCandidates(
   for (const move of allowedMoves) {
     if (
       move.name === "AutoCapture" &&
-      move.args[0] === "free" &&
+      (move.args[0] === "free" || move.args[0] === "bombard") &&
       areCoordsEqual(coord, move.args[1])
     ) {
       isCaptureCandidate = true;
@@ -442,7 +442,10 @@ function getMoveOrigin(move: AllowedMove): Coordinate | undefined {
   if (move.name === "Move" || move.name === "MoveAndOrient") {
     return move.args[0];
   }
-  if (move.name === "AutoCapture" && move.args[0] === "free") {
+  if (
+    move.name === "AutoCapture" &&
+    (move.args[0] === "free" || move.args[0] === "bombard")
+  ) {
     return move.args[1];
   }
   return undefined;

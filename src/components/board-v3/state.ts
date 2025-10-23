@@ -74,7 +74,7 @@ export function updateClick(
     possibleAllowedMoves.some(
       (move) =>
         move.name === "AutoCapture" &&
-        move.args[0] === "free" &&
+        (move.args[0] === "free" || move.args[0] === "bombard") &&
         areCoordsEqual(move.args[1], [rowIndex, colIndex])
     )
   ) {
@@ -82,7 +82,7 @@ export function updateClick(
       chosenMove: possibleAllowedMoves.find(
         (move) =>
           move.name === "AutoCapture" &&
-          move.args[0] === "free" &&
+          (move.args[0] === "free" || move.args[0] === "bombard") &&
           areCoordsEqual(move.args[1], [rowIndex, colIndex])
       ),
     };
