@@ -49,7 +49,9 @@ export function MatchLink({ game }: { game: MatchModel }) {
             )}
           </>
         ) : (
-          DateTime.fromISO(game.createdAt).toRelative()
+          <div className="text-gray-500">
+            {DateTime.fromISO(game.createdAt).toRelative()}
+          </div>
         )}
       </div>
     </Link>

@@ -118,7 +118,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
         seek={seek}
         settings={settings}
       />
-      <GameoverDialog game={game} match={opts.match} />
+      <GameoverDialog game={realGame || game} match={opts.match} />
     </div>
   );
 }

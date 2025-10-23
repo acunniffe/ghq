@@ -64,6 +64,8 @@ export default function ControlsView({
     forward: () => seek({ delta: 1 }),
   });
 
+  // TODO(tyler): after game is over, we can just have forward/backward buttons
+
   return (
     <div className="flex gap-1 m-1">
       <ActionButton

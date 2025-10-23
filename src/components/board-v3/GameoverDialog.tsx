@@ -22,14 +22,16 @@ export default function GameoverDialog({
 
   const gameover = useMemo(() => {
     // If the match object from the database is available, use it to get the gameover state first.
-    if (match?.status && match.winnerUserId && match.gameoverReason) {
+    if (match?.status && match.gameoverReason) {
+      const winner =
+        match.status === "WIN"
+          ? match.player0UserId === match.winnerUserId
+            ? "RED"
+            : "BLUE"
+          : undefined;
       return {
-        winner:
-          match.status === "WIN"
-            ? match.player0UserId === match.winnerUserId
-              ? "RED"
-              : "BLUE"
-            : undefined,
+        winner,
+        status: match.status,
         reason: match.gameoverReason,
       };
     }
