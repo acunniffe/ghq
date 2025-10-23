@@ -17,11 +17,12 @@ import { pieceSizes } from "@/game/constants";
 import { useMeasure } from "@uidotdev/usehooks";
 import { squareSizes } from "@/game/constants";
 import { SeekFunc } from "./useSeek";
-import { MatchV3 } from "@/lib/types";
+import { MatchV3, User } from "@/lib/types";
 
 interface PlayAreaProps {
   className: string;
   game: GameClient;
+  users: User[];
   match?: MatchV3;
   seek: SeekFunc;
   settings: Settings;
@@ -31,6 +32,7 @@ export default function PlayArea({
   className,
   game,
   match,
+  users,
   seek,
   settings,
 }: PlayAreaProps) {
@@ -53,13 +55,6 @@ export default function PlayArea({
     }
     return !playerId ? currentPlayerTurn : playerIdToPlayer(playerId);
   }, [currentPlayerTurn, playerId, isReplayMode, game.turn]);
-  const userIds = useMemo(() => {
-    if (match) {
-      return [match.player0UserId, match.player1UserId];
-    }
-    return [];
-  }, [match]);
-  const { users } = useUsers({ userIds });
 
   const isFlipped = useMemo(() => viewPlayerPref === "BLUE", [viewPlayerPref]);
 

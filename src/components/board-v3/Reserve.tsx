@@ -94,8 +94,7 @@ export default function Reserve({
       >
         <div className="flex justify-between gap-1 w-full">
           <div className="flex gap-2 items-center flex-1">
-            {/* TODO(tyler): implement this */}
-            {game.isOnline && <ConnectionStatus isConnected={isConnected} />}
+            {game.isOnline && <ConnectionStatus isConnected={!!isConnected} />}
             {user ? (
               <Username user={user} includeElo />
             ) : (
@@ -136,9 +135,9 @@ export default function Reserve({
             squareSize={squareSize}
             hideHQ={true}
           />
-          {player === currentPlayer && (
+          {/* {player === currentPlayer && (
             <ChatIcon sendChatMessage={sendChatMessage} />
-          )}
+          )} */}
         </div>
       </div>
     </>

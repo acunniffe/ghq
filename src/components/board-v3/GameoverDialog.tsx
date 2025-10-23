@@ -5,20 +5,36 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import HomeButton from "./HomeButton";
 import ShareGameDialog from "./ShareGameDialog";
-import { GameClient } from "@/game/engine-v2";
-import { MatchV3 } from "@/lib/types";
+import { GameClient, Player } from "@/game/engine-v2";
+import { MatchV3, User } from "@/lib/types";
+import Username from "../Username";
 
 export default function GameoverDialog({
   game,
   match,
+  users,
 }: {
   game: GameClient;
   match?: MatchV3;
+  users: User[];
 }) {
   const [open, setOpen] = useState(false);
+
+  const getUser = useCallback(
+    (player: Player) => {
+      const userId =
+        player === "RED" ? match?.player0UserId : match?.player1UserId;
+      const user = users.find((u) => u.id === userId);
+      return user ? <Username user={user} /> : toTitleCase(player);
+    },
+    [users, match]
+  );
+
+  const redPlayer = useMemo(() => getUser("RED"), [getUser]);
+  const bluePlayer = useMemo(() => getUser("BLUE"), [getUser]);
 
   const gameover = useMemo(() => {
     // If the match object from the database is available, use it to get the gameover state first.
@@ -49,15 +65,31 @@ export default function GameoverDialog({
         <DialogHeader>
           <DialogTitle>Game ended</DialogTitle>
           <DialogDescription></DialogDescription>
-          <div className="flex flex-col gap-1 items-center">
-            <div className="font-bold">
-              {gameover?.winner
-                ? `${toTitleCase(gameover.winner)} won!`
-                : "Game ended in a draw"}
+          <div className="flex flex-col gap-4 items-center">
+            <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-4">
+              <div className="flex justify-center sm:justify-end w-full">
+                <div className="bg-red-500/10 border border-red-500 rounded-lg px-2 py-1">
+                  {redPlayer}
+                </div>
+              </div>
+              <div className="text-gray-600 text-xs font-medium">vs.</div>
+              <div className="flex justify-center sm:justify-start w-full">
+                <div className="bg-blue-500/10 border border-blue-500 rounded-lg px-2 py-1">
+                  {bluePlayer}
+                </div>
+              </div>
             </div>
-            <div className="text-sm text-gray-500">{gameover?.reason}</div>
 
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-col w-full items-center justify-center">
+              <div className="font-bold text-gray-800">
+                {gameover?.winner
+                  ? `${toTitleCase(gameover.winner)} won!`
+                  : "It's a draw!"}
+              </div>
+              <div className="text-xs text-gray-600">{gameover?.reason}</div>
+            </div>
+
+            <div className="flex gap-2">
               <ShareGameDialog game={game} />
               <HomeButton />
             </div>

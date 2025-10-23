@@ -3,7 +3,7 @@
 import PlayArea from "./PlayArea";
 import Sidebar from "./Sidebar";
 import GameoverDialog from "./GameoverDialog";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import MobileHeader from "../MobileHeader";
 import { GameClientOptions, useEngine } from "@/game/engine-v2";
@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import GameLoader from "./GameLoader";
 import { MatchV3 } from "@/lib/types";
+import { useUsers } from "./useUsers";
 
 export interface GHQBoardV3Props extends GameClientOptions {
   bot?: boolean;
@@ -82,6 +83,14 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
     isPassAndPlayMode: true,
   });
 
+  const userIds = useMemo(() => {
+    if (opts.match) {
+      return [opts.match.player0UserId, opts.match.player1UserId];
+    }
+    return [];
+  }, [opts.match]);
+  const { users } = useUsers({ userIds });
+
   // Hack so we can debug in the console
   if (typeof window !== "undefined") {
     (window as any).realGame = realGame;
@@ -115,10 +124,15 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
         match={opts.match}
         className="order-1 md:order-2 m-auto"
         game={game}
+        users={users}
         seek={seek}
         settings={settings}
       />
-      <GameoverDialog game={realGame || game} match={opts.match} />
+      <GameoverDialog
+        game={realGame || game}
+        match={opts.match}
+        users={users}
+      />
     </div>
   );
 }
