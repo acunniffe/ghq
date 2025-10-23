@@ -17,7 +17,7 @@ import {
   updateMatchPGN,
   updatePlayerElo,
 } from "./matchv3-store";
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 import { GameoverState } from "@/game/engine";
 import { SupabaseMatch } from "./supabase";
 import { updateUserStats } from "./user-stats";
