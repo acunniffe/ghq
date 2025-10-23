@@ -65,3 +65,39 @@ export function gamesPlayedToBadge(gamesPlayed: number): UserBadge | undefined {
 export function badgeToGamesPlayed(badge: UserBadge): number {
   return BADGE_THRESHOLDS[badge];
 }
+
+export interface MatchV3 {
+  id: string;
+  createdAt: string;
+  player0UserId: string;
+  player0CredentialsHash: string;
+  player0Elo: number;
+  player1UserId: string;
+  player1CredentialsHash: string;
+  player1Elo: number;
+  winnerUserId?: string | null;
+  gameoverReason?: string | null;
+  status?: string | null;
+  timeControlName: string;
+  timeControlAllowedTime: number;
+  timeControlBonus: number;
+  timeControlVariant?: string;
+  rated: boolean;
+  isCorrespondence: boolean;
+  startingFen?: string;
+  pgn: string;
+}
+
+export interface MatchV3Info {
+  match: MatchV3;
+  playerInfo?: {
+    playerId: "0" | "1";
+    credentials: string;
+  };
+}
+
+export interface ActiveMatch {
+  id: string;
+  playerId: "0" | "1";
+  credentials: string;
+}

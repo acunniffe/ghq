@@ -63,7 +63,11 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
         method: "POST",
       });
       if (data.match) {
-        router.push(`/live/${data.match.id}`);
+        if (!rated) {
+          router.push(`/game/${data.match.id}`);
+        } else {
+          router.push(`/live/${data.match.id}`);
+        }
         playGameReadySound();
         setMatchmakingMode(null);
       }

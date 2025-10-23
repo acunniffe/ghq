@@ -32,6 +32,8 @@ import { getMatchSummary } from "./server/match-summary";
 import { updateUserStats } from "./server/user-stats";
 import { getUserSummary } from "./server/user-summary";
 import { getActivePlayersInLast30Days, listMatches } from "./server/matches";
+import { addGameServerRoutes, createNewV3Match } from "./server/game-server";
+import { loadV2Engine } from "./server/engine";
 
 async function runServer() {
   const supabase = createClient(
@@ -40,6 +42,7 @@ async function runServer() {
   );
 
   const ghqGame = newOnlineGHQGame({ onEnd: onGameEnd });
+  const v2Engine = await loadV2Engine();
 
   const db = new PostgresStore({
     database: "postgres",
@@ -77,6 +80,8 @@ async function runServer() {
   setInterval(() => {
     userLifecycle({ supabase, db: server.db });
   }, 5_000);
+
+  addGameServerRoutes(server.router, v2Engine);
 
   server.router.post("/matchmaking", async (ctx) => {
     const userId = ctx.state.auth.userId;
@@ -130,10 +135,24 @@ async function runServer() {
       const player0 = isRandomFirst ? firstPlayer : secondPlayer;
       const player1 = isRandomFirst ? secondPlayer : firstPlayer;
 
-      console.log("Creating match with players", player0, player1);
+      console.log("Creating match with players", player0, player1, rated);
 
       const user0 = await getOrCreateUser(player0);
       const user1 = await getOrCreateUser(player1);
+
+      // NB(tyler): For now, we only support V3 matches for unrated games.
+      if (!rated) {
+        await createNewV3Match({
+          user0,
+          user1,
+          timeControlName: mode,
+          timeControl,
+          isCorrespondence: false,
+          rated,
+        });
+        ctx.body = JSON.stringify({});
+        return;
+      }
 
       const newMatch = await createNewMatch({
         ctx,

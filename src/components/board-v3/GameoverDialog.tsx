@@ -9,11 +9,34 @@ import { useEffect, useMemo, useState } from "react";
 import HomeButton from "./HomeButton";
 import ShareGameDialog from "./ShareGameDialog";
 import { GameClient } from "@/game/engine-v2";
+import { MatchV3 } from "@/lib/types";
 
-export default function GameoverDialog({ game }: { game: GameClient }) {
+export default function GameoverDialog({
+  game,
+  match,
+}: {
+  game: GameClient;
+  match?: MatchV3;
+}) {
   const [open, setOpen] = useState(false);
 
-  const gameover = useMemo(() => game.gameover(), [game.turn, game.moves]);
+  const gameover = useMemo(() => {
+    // If the match object from the database is available, use it to get the gameover state first.
+    if (match?.status && match.winnerUserId && match.gameoverReason) {
+      return {
+        winner:
+          match.status === "WIN"
+            ? match.player0UserId === match.winnerUserId
+              ? "RED"
+              : "BLUE"
+            : undefined,
+        reason: match.gameoverReason,
+      };
+    }
+
+    // Otherwise use the gameover from the game client.
+    return game.gameover();
+  }, [game.turn, game.moves, match]);
 
   useEffect(() => {
     setOpen(!!gameover);

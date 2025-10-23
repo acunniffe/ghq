@@ -8,7 +8,6 @@ export function useUsers({ userIds }: { userIds: string[] }) {
     if (userIds.length !== 2) {
       return;
     }
-
     getUsers(userIds).then((users) => {
       if (users) {
         setUsers(users);

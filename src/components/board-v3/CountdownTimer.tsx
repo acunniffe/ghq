@@ -15,8 +15,6 @@ const CountdownTimer = ({
   const { timeControl } = game;
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
 
-  // TODO(tyler): implement this for replays
-
   useEffect(() => {
     const timeLeft = game.getPlayerTimeLeftMs(player);
     setRemainingTime(timeLeft);
@@ -45,7 +43,7 @@ const CountdownTimer = ({
 
     // Clean up interval when `active` becomes false or when the component unmounts.
     return () => clearInterval(intervalId);
-  }, [timeControl, active]);
+  }, [timeControl, active, game.turn]);
 
   const formatTime = (timeInMs: number | null) => {
     if (!timeControl) return "∞";

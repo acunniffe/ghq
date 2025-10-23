@@ -9,7 +9,7 @@ import RatedBadge from "@/components/RatedBadge";
 export function MatchLink({ game }: { game: MatchModel }) {
   return (
     <Link
-      href={`/live/${game.id}`}
+      href={`/${game.rated === false ? "game" : "live"}/${game.id}`}
       className="p-1 px-2 bg-white/50 border border-white/50 hover:border-blue-700 flex justify-between hover:bg-blue-100 rounded flex-col sm:flex-row"
     >
       <div className="flex gap-1 items-center flex-wrap">

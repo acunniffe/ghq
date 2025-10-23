@@ -19,12 +19,14 @@ import { SeekFunc } from "./useSeek";
 export default function Sidebar({
   game,
   seek,
+  seekIndex,
   className,
   settings,
   setSettings,
 }: {
   game: GameClient;
   seek: SeekFunc;
+  seekIndex: number;
   className: string;
   settings: Settings;
   setSettings: (settings: Settings) => void;
@@ -43,10 +45,10 @@ export default function Sidebar({
     return (
       <>
         <EvalBar evalValue={game.eval()} />
-        <HistoryLog game={game} seek={seek} />
+        <HistoryLog game={game} seek={seek} seekIndex={seekIndex} />
       </>
     );
-  }, [game.moves]);
+  }, [game.moves, seekIndex]);
 
   const gameover = game.gameover();
 

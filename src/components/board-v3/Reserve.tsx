@@ -19,6 +19,7 @@ import { GameClient } from "@/game/engine-v2";
 import { ReserveBankV2 } from "./ReserveBankV2";
 import { cn } from "@/lib/utils";
 import CountdownTimer from "./CountdownTimer";
+import { useMemo } from "react";
 
 export default function Reserve({
   game,
@@ -45,8 +46,7 @@ export default function Reserve({
 }) {
   const playerIndex = player === "RED" ? 0 : 1;
   const defaultUsername = `Player ${playerIndex + 1}`;
-  const userId = game.userIds?.[playerIndex];
-  const user = users.find((user) => user.id === userId);
+  const user = useMemo(() => users[playerIndex], [users, playerIndex]);
 
   if (game.isTutorial) {
     return (
@@ -68,6 +68,8 @@ export default function Reserve({
     );
   }
 
+  const isConnected = true;
+
   return (
     <>
       <LatestChatMessage player={player} chatMessages={chatMessages} />
@@ -80,11 +82,7 @@ export default function Reserve({
         <div className="flex justify-between gap-1 w-full">
           <div className="flex gap-2 items-center flex-1">
             {/* TODO(tyler): implement this */}
-            {/* {matchData?.[playerIndex]?.isConnected !== undefined && (
-              <ConnectionStatus
-                isConnected={matchData[playerIndex].isConnected}
-              />
-            )} */}
+            {game.isOnline && <ConnectionStatus isConnected={isConnected} />}
             {user ? (
               <Username user={user} includeElo />
             ) : (
