@@ -1,5 +1,5 @@
 # Use the official Node.js 18 image as a base
-FROM node:18
+FROM node:20
 
 # Copy package.json and package-lock.json for better layer caching
 COPY package.json yarn.lock ./

@@ -576,7 +576,7 @@ export class GameClient {
 
   // Multiplayer
   private multiplayer?: Multiplayer;
-  public _uuid: string;
+  // public _uuid: string;
 
   public ended: boolean;
   private listeners: Set<() => void> = new Set();
@@ -624,7 +624,7 @@ export class GameClient {
     this.lastTurnCaptures = [];
     this.movePieces = [];
     this.ended = false;
-    this._uuid = crypto.randomUUID();
+    // this._uuid = crypto.randomUUID();
     this.setupMultiplayer();
   }
 
