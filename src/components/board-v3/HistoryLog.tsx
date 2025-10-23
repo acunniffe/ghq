@@ -320,7 +320,6 @@ function DurationIndicator({
     if (duration === 0) {
       return 2;
     }
-    console.log(duration, maxDuration);
     const percent = duration / maxDuration;
     const baseWidthPx = 60;
     const minWidthPx = 2;
