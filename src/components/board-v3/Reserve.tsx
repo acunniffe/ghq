@@ -20,6 +20,7 @@ import { ReserveBankV2 } from "./ReserveBankV2";
 import { cn } from "@/lib/utils";
 import CountdownTimer from "./CountdownTimer";
 import { useMemo } from "react";
+import { useMatchmaking } from "../MatchmakingProvider";
 
 export default function Reserve({
   game,
@@ -44,9 +45,17 @@ export default function Reserve({
   selectReserve: (kind: keyof ReserveFleet) => void;
   squareSize: number;
 }) {
+  const { usersOnline } = useMatchmaking();
   const playerIndex = player === "RED" ? 0 : 1;
   const defaultUsername = `Player ${playerIndex + 1}`;
   const user = useMemo(() => users[playerIndex], [users, playerIndex]);
+
+  // NB(tyler): This just shows whether the user is on the site at all, not whether they're in this particular game.
+  // We should improve this in the future.
+  const isConnected = useMemo(() => {
+    const onlineUser = usersOnline?.users.find((u) => u.id === user?.id);
+    return onlineUser?.status && onlineUser.status !== "offline";
+  }, [usersOnline, user]);
 
   if (game.isTutorial) {
     return (
@@ -67,8 +76,6 @@ export default function Reserve({
       </div>
     );
   }
-
-  const isConnected = true;
 
   return (
     <>
