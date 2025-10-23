@@ -423,3 +423,33 @@ function debugPrintGameState(game: GameClient, turn: Turn) {
     turn: turn.moves.map((m) => allowedMoveToUci(m)),
   });
 }
+
+function isTurnAuthorized(
+  authenticatedUserId: string,
+  turnReq: SendTurnRequest,
+  match: MatchV3
+): boolean {
+  const { turn, playerId, credentials } = turnReq;
+  const requiredHashCredentials =
+    playerId === "0"
+      ? match.player0CredentialsHash
+      : match.player1CredentialsHash;
+  const requiredPlayerId =
+    playerId === "0" ? match.player0UserId : match.player1UserId;
+
+  const requiredTurnValidator = playerId === "0" ? isOdd : isEven; // 0 is red (odd numbered turns), 1 is blue (even numbered turns)
+
+  return (
+    authenticatedUserId === requiredPlayerId &&
+    hashCredentials(credentials) === requiredHashCredentials &&
+    requiredTurnValidator(turn.turn)
+  );
+}
+
+function isEven(turn: number): boolean {
+  return turn % 2 === 0;
+}
+
+function isOdd(turn: number): boolean {
+  return turn % 2 === 1;
+}

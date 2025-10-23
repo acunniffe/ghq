@@ -107,7 +107,7 @@ export default function Sidebar({
             {movesLeft} remaining move
             {movesLeft !== 1 ? "s" : ""}{" "}
           </div>
-          <div className="flex gap-1 justify-center items-center">
+          <div className="flex gap-1 justify-center items-center mt-2">
             {currentPlayer === currentPlayerTurn || !game.isOnline ? (
               <>
                 {/* {G.drawOfferedBy && G.drawOfferedBy !== ctx.currentPlayer ? (

@@ -523,7 +523,7 @@ export interface Turn {
   moves: AllowedMove[];
   elapsedSecs: number;
   // kind of a hack, but need to somehow send a resignation out of band
-  isResignation?: boolean;
+  playerResigned?: "0" | "1";
 }
 
 export interface GameClientOptions {
@@ -579,6 +579,7 @@ export class GameClient {
   private multiplayer?: Multiplayer;
   public _uuid: string;
 
+  public ended: boolean;
   private listeners: Set<() => void> = new Set();
   private playerResigned: "0" | "1" | undefined;
 
@@ -623,6 +624,7 @@ export class GameClient {
     this.lastTurnMoves = [];
     this.lastTurnCaptures = [];
     this.movePieces = [];
+    this.ended = false;
     this._uuid = crypto.randomUUID();
     this.setupMultiplayer();
   }
@@ -804,8 +806,8 @@ export class GameClient {
     if (this.playerResigned) {
       return {
         status: "WIN",
-        winner: this.playerResigned === "0" ? "RED" : "BLUE",
-        reason: "by opponent resignation",
+        winner: this.playerResigned === "0" ? "BLUE" : "RED",
+        reason: "opponent resigned",
       };
     }
 
@@ -837,7 +839,7 @@ export class GameClient {
       return {
         status,
         winner,
-        reason: `by ${outcome.termination}`,
+        reason: outcome.termination,
       };
     }
 
@@ -892,7 +894,7 @@ export class GameClient {
   }
 
   canEndTurn(): boolean {
-    return true;
+    return this.isMyTurn();
   }
 
   endTurn() {
@@ -912,8 +914,8 @@ export class GameClient {
   }
 
   pushTurn(turn: Turn) {
-    if (turn.isResignation) {
-      this.playerResigned = turn.turn % 2 === 0 ? "0" : "1"; // 0 is red, 1 is blue
+    if (turn.playerResigned) {
+      this.playerResigned = turn.playerResigned;
     }
 
     for (const move of turn.moves) {
@@ -1013,10 +1015,13 @@ export class GameClient {
   }
 
   resign() {
+    const playerResigned = this.currentPlayer() === "RED" ? "0" : "1";
     if (this.multiplayer) {
-      this.multiplayer.sendTurn(resignationTurn(this.turn));
+      this.multiplayer.sendTurn(resignationTurn(this.turn, playerResigned));
     } else {
-      this.playerResigned = this.currentPlayer() === "RED" ? "1" : "0";
+      this.playerResigned = playerResigned;
+      this.ended = true;
+      this.notify();
     }
   }
 
@@ -1035,6 +1040,7 @@ export class GameClient {
     this.lastTurnMoves = [];
     this.lastTurnCaptures = [];
     this.movePieces = [];
+    this.ended = false;
     this.notify();
   }
 

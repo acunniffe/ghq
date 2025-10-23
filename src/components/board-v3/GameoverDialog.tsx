@@ -36,7 +36,7 @@ export default function GameoverDialog({
 
     // Otherwise use the gameover from the game client.
     return game.gameover();
-  }, [game.turn, game.moves, match]);
+  }, [game.turn, game.moves, match, game.ended]);
 
   useEffect(() => {
     setOpen(!!gameover);
@@ -47,16 +47,15 @@ export default function GameoverDialog({
         <DialogHeader>
           <DialogTitle>Game ended</DialogTitle>
           <DialogDescription></DialogDescription>
-          <div className="flex flex-col gap-2">
-            <div>
+          <div className="flex flex-col gap-1 items-center">
+            <div className="font-bold">
               {gameover?.winner
-                ? `${toTitleCase(gameover.winner)} won ${gameover.reason}!`
-                : `Game ended in a draw${
-                    gameover?.reason ? ` by ${gameover.reason}` : ""
-                  }`}
+                ? `${toTitleCase(gameover.winner)} won!`
+                : "Game ended in a draw"}
             </div>
+            <div className="text-sm text-gray-500">{gameover?.reason}</div>
 
-            <div className="flex gap-1">
+            <div className="flex gap-2 mt-4">
               <ShareGameDialog game={game} />
               <HomeButton />
             </div>

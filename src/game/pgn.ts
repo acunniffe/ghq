@@ -4,8 +4,9 @@ import { allowedMoveFromUci, allowedMoveToUci } from "./notation-uci";
 export function createPGN(turns: Turn[]): string {
   return turns
     .map((turn, i) => {
-      if (turn.isResignation) {
-        const outcome = i % 2 === 0 ? "0-1" : "1-0"; // 0 is red, 1 is blue
+      if (turn.playerResigned) {
+        // if red resigned, then blue won, and vice versa
+        const outcome = turn.playerResigned === "0" ? "0-1" : "1-0";
         return `${outcome} {[%sts resign]}`;
       }
       return `${turn.turn}. ${turn.moves
@@ -30,7 +31,9 @@ export function pgnToTurns(pgn: string): Turn[] {
 
       const stsMatch = comment.match(/\[%sts\s+(\w+)\]/);
       if (stsMatch && stsMatch[1] === "resign") {
-        return resignationTurn(index + 1);
+        const outcome = line.split("{")[0].trim();
+        const playerResigned = outcome === "0-1" ? "0" : "1";
+        return resignationTurn(index + 1, playerResigned);
       }
 
       const emtMatch = comment.match(/\[%emt\s+([\d.]+)\]/);
@@ -55,11 +58,11 @@ export function pgnToTurns(pgn: string): Turn[] {
   });
 }
 
-export function resignationTurn(turn: number): Turn {
+export function resignationTurn(turn: number, playerResigned: "0" | "1"): Turn {
   return {
     turn,
     moves: [],
     elapsedSecs: 0,
-    isResignation: true, // just needs isResignation true, the rest shouldn't matter
+    playerResigned,
   };
 }
