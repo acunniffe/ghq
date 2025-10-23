@@ -11,6 +11,7 @@ import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { GameClient, Player } from "@/game/engine-v2";
 import { SeekFunc } from "./useSeek";
+import { Kbd } from "../ui/kbd";
 
 export default function ControlsView({
   game,
@@ -70,52 +71,79 @@ export default function ControlsView({
   // TODO(tyler): after game is over, we can just have forward/backward buttons
 
   return (
-    <div className="flex gap-1 m-1">
-      <ActionButton
-        Icon={Undo}
-        tooltip="Undo the most recent move you made this turn (shortcut: left-arrow)"
-        onClick={doUndo}
-        disabled={!game.canUndo()}
-      />
-      <ActionButton
-        Icon={Redo}
-        tooltip="Redo the most recent move you undid this turn (shortcut: right-arrow)"
-        onClick={doRedo}
-        disabled={!game.canRedo()}
-      />
-      <ActionButton
-        Icon={SkipForward}
-        tooltip='Skip or confirm the remainder of your turn. If both players skip without making any moves, the game is a draw. (shortcut: ".")'
-        onClick={doSkip}
-        disabled={!game.canEndTurn()}
-        className={
-          game.needsTurnConfirmation
-            ? "border-blue-800 bg-blue-200 text-blue-800 hover:bg-blue-100 transition-colors duration-200"
-            : ""
-        }
-      />
-      <ActionButton
-        Icon={Repeat}
-        tooltip="Replay the animation of your opponent's most recent turn (shortcut: spacebar)"
-        onClick={doReplay}
-        disabled={!canReplay}
-      />
+    <div className="flex flex-wrap gap-1 m-1 justify-center">
+      {game.isReplayMode || game.ended ? (
+        <>
+          <ActionButton
+            text="Previous"
+            tooltip="Go back one move"
+            onClick={() => seek({ delta: -1 })}
+            disabled={false}
+            shortcut="↑"
+          />
+          <ActionButton
+            text="Next"
+            tooltip="Go forward one move"
+            onClick={() => seek({ delta: 1 })}
+            disabled={false}
+            shortcut="↓"
+          />
+        </>
+      ) : (
+        <>
+          <ActionButton
+            text="Undo"
+            tooltip="Undo your last move"
+            onClick={doUndo}
+            disabled={!game.canUndo()}
+            shortcut="←"
+          />
+          <ActionButton
+            text="Redo"
+            tooltip="Redo your last undo"
+            onClick={doRedo}
+            disabled={!game.canRedo()}
+            shortcut="→"
+          />
+          <ActionButton
+            text={game.needsTurnConfirmation ? "Confirm" : "Skip"}
+            tooltip="Skip or confirm remainder of turn. If both players skip, it's a draw"
+            onClick={doSkip}
+            disabled={!game.canEndTurn()}
+            shortcut="⏎"
+            className={
+              game.needsTurnConfirmation
+                ? "border-blue-800 bg-blue-200 text-blue-800 hover:bg-blue-100 transition-colors duration-200"
+                : ""
+            }
+          />
+          <ActionButton
+            text="Replay"
+            tooltip="Replay animation of opponent's last turn"
+            onClick={doReplay}
+            disabled={!canReplay}
+            shortcut="␣"
+          />
+        </>
+      )}
     </div>
   );
 }
 
 function ActionButton({
-  Icon,
+  text,
   tooltip,
   onClick,
   disabled,
   className,
+  shortcut,
 }: {
-  Icon: React.FC;
+  text: string;
   tooltip: string;
   onClick: () => void;
   disabled: boolean;
   className?: string;
+  shortcut?: string;
 }) {
   return (
     <TooltipProvider>
@@ -123,11 +151,12 @@ function ActionButton({
         <TooltipTrigger asChild>
           <Button
             variant="outline"
-            className={cn("w-full", className ?? "")}
+            className={cn("", className ?? "")}
             onClick={onClick}
             disabled={disabled}
           >
-            <Icon />
+            {text}
+            {shortcut && <Kbd>{shortcut}</Kbd>}
           </Button>
         </TooltipTrigger>
         <TooltipContent>

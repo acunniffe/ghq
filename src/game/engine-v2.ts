@@ -804,6 +804,7 @@ export class GameClient {
     }
 
     if (this.playerResigned) {
+      this.ended = true;
       return {
         status: "WIN",
         winner: this.playerResigned === "0" ? "BLUE" : "RED",
@@ -817,6 +818,7 @@ export class GameClient {
       true
     );
     if (currentPlayerTimeLeftMs !== null && currentPlayerTimeLeftMs <= 0) {
+      this.ended = true;
       return {
         status: "WIN",
         winner: currentPlayer === "RED" ? "BLUE" : "RED", // Opponent wins by time out
@@ -836,6 +838,8 @@ export class GameClient {
         winner = "BLUE";
         status = "WIN";
       }
+
+      this.ended = true;
       return {
         status,
         winner,

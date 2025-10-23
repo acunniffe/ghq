@@ -67,6 +67,15 @@ export default function useControls({
   );
 
   useHotkeys(
+    "enter",
+    (e) => {
+      e.preventDefault();
+      skip();
+    },
+    [skip]
+  );
+
+  useHotkeys(
     "up",
     (e) => {
       e.preventDefault();
