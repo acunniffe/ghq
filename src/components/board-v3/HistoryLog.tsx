@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect } from "react";
+import { ReactNode, useCallback, useEffect, useMemo } from "react";
 import { GameClient, Turn } from "@/game/engine-v2";
 import {
   AllowedMove,
@@ -45,13 +45,16 @@ export function HistoryLog({
   );
 
   const elapsedSecsToString = (elapsedSecs: number) => {
-    if (elapsedSecs < 10) {
+    if (elapsedSecs < 60) {
       return elapsedSecs.toFixed(1) + "s";
     }
-    if (elapsedSecs < 100) {
-      return elapsedSecs.toFixed(0) + "s";
+
+    const minutes = Math.floor(elapsedSecs / 60);
+    const seconds = elapsedSecs % 60;
+    if (seconds === 0) {
+      return minutes + "m";
     }
-    return (elapsedSecs / 60).toFixed(0) + "m";
+    return minutes + "m " + seconds.toFixed(0) + "s";
   };
 
   interface DetailedMove {
@@ -74,6 +77,10 @@ export function HistoryLog({
     }
   );
 
+  const maxDuration = useMemo(() => {
+    return Math.max(...detailedMoves.map(({ turn }) => turn.elapsedSecs));
+  }, [detailedMoves]);
+
   return (
     <div className="flex flex-col gap-1 p-2 h-[350px]">
       <div className="font-bold text-gray-800">Activity</div>
@@ -90,7 +97,7 @@ export function HistoryLog({
               <div
                 key={overallMoveIndex}
                 className={cn(
-                  "inline-flex justify-between items-center hover:bg-gray-200 px-2 py-0.5 text-sm",
+                  "inline-flex justify-between items-center hover:bg-gray-200 px-2 py-0.5 text-xs text-gray-800",
                   overallMoveIndex === seekIndex - 1 && "bg-gray-200",
                   moveIndex === turn.moves.length - 1 && turn.elapsedSecs > 0
                     ? "border-b border-gray-200"
@@ -100,24 +107,34 @@ export function HistoryLog({
                 onClick={() => onMoveClick(overallMoveIndex + 1)}
               >
                 <div className="flex items-center space-x-3">
-                  <span className="text-gray-600 text-xs">{turnIndex + 1}</span>
+                  <span className="text-gray-600 text-xxs">
+                    {turnIndex + 1}
+                  </span>
                   <div className="inline-flex items-center space-x-1">
                     {renderMove(game, move, player)}
                   </div>
                 </div>
-                <div className="text-gray-500 text-xs">
-                  {moveIndex === turn.moves.length - 1 &&
-                    turn.elapsedSecs > 0 && (
-                      <>{elapsedSecsToString(turn.elapsedSecs)}</>
-                    )}
-                </div>
+
+                {moveIndex === turn.moves.length - 1 &&
+                  turn.elapsedSecs > 0 && (
+                    <div className="flex items-center space-x-1">
+                      <DurationIndicator
+                        maxDuration={maxDuration}
+                        duration={turn.elapsedSecs}
+                        player={player}
+                      />
+                      <div className="text-gray-800/70 text-xxs font-semibold">
+                        {elapsedSecsToString(turn.elapsedSecs)}
+                      </div>
+                    </div>
+                  )}
               </div>
             );
           }
         )}
 
         {gameover && (
-          <div className="inline-flex space-x-2 items-center py-0.5 px-1 font-semibold text-sm">
+          <div className="inline-flex space-x-2 items-center py-0.5 px-1 font-semibold text-sm text-gray-800">
             {gameover.status === "DRAW" && "Game ended in a draw"}
             {gameover.winner && (
               <>
@@ -135,7 +152,7 @@ export function HistoryLog({
 
 function moveToReadableString(move: AllowedMove): string {
   if (move.name === "Skip") {
-    return "skipped rest of turn";
+    return "Skipped rest of turn";
   }
 
   if (move.name === "Reinforce") {
@@ -282,10 +299,40 @@ function PieceIcon({
     <img
       className="inline-block"
       src={`/${Units[unitType].imagePathPrefix}-${player.toLowerCase()}.png`}
-      width={12}
-      height={12}
+      width={10}
+      height={10}
       draggable="false"
       alt={Units[unitType].imagePathPrefix}
     />
+  );
+}
+
+function DurationIndicator({
+  maxDuration,
+  duration,
+  player,
+}: {
+  maxDuration: number;
+  duration: number;
+  player: Player;
+}) {
+  const width = useMemo(() => {
+    if (duration === 0) {
+      return 2;
+    }
+    console.log(duration, maxDuration);
+    const percent = duration / maxDuration;
+    const baseWidthPx = 60;
+    const minWidthPx = 2;
+    return Math.max(minWidthPx, baseWidthPx * percent);
+  }, [duration, maxDuration]);
+  return (
+    <div
+      style={{ width: `${width}px` }}
+      className={cn(
+        "rounded h-2",
+        player === "RED" ? "bg-red-500/50" : "bg-blue-500/50"
+      )}
+    ></div>
   );
 }
