@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import MobileHeader from "../MobileHeader";
 import { GameClientOptions, useEngine } from "@/game/engine-v2";
-import { Loader2 } from "lucide-react";
 import { useGameClient } from "./useGameClient";
 import useSeek from "./useSeek";
 import { cn } from "@/lib/utils";
@@ -18,10 +17,12 @@ import {
 } from "@/game/engine-v2-multiplayer";
 import { useAuth } from "@clerk/nextjs";
 import GameLoader from "./GameLoader";
+import { MatchV3 } from "@/lib/types";
 
 export interface GHQBoardV3Props extends GameClientOptions {
   bot?: boolean;
   credentials?: string;
+  match?: MatchV3;
 }
 
 export function GHQBoardV3(opts: GHQBoardV3Props) {
@@ -47,7 +48,12 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
       return;
     }
 
-    if (opts.credentials && opts.id && isSignedIn && opts.playerId) {
+    if (
+      opts.credentials !== undefined &&
+      opts.id &&
+      isSignedIn &&
+      opts.playerId
+    ) {
       const multiplayer = new OnlineMultiplayer(
         opts.id,
         opts.credentials,
@@ -55,7 +61,9 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
         getToken
       );
       setMultiplayer(multiplayer);
+      console.log("creating multipler");
       return () => {
+        console.log("Disconnecting multiplayer");
         multiplayer.disconnect();
       };
     }
@@ -80,7 +88,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
     (window as any).simGame = simGame;
   }
 
-  const { seek, game, showSim } = useSeek({ realGame, simGame });
+  const { seek, seekIndex, game, showSim } = useSeek({ realGame, simGame });
 
   if (!game) {
     return <GameLoader message="Loading engine..." />;
@@ -95,20 +103,22 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
       </div>
       {!opts.isTutorial && (
         <Sidebar
-          game={game}
+          game={realGame || game}
           seek={seek}
+          seekIndex={seekIndex}
           className="order-3 md:order-1 mt-8 md:mt-0"
           settings={settings}
           setSettings={setSettings}
         />
       )}
       <PlayArea
+        match={opts.match}
         className="order-1 md:order-2 m-auto"
         game={game}
         seek={seek}
         settings={settings}
       />
-      <GameoverDialog game={game} />
+      <GameoverDialog game={game} match={opts.match} />
     </div>
   );
 }

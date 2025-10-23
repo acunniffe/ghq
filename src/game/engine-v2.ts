@@ -27,7 +27,7 @@ import { calculateEval } from "./eval";
 import { LogAPI } from "boardgame.io/src/plugins/plugin-log";
 import { getGameoverState } from "./gameover-logic";
 import { printWelcome } from "@/lib/console";
-import { createPGN, pgnToTurns } from "./pgn";
+import { createPGN, pgnToTurns, resignationTurn } from "./pgn";
 import { TimeControl } from "./constants";
 import { Multiplayer } from "./engine-v2-multiplayer";
 
@@ -517,10 +517,13 @@ export interface PlayerPiece {
   piece: NonNullSquare;
   coordinate: Coordinate;
 }
+
 export interface Turn {
   turn: number;
   moves: AllowedMove[];
   elapsedSecs: number;
+  // kind of a hack, but need to somehow send a resignation out of band
+  isResignation?: boolean;
 }
 
 export interface GameClientOptions {
@@ -533,6 +536,7 @@ export interface GameClientOptions {
   isPassAndPlayMode?: boolean;
   timeControl?: TimeControl;
   id?: string; // implies isOnline
+  gameStartTimeMs?: number;
 }
 
 export class GameClient {
@@ -565,21 +569,18 @@ export class GameClient {
   private thisTurnMoves: AllowedMove[];
   private thisTurnCaptures: PlayerPiece[];
   private movePieces: (NonNullSquare | null)[]; // same length as moves
+  private isProcessingMoves: boolean = false; // true if we the game is processing moves, e.g. from onTurnPlayed()
 
   // Time control
   public timeControl?: TimeControl;
-  private turnStartTimeMs: number;
+  private gameStartTimeMs: number;
 
   // Multiplayer
   private multiplayer?: Multiplayer;
   public _uuid: string;
 
-  public userIds: {
-    "0": string;
-    "1": string;
-  };
-
   private listeners: Set<() => void> = new Set();
+  private playerResigned: "0" | "1" | undefined;
 
   constructor({
     engine,
@@ -591,6 +592,7 @@ export class GameClient {
     timeControl,
     multiplayer,
     playerId,
+    gameStartTimeMs,
   }: GameClientOptions) {
     if (!engine) {
       throw new Error("engine is required");
@@ -609,15 +611,11 @@ export class GameClient {
     this.playerId = playerId;
     this.undoMoves = [];
     this.turn = 1;
-    this.userIds = {
-      "0": "",
-      "1": "",
-    };
     this.timeControl = timeControl;
     this.needsTurnConfirmation = false;
     this.moves = [];
     this.turns = [];
-    this.turnStartTimeMs = Date.now();
+    this.gameStartTimeMs = gameStartTimeMs ?? Date.now();
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
     this.thisTurnCaptures = [];
@@ -634,9 +632,11 @@ export class GameClient {
       return;
     }
 
+    this.isProcessingMoves = true;
     this.multiplayer.initGame();
 
     this.multiplayer.onTurnPlayed((turn) => {
+      this.isProcessingMoves = true;
       if (turn.turn !== this.turn) {
         // TODO(tyler): if this is a turn in the past, we should verify that it matches our history,
         // otherwise we have a mismatch between client and server game state.
@@ -646,7 +646,8 @@ export class GameClient {
         return;
       }
 
-      this.pushTurn(turn);
+      this.pushTurn(turn, true);
+      this.isProcessingMoves = false;
     });
   }
 
@@ -795,6 +796,19 @@ export class GameClient {
       return undefined;
     }
 
+    // Don't show gameover state until we've processed all turns, to avoid accidentally thinking its a timeout or something.
+    if (this.isProcessingMoves) {
+      return undefined;
+    }
+
+    if (this.playerResigned) {
+      return {
+        status: "WIN",
+        winner: this.playerResigned === "0" ? "RED" : "BLUE",
+        reason: "by opponent resignation",
+      };
+    }
+
     const currentPlayer = this.currentPlayerTurn();
     const currentPlayerTimeLeftMs = this.getPlayerTimeLeftMs(
       currentPlayer,
@@ -887,8 +901,7 @@ export class GameClient {
     }
 
     this.getTurn().elapsedSecs =
-      Math.round((Date.now() - this.turnStartTimeMs) / 100) / 10;
-    this.turnStartTimeMs = Date.now();
+      Math.round((Date.now() - this.getTurnStartTimeMs()) / 100) / 10;
 
     const turn = this.getTurn();
     this.finishTurn();
@@ -898,17 +911,21 @@ export class GameClient {
     }
   }
 
-  pushTurn(turn: Turn) {
+  pushTurn(turn: Turn, skipBombardments: boolean = false) {
+    if (turn.isResignation) {
+      this.playerResigned = turn.turn % 2 === 0 ? "0" : "1"; // 0 is red, 1 is blue
+    }
+
     for (const move of turn.moves) {
       this.push(move);
     }
 
     this.getTurn().elapsedSecs = turn.elapsedSecs;
 
-    this.finishTurn();
+    this.finishTurn(skipBombardments);
   }
 
-  finishTurn() {
+  finishTurn(skipBombardments: boolean = false) {
     if (this.needsTurnConfirmation) {
       this.needsTurnConfirmation = false;
     }
@@ -920,7 +937,9 @@ export class GameClient {
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
     this.thisTurnCaptures = [];
-    this.clearBombardments();
+    if (!skipBombardments) {
+      this.clearBombardments();
+    }
     this.notify();
   }
 
@@ -933,6 +952,14 @@ export class GameClient {
     }
   }
 
+  getTurnStartTimeMs(): number {
+    const elapsedMs =
+      this.turns.reduce((acc, turn) => {
+        return acc + turn.elapsedSecs;
+      }, 0) * 1000;
+    return this.gameStartTimeMs + elapsedMs;
+  }
+
   getPlayerTimeLeftMs(player: Player, isLive: boolean = false): number | null {
     if (!this.timeControl) {
       return null;
@@ -940,7 +967,7 @@ export class GameClient {
 
     const currentTurnElapsedMs =
       isLive && player === this.currentPlayerTurn()
-        ? Date.now() - this.turnStartTimeMs
+        ? Date.now() - this.getTurnStartTimeMs()
         : 0;
 
     const useEvens = player === "RED";
@@ -989,13 +1016,11 @@ export class GameClient {
   }
 
   resign() {
-    // TODO(tyler): implement this
-    // const gameover: GameoverState = {
-    //   status: "WIN",
-    //   winner: this.currentPlayerTurn() === "RED" ? "BLUE" : "RED",
-    //   reason: "by resignation",
-    // };
-    throw new Error("not implemented");
+    if (this.multiplayer) {
+      this.multiplayer.sendTurn(resignationTurn(this.turn));
+    } else {
+      this.playerResigned = this.currentPlayer() === "RED" ? "1" : "0";
+    }
   }
 
   reset() {
@@ -1006,7 +1031,6 @@ export class GameClient {
     this.turns = [];
     this.undoMoves = [];
     this.needsTurnConfirmation = false;
-    this.turnStartTimeMs = Date.now();
     this.thisTurnBoards = [];
     this.thisTurnMoves = [];
     this.thisTurnCaptures = [];
@@ -1026,6 +1050,14 @@ export class GameClient {
       if (i >= seekIndex) {
         break;
       }
+
+      const movesLeftToAdd = seekIndex - i;
+      if (movesLeftToAdd > turn.moves.length) {
+        this.pushTurn(turn, true);
+        i += turn.moves.length;
+        continue;
+      }
+
       for (const move of turn.moves) {
         if (i >= seekIndex) {
           break;

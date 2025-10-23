@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useEffect } from "react";
-import { GameClient } from "@/game/engine-v2";
+import { GameClient, Turn } from "@/game/engine-v2";
 import {
   AllowedMove,
   Orientation,
@@ -17,13 +17,16 @@ import {
   SkipForward,
 } from "lucide-react";
 import { SeekFunc } from "./useSeek";
+import { cn } from "@/lib/utils";
 
 export function HistoryLog({
   game,
   seek,
+  seekIndex,
 }: {
   game: GameClient;
   seek: SeekFunc;
+  seekIndex: number;
 }) {
   const gameover = game.gameover();
 
@@ -41,32 +44,77 @@ export function HistoryLog({
     [seek]
   );
 
+  const elapsedSecsToString = (elapsedSecs: number) => {
+    if (elapsedSecs < 10) {
+      return elapsedSecs.toFixed(1) + "s";
+    }
+    if (elapsedSecs < 100) {
+      return elapsedSecs.toFixed(0) + "s";
+    }
+    return (elapsedSecs / 60).toFixed(0) + "m";
+  };
+
+  interface DetailedMove {
+    turn: Turn;
+    turnIndex: number;
+    move: AllowedMove;
+    moveIndex: number;
+  }
+
+  const detailedMoves: DetailedMove[] = game.turns.flatMap(
+    (turn, turnIndex) => {
+      return turn.moves.map((move, moveIndex): DetailedMove => {
+        return {
+          turn,
+          turnIndex,
+          move,
+          moveIndex,
+        };
+      });
+    }
+  );
+
   return (
     <div className="flex flex-col gap-1 p-2 h-[350px]">
       <div className="font-bold text-gray-800">Activity</div>
       <div
         id="history-log-list"
-        className="overflow-y-auto border h-[600px] flex flex-col rounded"
+        className="overflow-y-auto border h-[600px] flex flex-col rounded bg-gray-50"
       >
-        {game.moves.map((move, index) => {
-          const readable = moveToReadableString(move);
-          const turnNumber = Math.floor(index / 3) + 1;
-          const player = index % 6 < 3 ? "RED" : "BLUE";
+        {detailedMoves.map(
+          ({ turn, turnIndex, move, moveIndex }, overallMoveIndex) => {
+            const readable = moveToReadableString(move);
+            const player = turnIndex % 2 === 0 ? "RED" : "BLUE";
 
-          return (
-            <div
-              key={index}
-              className="inline-flex space-x-3 items-center hover:bg-gray-100 py-0.5 px-2 text-sm"
-              title={readable}
-              onClick={() => onMoveClick(index + 1)}
-            >
-              <span className="text-gray-600 text-xs">{turnNumber}</span>
-              <div className="inline-flex items-center space-x-1">
-                {renderMove(game, move, player)}
+            return (
+              <div
+                key={overallMoveIndex}
+                className={cn(
+                  "inline-flex justify-between items-center hover:bg-gray-200 px-2 py-0.5 text-sm",
+                  overallMoveIndex === seekIndex - 1 && "bg-gray-200",
+                  moveIndex === turn.moves.length - 1 && turn.elapsedSecs > 0
+                    ? "border-b border-gray-200"
+                    : ""
+                )}
+                title={readable}
+                onClick={() => onMoveClick(overallMoveIndex + 1)}
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-gray-600 text-xs">{turnIndex + 1}</span>
+                  <div className="inline-flex items-center space-x-1">
+                    {renderMove(game, move, player)}
+                  </div>
+                </div>
+                <div className="text-gray-500 text-xs">
+                  {moveIndex === turn.moves.length - 1 &&
+                    turn.elapsedSecs > 0 && (
+                      <>{elapsedSecsToString(turn.elapsedSecs)}</>
+                    )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          }
+        )}
 
         {gameover && (
           <div className="inline-flex space-x-2 items-center py-0.5 px-1 font-semibold text-sm">

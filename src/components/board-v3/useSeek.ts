@@ -25,6 +25,12 @@ export default function useSeek({ realGame, simGame }: UseSeekOptions) {
 
       const getSeekIndex = ({ delta, index }: SeekParams): number => {
         if (delta !== undefined) {
+          // If we're at the start of the game and trying to go forward, set the seek index to the end of the game.
+          if (seekIndex === -1 && delta > 0) {
+            return realGame.moves.length + 1;
+          }
+
+          // Otherwise, just use the current seek index plus the delta.
           return seekIndex === -1
             ? realGame.moves.length - 1
             : seekIndex + delta;
@@ -56,5 +62,5 @@ export default function useSeek({ realGame, simGame }: UseSeekOptions) {
     return realGame;
   }, [showSim, realGame, simGame]);
 
-  return { seek, game, showSim };
+  return { seek, seekIndex, game, showSim };
 }

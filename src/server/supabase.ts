@@ -9,11 +9,10 @@ export interface SupabaseMatch {
   player1_elo: number;
   winner_id: string | null;
   status: string | null;
+  gameover_reason: string | null;
   is_correspondence: boolean | null;
   current_turn_player_id: string | null;
   rated: boolean;
-
-  // TODO(tyler): add these to the sql
   player_0_credentials_hash: string | null;
   player_1_credentials_hash: string | null;
   time_control_name: string | null;
@@ -45,6 +44,7 @@ export function matchToSupabaseMatch(
     player1_id: match.player1UserId,
     player0_elo: match.player0Elo,
     player1_elo: match.player1Elo,
+    gameover_reason: match.gameoverReason ?? null,
     is_correspondence: match.isCorrespondence,
     rated: match.rated,
     player_0_credentials_hash: match.player0CredentialsHash,
@@ -76,5 +76,8 @@ export function supabaseMatchToMatchV3(supabaseMatch: SupabaseMatch): MatchV3 {
     timeControlVariant: supabaseMatch.time_control_variant ?? undefined,
     startingFen: supabaseMatch.starting_fen ?? undefined,
     pgn: supabaseMatch.pgn || "",
+    winnerUserId: supabaseMatch.winner_id ?? undefined,
+    status: supabaseMatch.status ?? undefined,
+    gameoverReason: supabaseMatch.gameover_reason ?? undefined,
   };
 }

@@ -47,13 +47,29 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   }, [matchInfo]);
 
   const playerId = useMemo(() => {
+    if (!matchInfo?.playerInfo) {
+      return "0";
+    }
     return matchInfo?.playerInfo?.playerId;
   }, [matchInfo]);
   const credentials = useMemo(() => {
+    if (!matchInfo?.playerInfo) {
+      return "";
+    }
     return matchInfo?.playerInfo?.credentials;
   }, [matchInfo]);
+  const gameStartTimeMs = useMemo(() => {
+    return matchInfo?.match.createdAt
+      ? new Date(matchInfo.match.createdAt).getTime()
+      : undefined;
+  }, [matchInfo]);
 
-  if (!playerId || !credentials || !timeControl) {
+  if (
+    !playerId ||
+    credentials === undefined ||
+    !timeControl ||
+    !gameStartTimeMs
+  ) {
     return <GameLoader message="Fetching game data..." />;
   }
 
@@ -64,6 +80,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         id={id}
         credentials={credentials}
         timeControl={timeControl}
+        gameStartTimeMs={gameStartTimeMs}
+        match={matchInfo?.match}
       />
     </div>
   );

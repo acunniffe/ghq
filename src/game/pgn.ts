@@ -3,7 +3,11 @@ import { allowedMoveFromUci, allowedMoveToUci } from "./notation-uci";
 
 export function createPGN(turns: Turn[]): string {
   return turns
-    .map((turn) => {
+    .map((turn, i) => {
+      if (turn.isResignation) {
+        const outcome = i % 2 === 0 ? "0-1" : "1-0"; // 0 is red, 1 is blue
+        return `${outcome} {[%sts resign]}`;
+      }
       return `${turn.turn}. ${turn.moves
         .map((move) => allowedMoveToUci(move))
         .join(" ")} {[%emt ${turn.elapsedSecs}]}\n`;
@@ -23,6 +27,12 @@ export function pgnToTurns(pgn: string): Turn[] {
 
     if (commentMatch) {
       const comment = commentMatch[1];
+
+      const stsMatch = comment.match(/\[%sts\s+(\w+)\]/);
+      if (stsMatch && stsMatch[1] === "resign") {
+        return resignationTurn(index + 1);
+      }
+
       const emtMatch = comment.match(/\[%emt\s+([\d.]+)\]/);
       if (emtMatch) {
         elapsedSecs = parseFloat(emtMatch[1]);
@@ -43,4 +53,13 @@ export function pgnToTurns(pgn: string): Turn[] {
       elapsedSecs,
     };
   });
+}
+
+export function resignationTurn(turn: number): Turn {
+  return {
+    turn,
+    moves: [],
+    elapsedSecs: 0,
+    isResignation: true, // just needs isResignation true, the rest shouldn't matter
+  };
 }

@@ -33,6 +33,7 @@ import { updateUserStats } from "./server/user-stats";
 import { getUserSummary } from "./server/user-summary";
 import { getActivePlayersInLast30Days, listMatches } from "./server/matches";
 import { addGameServerRoutes, createNewV3Match } from "./server/game-server";
+import { loadV2Engine } from "./server/engine";
 
 async function runServer() {
   const supabase = createClient(
@@ -41,6 +42,7 @@ async function runServer() {
   );
 
   const ghqGame = newOnlineGHQGame({ onEnd: onGameEnd });
+  const v2Engine = await loadV2Engine();
 
   const db = new PostgresStore({
     database: "postgres",
@@ -79,7 +81,7 @@ async function runServer() {
     userLifecycle({ supabase, db: server.db });
   }, 5_000);
 
-  addGameServerRoutes(server.router);
+  addGameServerRoutes(server.router, v2Engine);
 
   server.router.post("/matchmaking", async (ctx) => {
     const userId = ctx.state.auth.userId;

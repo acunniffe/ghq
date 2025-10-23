@@ -80,7 +80,7 @@ export class OnlineMultiplayer implements Multiplayer {
   private abortController?: AbortController;
   private isConnected = false;
   private retryCount = 0;
-  private maxRetries = 5;
+  private maxRetries = 20;
   private baseRetryDelay = 1000;
   private processedTurnIndices = new Set<number>();
 
@@ -150,12 +150,9 @@ export class OnlineMultiplayer implements Multiplayer {
               // console.log("Received turns:", parsed);
 
               if (parsed.turns && Array.isArray(parsed.turns)) {
-                const startIndex = parsed.startIndex ?? 0;
-                for (let i = 0; i < parsed.turns.length; i++) {
-                  const turnIndex = startIndex + i;
-                  if (!this.processedTurnIndices.has(turnIndex)) {
-                    this.processedTurnIndices.add(turnIndex);
-                    const turn = parsed.turns[i];
+                for (const turn of parsed.turns) {
+                  if (!this.processedTurnIndices.has(turn.turn)) {
+                    this.processedTurnIndices.add(turn.turn);
                     this._callbacks.forEach((callback) => callback(turn));
                   }
                 }
@@ -177,7 +174,10 @@ export class OnlineMultiplayer implements Multiplayer {
 
       if (this.retryCount < this.maxRetries) {
         this.retryCount++;
-        const delay = this.baseRetryDelay * Math.pow(2, this.retryCount - 1);
+        const delay = Math.min(
+          this.baseRetryDelay * Math.pow(2, this.retryCount - 1),
+          30_000
+        );
         console.log(
           `Reconnecting in ${delay}ms (attempt ${this.retryCount}/${this.maxRetries})`
         );
