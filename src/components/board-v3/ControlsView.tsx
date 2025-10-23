@@ -9,7 +9,7 @@ import {
 import useControls from "./Controls";
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { GameClient } from "@/game/engine-v2";
+import { GameClient, Player } from "@/game/engine-v2";
 import { SeekFunc } from "./useSeek";
 
 export default function ControlsView({
@@ -17,11 +17,13 @@ export default function ControlsView({
   replay,
   seek,
   cancel,
+  togglePOV,
 }: {
   game: GameClient;
   replay: () => void;
   seek: SeekFunc;
   cancel: () => void;
+  togglePOV: () => void;
 }) {
   const canReplay = useMemo(
     () => game.isMyTurn() && game.turn > 1,
@@ -62,6 +64,7 @@ export default function ControlsView({
     replay: doReplay,
     backward: () => seek({ delta: -1 }),
     forward: () => seek({ delta: 1 }),
+    togglePOV,
   });
 
   // TODO(tyler): after game is over, we can just have forward/backward buttons

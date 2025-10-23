@@ -12,7 +12,7 @@ import { use, useCallback, useEffect, useMemo, useState } from "react";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn, userId, getToken } = useAuth();
   const [matchInfo, setMatchInfo] = useState<MatchV3Info | undefined>();
 
   const fetchMatchInfo = useCallback(async () => {
@@ -47,10 +47,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   }, [matchInfo]);
 
   const playerId = useMemo(() => {
-    if (!matchInfo?.playerInfo) {
-      return "0";
+    if (matchInfo?.match?.player1UserId === userId) {
+      return "1";
     }
-    return matchInfo?.playerInfo?.playerId;
+    if (matchInfo?.playerInfo?.playerId) {
+      return matchInfo?.playerInfo?.playerId;
+    }
+    return "0";
   }, [matchInfo]);
   const credentials = useMemo(() => {
     if (!matchInfo?.playerInfo) {

@@ -8,6 +8,7 @@ export interface ControlsProps {
   replay: () => void;
   backward: () => void;
   forward: () => void;
+  togglePOV: () => void;
 }
 
 export default function useControls({
@@ -18,6 +19,7 @@ export default function useControls({
   replay,
   backward,
   forward,
+  togglePOV,
 }: ControlsProps) {
   useHotkeys(
     "escape",
@@ -80,6 +82,15 @@ export default function useControls({
       forward();
     },
     [forward]
+  );
+
+  useHotkeys(
+    "x",
+    (e) => {
+      e.preventDefault();
+      togglePOV();
+    },
+    [togglePOV]
   );
 
   return {};

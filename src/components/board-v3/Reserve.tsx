@@ -13,7 +13,7 @@ import {
 import classNames from "classnames";
 import ChatIcon from "./ChatIcon";
 import LatestChatMessage from "./LatestChatMessage";
-import { User } from "@/lib/types";
+import { MatchV3, User } from "@/lib/types";
 import Username from "@/components/Username";
 import { GameClient } from "@/game/engine-v2";
 import { ReserveBankV2 } from "./ReserveBankV2";
@@ -24,6 +24,7 @@ import { useMatchmaking } from "../MatchmakingProvider";
 
 export default function Reserve({
   game,
+  match,
   player,
   currentPlayer,
   currentPlayerTurn,
@@ -35,6 +36,7 @@ export default function Reserve({
   squareSize,
 }: {
   game: GameClient;
+  match?: MatchV3;
   player: Player;
   currentPlayer: Player;
   currentPlayerTurn: Player;
@@ -48,7 +50,11 @@ export default function Reserve({
   const { usersOnline } = useMatchmaking();
   const playerIndex = player === "RED" ? 0 : 1;
   const defaultUsername = `Player ${playerIndex + 1}`;
-  const user = useMemo(() => users[playerIndex], [users, playerIndex]);
+  const userId = player === "RED" ? match?.player0UserId : match?.player1UserId;
+  const user = useMemo(
+    () => users.find((u) => u.id === userId),
+    [users, userId]
+  );
 
   // NB(tyler): This just shows whether the user is on the site at all, not whether they're in this particular game.
   // We should improve this in the future.

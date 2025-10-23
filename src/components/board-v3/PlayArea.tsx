@@ -42,8 +42,8 @@ export default function PlayArea({
   );
   const { isReplayMode, isTutorial, isPassAndPlayMode, playerId } = game;
   const { measureRef, squareSize, pieceSize } = useBoardDimensions(isTutorial);
+  const [overridePOV, setOverridePOV] = useState<Player | undefined>(undefined);
 
-  // TODO(tyler): allow spectators to choose which side to view
   const defaultPlayerPOV = "RED";
 
   // Note: playerId is null in local play (non-multiplayer, non-bot), also when spectating, replaying, and tutorials.
@@ -64,13 +64,18 @@ export default function PlayArea({
   const isFlipped = useMemo(() => viewPlayerPref === "BLUE", [viewPlayerPref]);
 
   useEffect(() => {
+    if (overridePOV) {
+      setViewPlayerPref(overridePOV);
+      return;
+    }
+
     // If G.isPassAndPlayMode, then viewPlayerPref should snap to currentPlayerTurn.
     if (isPassAndPlayMode && settings.autoFlipBoard && playerId === null) {
       setViewPlayerPref(currentPlayerTurn);
     } else if (playerId) {
       setViewPlayerPref(playerIdToPlayer(playerId));
     }
-  }, [isPassAndPlayMode, playerId, currentPlayerTurn, settings]);
+  }, [isPassAndPlayMode, playerId, currentPlayerTurn, settings, overridePOV]);
 
   const possibleAllowedMoves = useMemo(
     () => game.getAllowedMoves(),
@@ -95,6 +100,7 @@ export default function PlayArea({
     >
       <Reserve
         game={game}
+        match={match}
         users={users}
         player={isFlipped ? defaultPlayerPOV : getOpponent(defaultPlayerPOV)}
         currentPlayer={currentPlayer}
@@ -136,6 +142,7 @@ export default function PlayArea({
       </div>
       <Reserve
         game={game}
+        match={match}
         users={users}
         player={isFlipped ? getOpponent(defaultPlayerPOV) : defaultPlayerPOV}
         currentPlayer={currentPlayer}
@@ -157,6 +164,9 @@ export default function PlayArea({
         seek={seek}
         cancel={() => setUserActionState({})}
         replay={() => replay()}
+        togglePOV={() =>
+          setOverridePOV((pov) => (pov === "RED" ? "BLUE" : "RED"))
+        }
       />
     </div>
   );
