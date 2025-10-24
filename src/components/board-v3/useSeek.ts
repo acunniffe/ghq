@@ -45,6 +45,7 @@ export default function useSeek({ realGame, simGame }: UseSeekOptions) {
         return;
       }
       if (newSeek > realGame.moves.length) {
+        setSeekIndex(-1); // Reset to "latest" rather than the last known index (which may change as game progresses)
         setShowSim(false);
         return;
       }

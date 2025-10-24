@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { GameClient, Player } from "@/game/engine-v2";
 import { SeekFunc } from "./useSeek";
 import { Kbd } from "../ui/kbd";
+import { toast } from "sonner";
 
 export default function ControlsView({
   game,
@@ -51,10 +52,17 @@ export default function ControlsView({
     }
     return game.canEndTurn();
   }, [game.moves, justSkipped]);
-  const doSkip = useCallback(() => {
+  const doSkip = useCallback(async () => {
     if (canSkip) {
       setJustSkipped(true);
-      game.endTurn();
+      try {
+        await game.endTurn();
+      } catch (error) {
+        toast.error(
+          "There was a problem sending your turn: " +
+            ((error as Error).message || "Unknown")
+        );
+      }
 
       setTimeout(() => {
         setJustSkipped(false);

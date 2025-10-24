@@ -15,6 +15,7 @@ import { API_URL } from "@/app/live/config";
 import { TIME_CONTROLS } from "@/game/constants";
 import { playGameReadySound } from "@/game/audio";
 import { UsersOnline } from "@/lib/types";
+import useServerConnectionStatus from "./useServerConnectionStatus";
 
 interface MatchmakingContextType {
   matchmakingMode: keyof typeof TIME_CONTROLS | null;
@@ -53,7 +54,11 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
   const [rated, setRated] = useState<boolean>(true);
   const { isSignedIn, getToken } = useAuth();
   const [usersOnline, setUsersOnline] = useState<UsersOnline | null>(null);
+  const [isServerConnected, setIsServerConnected] = useState<
+    boolean | undefined
+  >(undefined);
   const router = useRouter();
+  useServerConnectionStatus({ isServerConnected });
 
   const checkMatchmaking = useCallback(async () => {
     try {
@@ -119,9 +124,14 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
         url: `${API_URL}/users/online`,
         getToken,
         method: "GET",
-      }).then((data) => {
-        setUsersOnline(data);
-      });
+      })
+        .then((data) => {
+          setIsServerConnected(true);
+          setUsersOnline(data);
+        })
+        .catch(() => {
+          setIsServerConnected(false);
+        });
     };
 
     fetchOnlineUsers();

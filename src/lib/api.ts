@@ -1,5 +1,11 @@
 import { Turn } from "@/game/engine-v2";
 
+export class GHQAPIError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
+
 interface FetchOptions extends RequestInit {
   getToken: () => Promise<string | null>;
   url: string;
@@ -21,7 +27,7 @@ export async function ghqFetch<T>({
   });
 
   if (!response.ok) {
-    throw new Error(`Error: ${response.statusText}`);
+    throw new GHQAPIError(response.statusText, response.status);
   }
 
   return (await response.json()) as T;

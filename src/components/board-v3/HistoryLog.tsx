@@ -41,11 +41,27 @@ export function HistoryLog({
 
   useEffect(() => {
     const highlightedElement = document.getElementById(`move-${seekIndex - 1}`);
-    if (highlightedElement) {
-      highlightedElement.scrollIntoView({
-        block: "nearest",
-        behavior: "smooth",
-      });
+    const container = document.getElementById("history-log-list");
+
+    if (highlightedElement && container) {
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = highlightedElement.getBoundingClientRect();
+
+      const isVisible =
+        elementRect.top >= containerRect.top &&
+        elementRect.bottom <= containerRect.bottom;
+
+      if (!isVisible) {
+        const scrollOffset =
+          elementRect.top -
+          containerRect.top -
+          containerRect.height / 2 +
+          elementRect.height / 2;
+        container.scrollTo({
+          top: container.scrollTop + scrollOffset,
+          behavior: "smooth",
+        });
+      }
     }
   }, [seekIndex]);
 

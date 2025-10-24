@@ -3,7 +3,7 @@
 import PlayArea from "./PlayArea";
 import Sidebar from "./Sidebar";
 import GameoverDialog from "./GameoverDialog";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Settings } from "./SettingsMenu";
 import MobileHeader from "../MobileHeader";
 import { GameClient, GameClientOptions, useEngine } from "@/game/engine-v2";
@@ -20,6 +20,8 @@ import GameLoader from "./GameLoader";
 import { MatchV3 } from "@/lib/types";
 import { useUsers } from "./useUsers";
 import { GameoverState } from "@/game/engine";
+
+// TODO(tyler): unauth'd view for games
 
 export interface GHQBoardV3Props extends GameClientOptions {
   bot?: boolean;

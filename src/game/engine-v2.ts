@@ -894,7 +894,7 @@ export class GameClient {
     return this.isMyTurn();
   }
 
-  endTurn() {
+  async endTurn() {
     if (!this.needsTurnConfirmation) {
       this._push({ name: "Skip", args: [] });
     }
@@ -906,7 +906,7 @@ export class GameClient {
     this.finishTurn();
 
     if (this.multiplayer) {
-      this.multiplayer.sendTurn(turn);
+      return this.multiplayer.sendTurn(turn);
     }
   }
 

@@ -4,16 +4,18 @@ import { API_URL } from "@/app/live/config";
 import { GHQBoardV3 } from "@/components/board-v3/boardv3";
 import GameLoader from "@/components/board-v3/GameLoader";
 import { TimeControl } from "@/game/constants";
-import { ghqFetch } from "@/lib/api";
+import { GHQAPIError, ghqFetch } from "@/lib/api";
 import { MatchV3Info } from "@/lib/types";
 import { useAuth } from "@clerk/nextjs";
-import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { isSignedIn, userId, getToken } = useAuth();
   const [matchInfo, setMatchInfo] = useState<MatchV3Info | undefined>();
+  const router = useRouter();
 
   const fetchMatchInfo = useCallback(async () => {
     if (!isSignedIn) {
@@ -27,7 +29,12 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       });
       return data;
     } catch (error) {
-      console.error("Error polling matchmaking API:", error);
+      if (error instanceof GHQAPIError) {
+        toast.error("We couldn't find that game.");
+        router.push("/");
+      } else {
+        console.error("Error getting match info:", error);
+      }
     }
   }, [isSignedIn, getToken, id]);
 
