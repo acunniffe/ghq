@@ -10,7 +10,6 @@ export default function useServerConnectionStatus({
   const disconnectToastId = useRef<string | number | undefined>(undefined);
 
   useEffect(() => {
-    console.log("isServerConnected", isServerConnected);
     if (isServerConnected === false) {
       if (!disconnectToastId.current) {
         disconnectToastId.current = toast(

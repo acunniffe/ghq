@@ -1,7 +1,7 @@
 "use client";
 
 import { API_URL } from "@/app/live/config";
-import { GHQBoardV3 } from "@/components/board-v3/boardv3";
+import { GHQBoardV3, GHQBoardV3Props } from "@/components/board-v3/boardv3";
 import GameLoader from "@/components/board-v3/GameLoader";
 import { TimeControl } from "@/game/constants";
 import { GHQAPIError, ghqFetch } from "@/lib/api";
@@ -18,21 +18,29 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
 
   const fetchMatchInfo = useCallback(async () => {
-    if (!isSignedIn) {
+    if (isSignedIn === undefined) {
       return;
     }
+
+    const getTokenFn = isSignedIn ? getToken : async () => null;
 
     try {
       const data = await ghqFetch<MatchV3Info>({
         url: `${API_URL}/v3/match/${id}`,
-        getToken,
+        getToken: getTokenFn,
       });
       return data;
     } catch (error) {
       if (error instanceof GHQAPIError) {
-        toast.error("We couldn't find that game.");
-        router.push("/");
+        if (error.status === 404) {
+          toast.error("We couldn't find that game.");
+          router.push("/");
+        } else {
+          toast.error("There was a problem fetching the game data.");
+          console.error("Error getting match info:", error);
+        }
       } else {
+        toast.error("There was a problem fetching the game data.");
         console.error("Error getting match info:", error);
       }
     }
@@ -42,7 +50,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     fetchMatchInfo().then((data) => setMatchInfo(data));
   }, [fetchMatchInfo]);
 
-  const timeControl: TimeControl | undefined = useMemo(() => {
+  function getTimeControl(matchInfo?: MatchV3Info): TimeControl | undefined {
     if (!matchInfo) {
       return undefined;
     }
@@ -51,9 +59,9 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       bonus: matchInfo.match.timeControlBonus,
       variant: matchInfo.match.timeControlVariant,
     };
-  }, [matchInfo]);
+  }
 
-  const playerId = useMemo(() => {
+  function getPlayerId(matchInfo?: MatchV3Info) {
     if (matchInfo?.match?.player1UserId === userId) {
       return "1";
     }
@@ -61,38 +69,41 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       return matchInfo?.playerInfo?.playerId;
     }
     return "0";
-  }, [matchInfo]);
-  const credentials = useMemo(() => {
+  }
+
+  function getCredentials(matchInfo?: MatchV3Info) {
     if (!matchInfo?.playerInfo) {
       return "";
     }
     return matchInfo?.playerInfo?.credentials;
-  }, [matchInfo]);
-  const gameStartTimeMs = useMemo(() => {
+  }
+
+  function getGameStartTimeMs(matchInfo?: MatchV3Info) {
     return matchInfo?.match.createdAt
       ? new Date(matchInfo.match.createdAt).getTime()
       : undefined;
+  }
+
+  const opts: GHQBoardV3Props | undefined = useMemo(() => {
+    if (!matchInfo) {
+      return undefined;
+    }
+    return {
+      id: id,
+      playerId: getPlayerId(matchInfo),
+      credentials: getCredentials(matchInfo),
+      timeControl: getTimeControl(matchInfo),
+      gameStartTimeMs: getGameStartTimeMs(matchInfo),
+    };
   }, [matchInfo]);
 
-  if (
-    !playerId ||
-    credentials === undefined ||
-    !timeControl ||
-    !gameStartTimeMs
-  ) {
+  if (!opts) {
     return <GameLoader message="Fetching game data..." />;
   }
 
   return (
     <div>
-      <GHQBoardV3
-        playerId={playerId}
-        id={id}
-        credentials={credentials}
-        timeControl={timeControl}
-        gameStartTimeMs={gameStartTimeMs}
-        match={matchInfo?.match}
-      />
+      <GHQBoardV3 {...opts} />
     </div>
   );
 }

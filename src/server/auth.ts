@@ -2,11 +2,17 @@ require("dotenv").config();
 import { createClerkClient } from "@clerk/backend";
 import Koa from "koa";
 
-const PUBLIC_API_PATHS = new Set([
-  "/leaderboard",
-  "/match-summary",
-  "/matches",
-]);
+const PUBLIC_API_ROUTES: Array<{
+  exactPath?: string;
+  pathRegex?: RegExp;
+  method: string;
+}> = [
+  { exactPath: "/leaderboard", method: "GET" },
+  { exactPath: "/match-summary", method: "GET" },
+  { exactPath: "/matches", method: "GET" },
+  { pathRegex: /^\/v3\/match\/[^/]+$/, method: "GET" },
+  { pathRegex: /^\/v3\/match\/[^/]+\/turns$/, method: "GET" },
+];
 
 export const clerkClient = createClerkClient({
   secretKey: process.env.CLERK_SECRET_KEY,
@@ -14,9 +20,19 @@ export const clerkClient = createClerkClient({
 });
 
 export const authMiddleware = async (ctx: Koa.Context, next: Koa.Next) => {
-  if (PUBLIC_API_PATHS.has(ctx.path)) {
-    await next();
-    return;
+  for (const route of PUBLIC_API_ROUTES) {
+    if (route.exactPath === ctx.path && route.method === ctx.request.method) {
+      await next();
+      return;
+    }
+    if (
+      route.pathRegex &&
+      ctx.path.match(route.pathRegex) &&
+      route.method === ctx.request.method
+    ) {
+      await next();
+      return;
+    }
   }
 
   const req = new Request(ctx.request.href, {

@@ -102,7 +102,7 @@ export function addGameServerRoutes(
       ctx.throw(404, "Game not found");
       return;
     }
-    const userId = ctx.state.auth.userId;
+    const userId = ctx.state?.auth?.userId;
     const matchInfo = await getV3MatchInfo(gameId, userId);
     if (!matchInfo) {
       ctx.throw(404, "Game not found");

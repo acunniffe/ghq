@@ -21,8 +21,6 @@ import { MatchV3 } from "@/lib/types";
 import { useUsers } from "./useUsers";
 import { GameoverState } from "@/game/engine";
 
-// TODO(tyler): unauth'd view for games
-
 export interface GHQBoardV3Props extends GameClientOptions {
   bot?: boolean;
   credentials?: string;
@@ -55,7 +53,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
     if (
       opts.credentials !== undefined &&
       opts.id &&
-      isSignedIn &&
+      isSignedIn !== undefined &&
       opts.playerId
     ) {
       const multiplayer = new OnlineMultiplayer(
