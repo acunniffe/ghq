@@ -118,6 +118,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
       {!opts.isTutorial && (
         <Sidebar
           game={realGame || game}
+          activeGame={game}
           seek={seek}
           gameover={gameover}
           seekIndex={seekIndex}

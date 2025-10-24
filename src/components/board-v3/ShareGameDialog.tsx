@@ -18,8 +18,8 @@ import { Textarea } from "../ui/textarea";
 export default function ShareGameDialog({ game }: { game: GameClient }) {
   const fen = game.fen();
   const url = new URL(window.location.toString());
-  url.pathname = "/learn";
-  url.searchParams.set("jfen", fen);
+  url.pathname = "/local";
+  url.searchParams.set("fen", fen);
   const learnUrl = url.toString();
 
   function handlePlayBot() {

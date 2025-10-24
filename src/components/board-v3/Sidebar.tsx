@@ -19,6 +19,7 @@ import { GameoverState } from "@/game/engine";
 
 export default function Sidebar({
   game,
+  activeGame,
   seek,
   gameover,
   seekIndex,
@@ -26,7 +27,10 @@ export default function Sidebar({
   settings,
   setSettings,
 }: {
+  // this is the realGame
   game: GameClient;
+  // this is the active game, which may be the realGame or the simGame
+  activeGame: GameClient;
   seek: SeekFunc;
   gameover: GameoverState | undefined;
   seekIndex: number;
@@ -90,7 +94,7 @@ export default function Sidebar({
             {gameoverReason(gameover)}
           </div>
           <div className="flex gap-1 mt-3">
-            <ShareGameDialog game={game} />
+            <ShareGameDialog game={activeGame} />
             <HomeButton />
           </div>
         </div>
