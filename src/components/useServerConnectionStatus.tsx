@@ -15,7 +15,7 @@ export default function useServerConnectionStatus({
         disconnectToastId.current = toast(
           <div className="flex items-center gap-2 text-blue-600">
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>We're having trouble reaching the server...</span>
+            <span>We&apos;re having trouble reaching the server...</span>
           </div>,
           {
             duration: Infinity,
