@@ -94,6 +94,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       credentials: getCredentials(matchInfo),
       timeControl: getTimeControl(matchInfo),
       gameStartTimeMs: getGameStartTimeMs(matchInfo),
+      match: matchInfo.match,
     };
   }, [matchInfo]);
 

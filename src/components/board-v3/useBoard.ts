@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AllowedMove, Board, isMoveCapture, isSkipMove } from "@/game/engine";
 import { UserActionState } from "./state";
 import {
@@ -11,6 +11,7 @@ import {
 import { GameClient } from "@/game/engine-v2";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const ANIMATION_DELAY = 250;
 
 export default function useBoard({
   game,
@@ -35,7 +36,7 @@ export default function useBoard({
 
       // Slowly re-apply the state to allow for animations.
       for (let i = 0; i < lastTurnBoards.length; i++) {
-        sleep(i * 250).then(() => {
+        sleep(i * ANIMATION_DELAY).then(() => {
           setAnimatedBoard(lastTurnBoards[i]);
 
           const lastMove = lastTurnMoves[i];
@@ -50,7 +51,7 @@ export default function useBoard({
       }
 
       // Wait for all the animations to finish before setting the final board state.
-      sleep(lastTurnBoards.length * 250).then(() => {
+      sleep(lastTurnBoards.length * ANIMATION_DELAY).then(() => {
         setMostRecentMove(undefined);
         setAnimatedBoard(game.getV1Board());
       });
@@ -118,7 +119,10 @@ export default function useBoard({
   // Clear bombardments for the user when the turn starts.
   useEffect(() => {
     if (game.isMyTurn()) {
-      game.clearBombardments();
+      const cleared = game.clearBombardments();
+      if (cleared) {
+        playCaptureSound();
+      }
     }
   }, [game.turn]);
 

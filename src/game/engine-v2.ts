@@ -941,13 +941,16 @@ export class GameClient {
     this.notify();
   }
 
-  clearBombardments() {
+  clearBombardments(): boolean {
+    let cleared = false;
     const allowedMoves = this.board().generate_legal_moves();
     for (const move of allowedMoves) {
       if (move.name === "AutoCapture" && move.auto_capture_type === "bombard") {
         this._push(allowedMoveFromUci(move.uci()));
+        cleared = true;
       }
     }
+    return cleared;
   }
 
   getTurnStartTimeMs(): number {

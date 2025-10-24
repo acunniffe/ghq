@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Share, Swords } from "lucide-react";
+import { SearchCheck, Share, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DialogTrigger } from "@radix-ui/react-dialog";
@@ -17,14 +17,17 @@ import { Textarea } from "../ui/textarea";
 
 export default function ShareGameDialog({ game }: { game: GameClient }) {
   const fen = game.fen();
-  const url = new URL(window.location.toString());
-  url.pathname = "/local";
-  url.searchParams.set("fen", fen);
-  const learnUrl = url.toString();
 
   function handlePlayBot() {
     const url = new URL(window.location.toString());
     url.pathname = "/bot";
+    url.searchParams.set("fen", fen);
+    window.open(url.toString(), "_blank");
+  }
+
+  function handlePlayLocal() {
+    const url = new URL(window.location.toString());
+    url.pathname = "/local";
     url.searchParams.set("fen", fen);
     window.open(url.toString(), "_blank");
   }
@@ -51,18 +54,6 @@ export default function ShareGameDialog({ game }: { game: GameClient }) {
                 id="jfen"
                 placeholder=""
                 value={game.fen()}
-              />
-            </div>
-            <div>
-              <Label htmlFor="jfen">Analysis</Label>
-              <Input
-                readOnly
-                spellCheck={false}
-                className="font-mono"
-                type="url"
-                id="fen-url"
-                placeholder=""
-                value={learnUrl}
               />
             </div>
             <div>
@@ -93,9 +84,12 @@ export default function ShareGameDialog({ game }: { game: GameClient }) {
                 value={game.pgn()}
               />
             </div>
-            <div>
+            <div className="flex gap-2">
               <Button onClick={handlePlayBot}>
-                <Swords /> Play bot from this position
+                <Swords /> Play bot from here
+              </Button>
+              <Button onClick={handlePlayLocal}>
+                <SearchCheck /> Play from here
               </Button>
             </div>
           </div>
