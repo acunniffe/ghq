@@ -991,6 +991,10 @@ export class GameClient {
     return getV1Board(this.board());
   }
 
+  getThisTurnBoards(): Board[] {
+    return this.thisTurnBoards.map(getV1Board);
+  }
+
   getLastTurnBoards(): Board[] {
     return this.lastTurnBoards.map(getV1Board);
   }

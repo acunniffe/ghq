@@ -93,6 +93,11 @@ export type AllowedMove =
   | AutoCaptureMove
   | SkipMove;
 
+export type AnimatedMove = {
+  move: AllowedMove;
+  reverse: boolean;
+};
+
 export interface ReinforceMove {
   name: "Reinforce";
   args: [

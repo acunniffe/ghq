@@ -4,6 +4,7 @@
 import React, { Ref, useEffect, useRef, useState } from "react";
 import {
   AllowedMove,
+  AnimatedMove,
   Board,
   Coordinate,
   NonNullSquare,
@@ -25,6 +26,7 @@ import { areCoordsEqual, BoardEngagements } from "../../game/capture-logic";
 import { UserActionState } from "./state";
 import BoardCoordinateLabels from "./BoardCoordinateLabels";
 import { GameClient } from "@/game/engine-v2";
+import { allowedMoveToUci } from "@/game/notation-uci";
 
 interface AnimateTo {
   coordinate: Coordinate;
@@ -71,7 +73,7 @@ export function getSquareState({
   currentPlayer: Player;
   board: Board;
   bombarded: Bombarded;
-  mostRecentMove: AllowedMove | undefined;
+  mostRecentMove: AnimatedMove | undefined;
   recentMoves: Coordinate[];
   recentCaptures: PlayerPiece[];
   rowIndex: number;
@@ -552,23 +554,29 @@ function getChosenCandidates(
 
 function getAnimation(
   coord: Coordinate,
-  mostRecentMove: AllowedMove | undefined
+  animatedMove: AnimatedMove | undefined
 ) {
   let shouldAnimateTo: AnimateTo | undefined = undefined;
-  if (mostRecentMove) {
-    if (
-      (mostRecentMove &&
-        mostRecentMove.name === "Move" &&
-        areCoordsEqual(mostRecentMove.args[0], coord)) ||
-      (mostRecentMove.name === "MoveAndOrient" &&
-        areCoordsEqual(mostRecentMove.args[0], coord))
-    ) {
-      shouldAnimateTo = {
-        coordinate: mostRecentMove.args[1],
-      };
+  if (animatedMove) {
+    const { move: mostRecentMove, reverse } = animatedMove;
 
-      if (mostRecentMove.name === "MoveAndOrient") {
-        shouldAnimateTo.orientation = mostRecentMove.args[2];
+    if (
+      mostRecentMove &&
+      (mostRecentMove.name === "Move" ||
+        mostRecentMove.name === "MoveAndOrient")
+    ) {
+      const fromCoord = reverse
+        ? mostRecentMove.args[1]
+        : mostRecentMove.args[0];
+      const toCoord = reverse ? mostRecentMove.args[0] : mostRecentMove.args[1];
+      if (areCoordsEqual(fromCoord, coord)) {
+        shouldAnimateTo = {
+          coordinate: toCoord,
+        };
+
+        if (mostRecentMove.name === "MoveAndOrient") {
+          shouldAnimateTo.orientation = mostRecentMove.args[2];
+        }
       }
     }
   }

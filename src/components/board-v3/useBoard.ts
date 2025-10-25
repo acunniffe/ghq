@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AllowedMove, Board, isMoveCapture, isSkipMove } from "@/game/engine";
+import {
+  AllowedMove,
+  AnimatedMove,
+  Board,
+  isMoveCapture,
+  isSkipMove,
+} from "@/game/engine";
 import { UserActionState } from "./state";
 import {
   playCaptureSound,
@@ -21,9 +27,13 @@ export default function useBoard({
   userActionState: UserActionState;
 }) {
   const [animatedBoard, setAnimatedBoard] = useState<Board>(game.getV1Board());
+  const [animatedMoveIndex, setAnimatedMoveIndex] = useState<number>(
+    game.moves.length
+  );
   const [mostRecentMove, setMostRecentMove] = useState<
-    AllowedMove | undefined
+    AnimatedMove | undefined
   >();
+  const [lastMove, setLastMove] = useState<AllowedMove | undefined>();
   const skipAnimations = game.isReplayMode; // || G.isPassAndPlayMode;
   const currentPlayer = game.currentPlayer();
   const currentPlayerTurn = game.currentPlayerTurn();
@@ -40,7 +50,7 @@ export default function useBoard({
           setAnimatedBoard(lastTurnBoards[i]);
 
           const lastMove = lastTurnMoves[i];
-          setMostRecentMove(lastMove);
+          setMostRecentMove({ move: lastMove, reverse: false });
 
           if (isMoveCapture(lastMove)) {
             playCaptureSound();
@@ -68,6 +78,10 @@ export default function useBoard({
   }, [skipAnimations, game.turn]);
 
   useEffect(() => {
+    if (game.isReplayMode) {
+      return;
+    }
+
     // Animate when it's our turn (i.e. we just made move 1 or 2, or hit undo to go to move 0)
     if (currentPlayerTurn === currentPlayer && game.numMovesThisTurn() >= 0) {
       setAnimatedBoard(game.getV1Board());
@@ -78,14 +92,29 @@ export default function useBoard({
       setAnimatedBoard(game.getV1Board());
       playNextTurnSound();
     }
-  }, [currentPlayerTurn, game.moves]);
+  }, [currentPlayerTurn, game.moves, game.isReplayMode]);
 
-  // In replay mode, don't animate the board state when the game state changes, just set it immediately.
+  // In replay mode, animate single moves.
   useEffect(() => {
-    if (skipAnimations) {
-      setAnimatedBoard(game.getV1Board());
+    if (game.isReplayMode) {
+      const reverse = animatedMoveIndex > game.moves.length;
+
+      // Account for whether we're moving forward or backward in the move history.
+      if (reverse) {
+        setMostRecentMove({ move: lastMove!, reverse });
+      } else {
+        setMostRecentMove({ move: game.moves[game.moves.length - 1], reverse });
+      }
+
+      setLastMove(game.moves[game.moves.length - 1]);
+
+      sleep(150).then(() => {
+        setAnimatedBoard(game.getV1Board());
+        setAnimatedMoveIndex(game.moves.length);
+        setMostRecentMove(undefined);
+      });
     }
-  }, [skipAnimations, game.moves]);
+  }, [game.isReplayMode, game.moves]);
 
   // In replay mode, don't animate the board state when the game state changes, just set it immediately.
   useEffect(() => {

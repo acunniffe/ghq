@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useCallback, useMemo } from "react";
-import { AllowedMove, Coordinate, Player, type Board } from "@/game/engine";
+import {
+  AllowedMove,
+  AnimatedMove,
+  Coordinate,
+  Player,
+  type Board,
+} from "@/game/engine";
 import { bombardedSquares } from "@/game/move-logic";
 import { updateClick, updateHover, UserActionState } from "./state";
 import Square, { getSquareState } from "./Square";
@@ -30,7 +36,7 @@ export default function Board({
 }: {
   game: GameClient;
   board: Board;
-  mostRecentMove: AllowedMove | undefined;
+  mostRecentMove: AnimatedMove | undefined;
   currentPlayer: Player;
   currentPlayerTurn: Player;
   userActionState: UserActionState;
