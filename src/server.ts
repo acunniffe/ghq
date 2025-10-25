@@ -270,15 +270,6 @@ async function runServer() {
     const userId = ctx.state.auth.userId;
     const matchId = ctx.params.matchId;
 
-    const { state } = await db.fetch(matchId, {
-      state: true,
-    });
-
-    if (!state) {
-      ctx.body = JSON.stringify({});
-      return null;
-    }
-
     // Ensure the calling user is authorized to abort this game
     const { error: findMatchError } = await supabase
       .from("active_user_matches")

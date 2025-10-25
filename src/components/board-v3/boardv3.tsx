@@ -157,6 +157,15 @@ function getGameover(
     return undefined;
   }
 
+  // If the game was aborted, we can show that first
+  if (match?.status === "ABORTED") {
+    return {
+      winner: undefined,
+      status: "DRAW",
+      reason: "Game was abandoned",
+    };
+  }
+
   // If the match object from the database is available, use it to get the gameover state first.
   if (match?.status && match.gameoverReason) {
     const winner =
