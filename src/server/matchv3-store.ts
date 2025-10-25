@@ -113,16 +113,25 @@ export async function createActiveMatches({
   if (error) throw error;
 }
 
-export async function getActiveMatchForUser(
-  userId: string
+export async function getActiveMatch(
+  userId: string,
+  matchId: string
 ): Promise<ActiveMatch | undefined> {
   const { data, error } = await supabase
     .from("active_user_matches")
     .select("match_id, player_id, credentials")
     .eq("user_id", userId)
-    .eq("is_correspondence", false) // distinguish between live and correspondence, correspondence allows multiple simultaneous games
+    .eq("match_id", matchId)
     .single();
-  if (error) return undefined;
+  if (error) {
+    console.log({
+      message: "Error getting active match",
+      userId,
+      matchId,
+      error,
+    });
+    return undefined;
+  }
 
   return {
     id: data?.match_id || "",

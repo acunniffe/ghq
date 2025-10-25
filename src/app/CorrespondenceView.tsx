@@ -116,7 +116,7 @@ export default function CorrespondenceView() {
       )}
 
       {receivedChallenges.length > 0 && (
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-0.5 mb-0.5">
           {receivedChallenges.map((challenge) => (
             <ReceivedChallengeRow
               key={`${challenge.challenger.id}-${challenge.target.id}`}
@@ -137,7 +137,7 @@ export default function CorrespondenceView() {
         )}
 
       {matches.length > 0 && (
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-0.5 mb-0.5">
           {matches.map((game) => (
             <MatchLink key={game.id} game={game} />
           ))}
@@ -170,7 +170,7 @@ function ReceivedChallengeRow({
   return (
     <div
       key={`${challenge.challenger.id}-${challenge.target.id}`}
-      className="p-1 bg-white rounded-lg flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center"
+      className="p-1 px-2 bg-white/50 border border-white/50 flex justify-between rounded flex-col sm:flex-row text-sm"
     >
       <div className="flex items-center gap-1 px-2">
         <Mail className="h-4 w-4 mr-1" />
@@ -204,9 +204,9 @@ function SentChallengeRow({ challenge }: { challenge: any }) {
   return (
     <div
       key={`${challenge.challenger.id}-${challenge.target.id}`}
-      className="p-1 bg-white rounded-lg flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center"
+      className="p-1 px-2 bg-white/50 border border-white/50 flex justify-between rounded flex-col sm:flex-row"
     >
-      <div className="flex items-center gap-1 px-2">
+      <div className="flex items-center gap-1 px-2 text-sm">
         <MailQuestion className="h-4 w-4 mr-1" />
         Challenged{" "}
         <span className="font-bold text-gray-700">
@@ -215,7 +215,7 @@ function SentChallengeRow({ challenge }: { challenge: any }) {
         <RatedBadge rated={challenge.rated} />
         <CustomGameLink challenge={challenge} />
       </div>
-      <div className="flex items-center text-sm text-gray-500 justify-end">
+      <div className="flex items-center text-xs text-gray-600 justify-end">
         Awaiting response...
       </div>
     </div>

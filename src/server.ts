@@ -813,6 +813,33 @@ async function runServer() {
       isRandomFirst ? userId : challenge.challenger_user_id
     );
 
+    if (!challenge.rated) {
+      await createNewV3Match({
+        user0,
+        user1,
+        timeControlName: "correspondence",
+        timeControl: TIME_CONTROLS.correspondence,
+        isCorrespondence: true,
+        rated: challenge.rated,
+        startingFen: challenge.fen,
+      });
+      const { error: updateError } = await supabase
+        .from("correspondence_challenges")
+        .delete()
+        .eq("challenger_user_id", challengerUserId)
+        .eq("target_user_id", userId);
+
+      if (updateError) {
+        console.log({
+          message: "Error updating challenge status",
+          error: updateError,
+        });
+        ctx.throw(400, "Error accepting challenge");
+      }
+      ctx.body = JSON.stringify({});
+      return;
+    }
+
     const newMatch = await createNewMatch({
       ctx,
       db: server.db,

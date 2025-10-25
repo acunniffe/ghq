@@ -12,7 +12,7 @@ import {
   createMatchV3,
   deleteActiveMatches,
   fetchMatchV3,
-  getActiveMatchForUser,
+  getActiveMatch,
   onMatchChange,
   updateMatchPGN,
   updatePlayerElo,
@@ -170,6 +170,19 @@ export function addGameServerRoutes(
 
     const turnReq = ctx.request.body as SendTurnRequest;
 
+    if (!turnReq.credentials) {
+      ctx.throw(400, "Credentials are required");
+      return;
+    }
+    if (!turnReq.playerId) {
+      ctx.throw(400, "Player ID is required");
+      return;
+    }
+    if (!turnReq.turn) {
+      ctx.throw(400, "Turn is required");
+      return;
+    }
+
     if (!isTurnAuthorized(userId, turnReq, match)) {
       ctx.throw(401, "Unauthorized");
       return;
@@ -251,6 +264,12 @@ export function addGameServerRoutes(
       turns.push(turn);
       updatedMatch.pgn = createPGN(turns);
 
+      // Update the current player turn user id
+      updatedMatch.current_turn_player_id =
+        game.currentPlayerTurn() === "RED"
+          ? match.player0_id
+          : match.player1_id;
+
       return updatedMatch;
     });
 
@@ -285,7 +304,7 @@ export async function createNewV3Match({
   const matchId = nanoid();
   const player0Creds = nanoid();
   const player1Creds = nanoid();
-  const match = {
+  const match: MatchV3 = {
     id: matchId,
     createdAt: new Date().toISOString(),
     player0UserId: user0.id,
@@ -294,6 +313,7 @@ export async function createNewV3Match({
     player1UserId: user1.id,
     player1CredentialsHash: hashCredentials(player1Creds),
     player1Elo: user1.elo,
+    currentPlayerTurnUserId: user0.id,
     timeControlName,
     timeControlAllowedTime: timeControl.time,
     timeControlBonus: timeControl.bonus,
@@ -334,7 +354,7 @@ export async function getV3MatchInfo(
   }
 
   if (userId) {
-    const activeMatch = await getActiveMatchForUser(userId);
+    const activeMatch = await getActiveMatch(userId, match.id);
     if (activeMatch) {
       return {
         match,
@@ -424,12 +444,24 @@ function isTurnAuthorized(
 
   const requiredTurnValidator = playerId === "0" ? isOdd : isEven; // 0 is red (odd numbered turns), 1 is blue (even numbered turns)
 
-  return (
+  const isAuthorized =
     authenticatedUserId === requiredPlayerId &&
     hashCredentials(credentials) === requiredHashCredentials &&
     // either they're playing the correct order turn or they've resigned
-    (requiredTurnValidator(turn) || turn.playerResigned === playerId)
-  );
+    (requiredTurnValidator(turn) || turn.playerResigned === playerId);
+
+  if (!isAuthorized) {
+    console.log("Unauthorized turn", {
+      authenticatedUserId,
+      requiredPlayerId,
+      hashCredentials: hashCredentials(credentials),
+      requiredHashCredentials,
+      turn,
+      isTurnValidated: requiredTurnValidator(turn),
+    });
+  }
+
+  return isAuthorized;
 }
 
 function isEven(turn: Turn): boolean {

@@ -962,7 +962,8 @@ export class GameClient {
   }
 
   getPlayerTimeLeftMs(player: Player, isLive: boolean = false): number | null {
-    if (!this.timeControl) {
+    if (!this.timeControl || this.timeControl.time === 0) {
+      // unlimited time control
       return null;
     }
 

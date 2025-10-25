@@ -27,9 +27,9 @@ export interface GHQBoardV3Props extends GameClientOptions {
   match?: MatchV3;
 }
 
-// TODO(tyler): look into single-move animations for replay mode
 // TODO(tyler): figure out server side match lifecycle to ensure games time out correctly
-// TODO(tyler): unrated v3 correspondence games
+// TODO(tyler): make it more obvious when game is in replay mode (and how to get back to live version)
+// TODO(tyler): ability to load a game from a PGN
 
 export function GHQBoardV3(opts: GHQBoardV3Props) {
   const { engine } = useEngine();

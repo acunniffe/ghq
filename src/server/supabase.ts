@@ -34,10 +34,7 @@ export interface SupabaseActiveUserMatch {
 
 export function matchToSupabaseMatch(
   match: MatchV3
-): Omit<
-  SupabaseMatch,
-  "created_at" | "winner_id" | "status" | "current_turn_player_id"
-> {
+): Omit<SupabaseMatch, "created_at" | "winner_id" | "status"> {
   return {
     id: match.id,
     player0_id: match.player0UserId,
@@ -49,6 +46,7 @@ export function matchToSupabaseMatch(
     rated: match.rated,
     player_0_credentials_hash: match.player0CredentialsHash,
     player_1_credentials_hash: match.player1CredentialsHash,
+    current_turn_player_id: match.currentPlayerTurnUserId ?? null,
     time_control_name: match.timeControlName,
     time_control_allowed_time: match.timeControlAllowedTime,
     time_control_bonus: match.timeControlBonus,

@@ -20,21 +20,6 @@ export const clerkClient = createClerkClient({
 });
 
 export const authMiddleware = async (ctx: Koa.Context, next: Koa.Next) => {
-  for (const route of PUBLIC_API_ROUTES) {
-    if (route.exactPath === ctx.path && route.method === ctx.request.method) {
-      await next();
-      return;
-    }
-    if (
-      route.pathRegex &&
-      ctx.path.match(route.pathRegex) &&
-      route.method === ctx.request.method
-    ) {
-      await next();
-      return;
-    }
-  }
-
   const req = new Request(ctx.request.href, {
     method: ctx.request.method,
     headers: new Headers(ctx.request.headers as Record<string, string>),
@@ -45,6 +30,11 @@ export const authMiddleware = async (ctx: Koa.Context, next: Koa.Next) => {
   const { isSignedIn, status, reason, message } = res;
 
   if (!isSignedIn) {
+    if (isAuthOptional(ctx)) {
+      await next();
+      return;
+    }
+
     console.error({ msg: "Failed to authenticate.", status, reason, message });
     ctx.status = 401;
     ctx.body = { status: 401, message: "Unauthorized" };
@@ -55,3 +45,19 @@ export const authMiddleware = async (ctx: Koa.Context, next: Koa.Next) => {
 
   await next();
 };
+
+function isAuthOptional(ctx: Koa.Context): boolean {
+  for (const route of PUBLIC_API_ROUTES) {
+    if (route.exactPath === ctx.path && route.method === ctx.request.method) {
+      return true;
+    }
+    if (
+      route.pathRegex &&
+      ctx.path.match(route.pathRegex) &&
+      route.method === ctx.request.method
+    ) {
+      return true;
+    }
+  }
+  return false;
+}

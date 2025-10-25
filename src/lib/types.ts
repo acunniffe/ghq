@@ -76,6 +76,7 @@ export interface MatchV3 {
   player1CredentialsHash: string;
   player1Elo: number;
   winnerUserId?: string | null;
+  currentPlayerTurnUserId?: string | null;
   gameoverReason?: string | null;
   status?: string | null;
   timeControlName: string;

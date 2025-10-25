@@ -66,7 +66,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       return "1";
     }
     if (matchInfo?.playerInfo?.playerId) {
-      return matchInfo?.playerInfo?.playerId;
+      return matchInfo.playerInfo.playerId;
     }
     return "0";
   }

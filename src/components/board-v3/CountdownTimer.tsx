@@ -46,7 +46,7 @@ const CountdownTimer = ({
   }, [timeControl, active, game.turn]);
 
   const formatTime = (timeInMs: number | null) => {
-    if (!timeControl) return "∞";
+    if (!timeControl || timeControl.time === 0) return "∞";
     if (timeInMs === null) return "";
     if (timeInMs <= 0) return "00:00";
 
