@@ -1,9 +1,7 @@
 "use client";
 
-import { Client } from "boardgame.io/react";
 import { useEffect, useState } from "react";
-import ReplayCapability from "@/game/ReplayCapability";
-import { BoardType, getBoardInfo, newTutorialGHQGame } from "@/game/tutorial";
+import { BoardType, getBoardInfo } from "@/game/tutorial";
 import { useRouter, useSearchParams } from "next/navigation";
 import { boards } from "@/game/tutorial";
 import Header from "@/components/Header";
@@ -16,28 +14,26 @@ import { defaultBoard, defaultReserveFleet } from "@/game/engine";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import LearnBasics from "./LearnBasics";
-import { GHQBoardV2 } from "@/components/board/boardv2";
-import { newGHQGameV2, useEngine } from "@/game/engine-v2";
+import { GHQBoardV3 } from "@/components/board-v3/boardv3";
 
 export default function Page() {
   const searchParams = useSearchParams();
-  const [client, setClient] = useState<any | null>(null);
-  const [App, setApp] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [boardFen, setBoardFen] = useState<string | undefined>(undefined);
   const { setBoardArrows } = useBoardArrow();
-  const { engine } = useEngine();
 
   useEffect(() => {
-    if (!engine) {
+    const boardType = searchParams.get("boardType") as BoardType | undefined;
+    const fen = searchParams.get("jfen") as string | undefined;
+
+    if (!boardType && !fen) {
+      setLoading(false);
+      setBoardFen(undefined);
       return;
     }
 
-    const boardType = searchParams.get("boardType") as BoardType | undefined;
-    const jfen = searchParams.get("jfen") as string | undefined;
-
-    const boardInfo = getBoardInfo(boardType, jfen);
+    const boardInfo = getBoardInfo(boardType, fen);
     if (!boardInfo) {
-      setApp(null);
       setLoading(false);
       return;
     }
@@ -45,19 +41,11 @@ export default function Page() {
     // Wait a second to set the board arrow so that the board has time to render
     setTimeout(() => {
       setBoardArrows(boardInfo.boardArrows);
-    }, 500);
+    }, 2000);
+    setBoardFen(boardInfo.fen);
+  }, [searchParams]);
 
-    const DynamicApp = Client({
-      game: newGHQGameV2({ engine, fen: boardInfo.fen, type: "local" }),
-      board: GHQBoardV2,
-    });
-    setApp(() => {
-      setLoading(false);
-      return DynamicApp;
-    });
-  }, [searchParams, engine]);
-
-  if (!App) {
+  if (!boardFen) {
     return (
       <div className="p-2 flex flex-col gap-4 lg:px-48 mb-20">
         <Header />
@@ -139,15 +127,14 @@ export default function Page() {
 
   return (
     <div>
-      {client && <ReplayCapability client={client} />}
-      {App && <App ref={(ref: any) => setClient(ref?.client)} />}
+      <GHQBoardV3 isPassAndPlayMode={true} fen={boardFen} />
     </div>
   );
 }
 
 function ImportGame() {
   const router = useRouter();
-  const [jfen, setJfen] = useState(
+  const [fen, setFen] = useState(
     boardToFEN({
       board: defaultBoard,
       redReserve: defaultReserveFleet,
@@ -156,20 +143,20 @@ function ImportGame() {
   );
 
   function onClick() {
-    router.push(`/learn?jfen=${jfen}`);
+    router.push(`/learn?jfen=${fen}`);
   }
 
   return (
     <div className="flex items-center gap-2">
-      <Label htmlFor="jfen">FEN</Label>
+      <Label htmlFor="fen">FEN</Label>
       <Input
         spellCheck={false}
         className="font-mono bg-white w-96"
-        type="jfen"
-        id="jfen"
+        type="fen"
+        id="fen"
         placeholder=""
-        onChange={(e) => setJfen(e.target.value)}
-        value={jfen}
+        onChange={(e) => setFen(e.target.value)}
+        value={fen}
       />
 
       <div>
