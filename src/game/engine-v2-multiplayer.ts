@@ -54,6 +54,12 @@ export class BotMultiplayer implements Multiplayer {
       // const start = Date.now();
       const move = player.get_next_move();
 
+      if (move.auto_capture_type) {
+        // If the move is an auto capture, we don't want to count it as a move,
+        // so we decrement the index.
+        i = i - 1;
+      }
+
       // Apply to the board
       this.board.push(move);
 
