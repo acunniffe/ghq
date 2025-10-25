@@ -13,6 +13,7 @@ import {
   deleteActiveMatches,
   fetchMatchV3,
   getActiveMatch,
+  listInProgressLiveMatches,
   onMatchChange,
   updateMatchPGN,
   updatePlayerElo,
@@ -94,6 +95,16 @@ export function addGameServerRoutes(
     const turns = pgnToTurns(match.pgn);
     sendTurnsToListeners(match.id, turns);
   });
+
+  const runMatchLifecycle = () => {
+    matchLifecycleV3(engine).finally(() => {
+      setTimeout(runMatchLifecycle, 10_000);
+    });
+  };
+
+  if (process.env.NODE_ENV !== "development") {
+    runMatchLifecycle();
+  }
 
   router.get("/v3/match/:id", async (ctx) => {
     const gameId = ctx.params.id as string;
@@ -193,24 +204,14 @@ export function addGameServerRoutes(
     const updatedMatch = await updateMatchPGN(id, (match): SupabaseMatch => {
       const turns = pgnToTurns(match.pgn || "");
 
-      let timeControl: TimeControl | undefined;
-      if (
-        match.time_control_allowed_time &&
-        match.time_control_bonus &&
-        match.time_control_variant
-      ) {
-        timeControl = {
-          time: match.time_control_allowed_time,
-          bonus: match.time_control_bonus,
-          variant: match.time_control_variant,
-        };
-      }
+      const timeControl = getSupabaseMatchTimeControl(match);
 
       // TODO(tyler): can we cache this game client per match id?
       const game = new GameClient({
         engine,
         isPassAndPlayMode: true,
         timeControl,
+        gameStartTimeMs: getGameStartTimeMs(match?.created_at?.toISOString()),
       });
 
       // Apply the historical moves to the game state
@@ -470,4 +471,91 @@ function isEven(turn: Turn): boolean {
 
 function isOdd(turn: Turn): boolean {
   return turn.turn % 2 === 1;
+}
+
+async function matchLifecycleV3(engine: GameEngine) {
+  const matches = await listInProgressLiveMatches();
+
+  for (const match of matches) {
+    await checkAndUpdateMatch(engine, match);
+  }
+}
+
+function getSupabaseMatchTimeControl(
+  match: SupabaseMatch
+): TimeControl | undefined {
+  if (match.time_control_allowed_time && match.time_control_bonus) {
+    return {
+      time: match.time_control_allowed_time,
+      bonus: match.time_control_bonus,
+      variant: match.time_control_variant || undefined,
+    };
+  }
+
+  return undefined;
+}
+
+function getMatchTimeControl(match: MatchV3): TimeControl | undefined {
+  if (match.timeControlAllowedTime && match.timeControlBonus) {
+    return {
+      time: match.timeControlAllowedTime,
+      bonus: match.timeControlBonus,
+      variant: match.timeControlVariant || undefined,
+    };
+  }
+
+  return undefined;
+}
+
+function getGameStartTimeMs(createdAt?: string) {
+  return createdAt ? new Date(createdAt).getTime() : undefined;
+}
+
+async function checkAndUpdateMatch(engine: GameEngine, match: MatchV3) {
+  const turns = pgnToTurns(match.pgn || "");
+  console.log("checking and updating match", match.id, turns.length);
+
+  const timeControl = getMatchTimeControl(match);
+
+  const game = new GameClient({
+    engine,
+    isPassAndPlayMode: true,
+    timeControl,
+    gameStartTimeMs: getGameStartTimeMs(match.createdAt),
+  });
+
+  // Apply the historical moves to the game state
+  try {
+    for (const turn of turns) {
+      game.pushTurn(turn);
+    }
+  } catch (error) {
+    console.error("Error applying moves to game", error);
+    return match;
+  }
+
+  const getWinnerId = (gameover: GameoverState) => {
+    return gameover.winner
+      ? gameover.winner === "RED"
+        ? match.player0UserId
+        : match.player1UserId
+      : null;
+  };
+
+  // Check for gameover due to timeout or something already on the board.
+  const gameoverDueToTimeout = game.gameover();
+  if (gameoverDueToTimeout) {
+    console.log("Updating match due to timeout", {
+      id: match.id,
+      gameover: gameoverDueToTimeout,
+    });
+    await updateMatchPGN(match.id, (match): SupabaseMatch => {
+      return {
+        ...match,
+        status: gameoverDueToTimeout.status,
+        winner_id: getWinnerId(gameoverDueToTimeout),
+        gameover_reason: gameoverDueToTimeout.reason,
+      };
+    });
+  }
 }

@@ -124,6 +124,10 @@ export async function getActiveMatch(
     .eq("match_id", matchId)
     .single();
   if (error) {
+    if (error.code === "PGRST116") {
+      // not found is expected if this user isn't actively playing this match
+      return undefined;
+    }
     console.log({
       message: "Error getting active match",
       userId,
@@ -192,4 +196,16 @@ export async function updatePlayerElo(
     });
   }
   return;
+}
+
+export async function listInProgressLiveMatches(): Promise<MatchV3[]> {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .is("status", null)
+    .eq("is_correspondence", false);
+  if (error) {
+    throw error;
+  }
+  return data.map(supabaseMatchToMatchV3);
 }
