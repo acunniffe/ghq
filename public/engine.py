@@ -2445,7 +2445,7 @@ class ValuePlayer():
         for m1 in moves:
             b1 = self.board.copy()
             b1.push(m1)
-            v = -1 * evaluate_board(b1)
+            v = -1 * evaluate_board_for_blue(b1)
             if v > best_value:
                 best_value = v
                 best_move = m1
@@ -2480,14 +2480,16 @@ POSITION_GRADIENTS = {
     BLUE: POSITION_GRADIENT[::-1],
 }
 
-def evaluate_board(board: BaseBoard) -> float:
+def evaluate_board_for_blue(board: BaseBoard) -> float:
     return _get_color_score(board, RED) - _get_color_score(board, BLUE)
 
 def _get_color_score(board: BaseBoard, color: Color) -> float:
     score = 0
 
-    # switch the turn to trigger bombardments and so we can evaluate captures
-    if board.turn == color:
+    # switch the turn to trigger bombardments and so we can evaluate captures for red,
+    # but not for blue, because we're assuming we're just looking at blue's perspective,
+    # and switching it on red's turn would trigger free captures for blue (or something)
+    if board.turn == color and color != RED:
         board.push(Move.skip())
 
     while True:
