@@ -544,18 +544,23 @@ async function checkAndUpdateMatch(engine: GameEngine, match: MatchV3) {
 
   // Check for gameover due to timeout or something already on the board.
   const gameoverDueToTimeout = game.gameover();
-  if (gameoverDueToTimeout) {
-    console.log("Updating match due to timeout", {
-      id: match.id,
-      gameover: gameoverDueToTimeout,
-    });
-    await updateMatchPGN(match.id, (match): SupabaseMatch => {
-      return {
-        ...match,
-        status: gameoverDueToTimeout.status,
-        winner_id: getWinnerId(gameoverDueToTimeout),
-        gameover_reason: gameoverDueToTimeout.reason,
-      };
-    });
+  if (!gameoverDueToTimeout) {
+    return;
   }
+
+  console.log("Updating match due to timeout", {
+    id: match.id,
+    gameover: gameoverDueToTimeout,
+  });
+  await updateMatchPGN(match.id, (match): SupabaseMatch => {
+    return {
+      ...match,
+      status: gameoverDueToTimeout.status,
+      winner_id: getWinnerId(gameoverDueToTimeout),
+      gameover_reason: gameoverDueToTimeout.reason,
+    };
+  });
+
+  await deleteActiveMatches(match.id);
+  await updateUserElos(match);
 }
