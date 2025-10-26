@@ -211,7 +211,7 @@ export function addGameServerRoutes(
         engine,
         isPassAndPlayMode: true,
         timeControl,
-        gameStartTimeMs: getGameStartTimeMs(match?.created_at?.toISOString()),
+        gameStartTimeMs: getGameStartTimeMs(match?.created_at),
       });
 
       // Apply the historical moves to the game state

@@ -2,7 +2,7 @@ import { ActiveMatch, MatchV3 } from "@/lib/types";
 
 export interface SupabaseMatch {
   id: string;
-  created_at: Date;
+  created_at: string;
   player0_id: string;
   player1_id: string;
   player0_elo: number;
@@ -59,7 +59,7 @@ export function matchToSupabaseMatch(
 export function supabaseMatchToMatchV3(supabaseMatch: SupabaseMatch): MatchV3 {
   return {
     id: supabaseMatch.id,
-    createdAt: new Date(supabaseMatch.created_at).toISOString(),
+    createdAt: supabaseMatch.created_at,
     player0UserId: supabaseMatch.player0_id,
     player0Elo: supabaseMatch.player0_elo,
     player0CredentialsHash: supabaseMatch.player_0_credentials_hash ?? "",
