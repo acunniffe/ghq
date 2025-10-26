@@ -16,26 +16,24 @@ import { GameClient } from "@/game/engine-v2";
 import { Textarea } from "../ui/textarea";
 
 export default function ShareGameDialog({ game }: { game: GameClient }) {
-  const fen = game.fen();
-
   function handlePlayBot() {
     const url = new URL(window.location.toString());
     url.pathname = "/bot";
-    url.searchParams.set("fen", fen);
+    url.searchParams.set("fen", game.fen());
     window.open(url.toString(), "_blank");
   }
 
   function handlePlayLocal() {
     const url = new URL(window.location.toString());
     url.pathname = "/local";
-    url.searchParams.set("fen", fen);
+    url.searchParams.set("fen", game.fen());
     window.open(url.toString(), "_blank");
   }
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="text-sm">
+        <Button variant="outline">
           <Share /> Share
         </Button>
       </DialogTrigger>

@@ -16,6 +16,7 @@ import { GameClient, gameoverReason } from "@/game/engine-v2";
 import ShareGameDialog from "./ShareGameDialog";
 import { SeekFunc } from "./useSeek";
 import { GameoverState } from "@/game/engine";
+import PlayLocalIconButton from "./PlayLocalIconButton";
 
 export default function Sidebar({
   game,
@@ -94,6 +95,7 @@ export default function Sidebar({
             {gameoverReason(gameover)}
           </div>
           <div className="flex gap-1 mt-3">
+            <PlayLocalIconButton game={activeGame} />
             <ShareGameDialog game={activeGame} />
             <HomeButton />
           </div>
