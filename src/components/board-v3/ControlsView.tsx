@@ -13,6 +13,7 @@ import { GameClient, Player } from "@/game/engine-v2";
 import { SeekFunc } from "./useSeek";
 import { Kbd } from "../ui/kbd";
 import { toast } from "sonner";
+import { Settings } from "./SettingsMenu";
 
 export default function ControlsView({
   game,
@@ -20,12 +21,14 @@ export default function ControlsView({
   seek,
   cancel,
   togglePOV,
+  settings,
 }: {
   game: GameClient;
   replay: () => void;
   seek: SeekFunc;
   cancel: () => void;
   togglePOV: () => void;
+  settings: Settings;
 }) {
   const [justSkipped, setJustSkipped] = useState(false);
   const canReplay = useMemo(
@@ -78,6 +81,7 @@ export default function ControlsView({
   }, [replay, cancel]);
 
   useControls({
+    settings,
     undo: doUndo,
     redo: doRedo,
     cancel,

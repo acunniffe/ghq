@@ -16,7 +16,7 @@ import { Ellipsis } from "lucide-react";
 
 export interface Settings {
   autoFlipBoard: boolean;
-  confirmTurn?: boolean;
+  undoWithMouse?: boolean;
 }
 
 type Checked = DropdownMenuCheckboxItemProps["checked"];
@@ -49,12 +49,12 @@ export default function SettingsMenu({
         <DropdownMenuLabel>Game</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuCheckboxItem
-          checked={settings.confirmTurn}
+          checked={settings.undoWithMouse}
           onCheckedChange={(checked) =>
-            setSettings({ ...settings, confirmTurn: !!checked })
+            setSettings({ ...settings, undoWithMouse: !!checked })
           }
         >
-          Confirm turn
+          Mouse 4/5 for undo/redo
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>

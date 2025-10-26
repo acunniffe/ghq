@@ -157,6 +157,7 @@ export default function PlayArea({
       <ControlsView
         game={game}
         seek={seek}
+        settings={settings}
         cancel={() => setUserActionState({})}
         replay={() => replay()}
         togglePOV={() =>

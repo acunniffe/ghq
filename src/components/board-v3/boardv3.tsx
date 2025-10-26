@@ -27,7 +27,6 @@ export interface GHQBoardV3Props extends GameClientOptions {
   match?: MatchV3;
 }
 
-// TODO(tyler): better undo with mouse?
 // TODO(tyler): ability to load a game from a PGN
 
 export function GHQBoardV3(opts: GHQBoardV3Props) {
@@ -39,7 +38,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
 
   const [settings, setSettings] = useState<Settings>({
     autoFlipBoard: false,
-    confirmTurn: true,
+    undoWithMouse: false,
   });
 
   useEffect(() => {
