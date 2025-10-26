@@ -995,6 +995,10 @@ export class GameClient {
     return this.thisTurnBoards.map(getV1Board);
   }
 
+  getThisTurnMoves(): AllowedMove[] {
+    return this.thisTurnMoves;
+  }
+
   getLastTurnBoards(): Board[] {
     return this.lastTurnBoards.map(getV1Board);
   }

@@ -50,8 +50,7 @@ export default function Board({
   const bombarded = useMemo(() => bombardedSquares(board), [board]);
   const recentMoves: Coordinate[] = useMemo(
     () =>
-      game
-        .getLastTurnMoves()
+      [...game.getLastTurnMoves(), ...game.getThisTurnMoves()]
         .map((move) => move.args[1])
         .filter((square) => square !== undefined),
     [game.moves, game.turn]
