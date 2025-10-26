@@ -47,8 +47,8 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
       return;
     }
 
-    if (opts.bot) {
-      const multiplayer = new BotMultiplayer(engine, opts.fen);
+    if (opts.bot && opts.id) {
+      const multiplayer = new BotMultiplayer(engine, opts.id, opts.fen);
       setMultiplayer(multiplayer);
       return;
     }
@@ -72,7 +72,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
         multiplayer.disconnect();
       };
     }
-  }, [opts.bot, opts.fen, engine, isSignedIn, getToken]);
+  }, [opts.bot, opts.id, opts.fen, engine, isSignedIn, getToken]);
 
   const realGame = useGameClient({
     ...opts,

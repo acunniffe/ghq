@@ -631,8 +631,6 @@ export class GameClient {
       return;
     }
 
-    this.multiplayer.initGame();
-
     this.multiplayer.onTurnPlayed((turn) => {
       if (turn.turn !== this.turn) {
         // TODO(tyler): if this is a turn in the past, we should verify that it matches our history,
@@ -645,6 +643,8 @@ export class GameClient {
 
       this.pushTurn(turn);
     });
+
+    this.multiplayer.initGame();
   }
 
   // used for react components to re-render when the game state changes

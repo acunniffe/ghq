@@ -2,6 +2,8 @@ import { API_URL } from "@/app/live/config";
 import { GameEngine, PythonBoard, Turn } from "./engine-v2";
 import { allowedMoveFromUci, allowedMoveToUci } from "./notation-uci";
 import { ghqFetch, SendTurnRequest } from "@/lib/api";
+import { nanoid } from "nanoid";
+import { createPGN, pgnToTurns } from "./pgn";
 
 export type OnTurnPlayedCallback = (turn: Turn) => void;
 
@@ -11,17 +13,75 @@ export interface Multiplayer {
   onTurnPlayed(callback: OnTurnPlayedCallback): void;
 }
 
+interface BotGameHistory {
+  games: { id: string; pgn: string }[];
+}
+
 export class BotMultiplayer implements Multiplayer {
   private board: PythonBoard;
   private _callbacks: OnTurnPlayedCallback[];
+  private _id: string;
 
-  constructor(private engine: GameEngine, private fen?: string) {
+  constructor(private engine: GameEngine, id: string, private fen?: string) {
     this.board = this.engine.BaseBoard(fen);
+    this._id = id;
     this._callbacks = [];
+  }
+
+  loadGameTurns(id: string): Turn[] {
+    const d = localStorage.getItem("bot_game_history");
+    if (!d) {
+      return [];
+    }
+    const games = JSON.parse(d) as BotGameHistory;
+    const pgn = games.games?.find((game) => game.id === id)?.pgn ?? "";
+    return pgnToTurns(pgn);
+  }
+
+  appendGameTurn(id: string, turn: Turn): void {
+    const games = JSON.parse(
+      localStorage.getItem("bot_game_history") || '{"games":[]}'
+    ) as BotGameHistory;
+    const currentGame = games.games.find((game) => game.id === id) || {
+      id,
+      pgn: "",
+    };
+
+    // Remove the current game from the list
+    games.games = games.games.filter((game) => game.id !== id);
+
+    // Append the turn to the current game
+    const turns = this.loadGameTurns(id);
+    turns.push(turn);
+    currentGame.pgn = createPGN(turns);
+
+    // Add the current game back to the list
+    if (!games.games) {
+      games.games = [];
+    }
+    games.games.push(currentGame);
+
+    // Limit the number of games to 10
+    if (games.games.length > 10) {
+      games.games = games.games.slice(-10);
+    }
+
+    localStorage.setItem("bot_game_history", JSON.stringify(games));
   }
 
   async initGame(): Promise<void> {
     this.board = this.engine.BaseBoard(this.fen);
+    const turns = this.loadGameTurns(this._id);
+    if (this._callbacks.length === 0) {
+      throw new Error("onTurnPlayed callback not set");
+    }
+    for (const turn of turns) {
+      for (const move of turn.moves) {
+        const allowedMove = this.engine.Move.from_uci(allowedMoveToUci(move));
+        this.board.push(allowedMove);
+      }
+      this._callbacks.forEach((callback) => callback(turn));
+    }
   }
 
   async sendTurn(turn: Turn): Promise<void> {
@@ -29,6 +89,8 @@ export class BotMultiplayer implements Multiplayer {
       const allowedMove = this.engine.Move.from_uci(allowedMoveToUci(move));
       this.board.push(allowedMove);
     }
+
+    this.appendGameTurn(this._id, turn);
 
     if (this._callbacks.length === 0) {
       throw new Error("onTurnPlayed callback not set");
@@ -71,6 +133,8 @@ export class BotMultiplayer implements Multiplayer {
         break;
       }
     }
+
+    this.appendGameTurn(this._id, replyTurn);
 
     this._callbacks.forEach((callback) => callback(replyTurn));
   }
