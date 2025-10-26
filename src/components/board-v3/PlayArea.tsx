@@ -11,7 +11,6 @@ import classNames from "classnames";
 import ControlsView from "./ControlsView";
 import useBoard from "./useBoard";
 import { Settings } from "./SettingsMenu";
-import { useUsers } from "./useUsers";
 import { GameClient, Player } from "@/game/engine-v2";
 import { pieceSizes } from "@/game/constants";
 import { useMeasure } from "@uidotdev/usehooks";

@@ -4,11 +4,11 @@ import PlayArea from "./PlayArea";
 import Sidebar from "./Sidebar";
 import GameoverDialog from "./GameoverDialog";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Settings } from "./SettingsMenu";
 import MobileHeader from "../MobileHeader";
 import { GameClient, GameClientOptions, useEngine } from "@/game/engine-v2";
 import { useGameClient } from "./useGameClient";
 import useSeek from "./useSeek";
+import { useSettings } from "./useSettings";
 import { cn } from "@/lib/utils";
 import {
   BotMultiplayer,
@@ -28,6 +28,13 @@ export interface GHQBoardV3Props extends GameClientOptions {
 }
 
 // TODO(tyler): ability to load a game from a PGN
+// TODO(tyler): remove clerk
+//   - to users table, add a "id_v2" column
+//   - create supabase login page
+//   - add supabase auth middleware to server
+//   - add supabase auth provider to frontend
+//   - when users log in with clerk, check whether the id_v2 column is set, send them to supabase login page
+//   - create an API that authenticates with both clerk and supabase, and then adds their supabase user as id_v2
 
 export function GHQBoardV3(opts: GHQBoardV3Props) {
   const { engine } = useEngine();
@@ -36,10 +43,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
     undefined
   );
 
-  const [settings, setSettings] = useState<Settings>({
-    autoFlipBoard: false,
-    undoWithMouse: false,
-  });
+  const [settings, setSettings] = useSettings();
 
   useEffect(() => {
     if (!engine) {
