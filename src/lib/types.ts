@@ -31,6 +31,7 @@ export interface OnlineUser extends User {
   status:
     | "in blitz queue"
     | "in rapid queue"
+    | "in blitz queue (unrated)"
     | "in endgame queue (unrated)"
     | "in normandy queue (unrated)"
     | "in rapid queue (unrated)"

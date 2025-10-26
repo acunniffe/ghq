@@ -14,6 +14,7 @@ interface Mode {
 const allModes: Mode[] = [
   { id: "rapid:rated", timeControl: "rapid", rated: true },
   { id: "blitz:rated", timeControl: "blitz", rated: true },
+  { id: "blitz:unrated", timeControl: "blitz", rated: false },
   { id: "rapid:unrated", timeControl: "rapid", rated: false },
   { id: "endgame:unrated", timeControl: "endgame", rated: false },
   { id: "normandy:unrated", timeControl: "normandy", rated: false },
