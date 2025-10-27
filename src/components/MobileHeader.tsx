@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { config } from "@/lib/config";
 import { ghqFetch } from "@/lib/api";
-import { API_URL } from "@/app/live/config";
 import Username from "./Username";
 import { User } from "@/lib/types";
 
@@ -67,7 +66,7 @@ function AuthSection() {
     ) {
       // NOTE: This also creates the user if they don't exist.
       ghqFetch({
-        url: `${API_URL}/users/me/username`,
+        url: "/api/users/me/username",
         method: "PUT",
         getToken: getToken,
       }).then((data: any) => {

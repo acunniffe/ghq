@@ -11,7 +11,6 @@ import React, {
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ghqFetch } from "@/lib/api";
-import { API_URL } from "@/app/live/config";
 import { TIME_CONTROLS } from "@/game/constants";
 import { playGameReadySound } from "@/game/audio";
 import { UsersOnline } from "@/lib/types";
@@ -63,7 +62,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
   const checkMatchmaking = useCallback(async () => {
     try {
       const data = await ghqFetch<MatchmakingData>({
-        url: `${API_URL}/matchmaking?mode=${matchmakingMode}&rated=${rated}`,
+        url: `/api/matchmaking?mode=${matchmakingMode}&rated=${rated}`,
         getToken,
         method: "POST",
       });
@@ -106,7 +105,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
 
   const cancelMatchmaking = () => {
     ghqFetch({
-      url: `${API_URL}/matchmaking?mode=${matchmakingMode}`,
+      url: `/api/matchmaking?mode=${matchmakingMode}`,
       getToken,
       method: "DELETE",
     });
@@ -121,7 +120,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
 
     const fetchOnlineUsers = () => {
       ghqFetch<UsersOnline>({
-        url: `${API_URL}/users/online`,
+        url: "/api/users/online",
         getToken,
         method: "GET",
       })
