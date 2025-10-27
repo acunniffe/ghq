@@ -1,5 +1,5 @@
 import { GameClient } from "@/game/engine-v2";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UseSeekOptions {
   realGame: GameClient | null;
@@ -55,6 +55,14 @@ export default function useSeek({ realGame, simGame }: UseSeekOptions) {
     },
     [simGame, realGame, seekIndex, setSeekIndex, setShowSim]
   );
+
+  // If the user is looking back, and it becomes their turn, reset to the latest board state.
+  useEffect(() => {
+    if (realGame?.isMyTurn() && seekIndex !== -1) {
+      setSeekIndex(-1); // Reset to "latest" rather than the last known index (which may change as game progresses)
+      setShowSim(false);
+    }
+  }, [realGame?.turn]);
 
   const game = useMemo(() => {
     if (showSim) {
