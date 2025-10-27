@@ -15,6 +15,7 @@ import { TIME_CONTROLS } from "@/game/constants";
 import { playGameReadySound } from "@/game/audio";
 import { UsersOnline } from "@/lib/types";
 import useServerConnectionStatus from "./useServerConnectionStatus";
+import { API_URL } from "@/app/live/config";
 
 interface MatchmakingContextType {
   matchmakingMode: keyof typeof TIME_CONTROLS | null;
@@ -61,8 +62,10 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
 
   const checkMatchmaking = useCallback(async () => {
     try {
+      // NB(tyler): support matchmaking for previous engine rated games
+      const path = rated ? `${API_URL}/matchmaking` : "/api/matchmaking";
       const data = await ghqFetch<MatchmakingData>({
-        url: `/api/matchmaking?mode=${matchmakingMode}&rated=${rated}`,
+        url: `${path}?mode=${matchmakingMode}&rated=${rated}`,
         getToken,
         method: "POST",
       });

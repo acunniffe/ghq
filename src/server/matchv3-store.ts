@@ -159,6 +159,7 @@ export async function deleteActiveMatches(matchId: string) {
 }
 
 export function onMatchChange(callback: (newMatch: MatchV3) => void) {
+  console.log("Listening for match changes!");
   supabase
     .channel("schema-db-changes")
     .on(
