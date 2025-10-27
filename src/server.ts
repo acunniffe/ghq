@@ -209,19 +209,6 @@ async function runServer() {
     ctx.body = JSON.stringify({});
   });
 
-  server.router.get("/matches", async (ctx) => {
-    const userId = (ctx.request.query.userId as string) ?? undefined;
-    const isCorrespondence =
-      (ctx.request.query.isCorrespondence as string) === "true";
-
-    const matches = await listMatches({
-      supabase,
-      userId,
-      isCorrespondence,
-    });
-    ctx.body = JSON.stringify({ matches });
-  });
-
   server.router.get("/matches/:matchId", async (ctx) => {
     const userId = ctx.state.auth.userId;
 
@@ -624,25 +611,6 @@ async function runServer() {
 
     throw new Error("Unexpected error");
   }
-
-  server.router.get("/users", async (ctx) => {
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("id, username, elo")
-      .neq("username", "Anonymous")
-      .neq("username", "")
-      .order("username", { ascending: true });
-
-    if (error) {
-      console.log({
-        message: "Error fetching users",
-        error,
-      });
-      ctx.throw(400, "Error fetching users");
-    }
-
-    ctx.body = JSON.stringify({ users });
-  });
 
   server.router.put("/users/me/username", async (ctx) => {
     const userId = ctx.state.auth.userId;
