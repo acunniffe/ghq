@@ -1,6 +1,5 @@
 "use client";
 
-import { API_URL } from "./live/config";
 import { ghqFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { StatusIndicator } from "@/components/StatusIndicator";
@@ -18,7 +17,7 @@ export default function Leaderboard() {
     setLoading(true);
 
     ghqFetch<{ users: User[] }>({
-      url: `${API_URL}/leaderboard`,
+      url: "/api/leaderboard",
       getToken: async () => "", // public api
       method: "GET",
     })

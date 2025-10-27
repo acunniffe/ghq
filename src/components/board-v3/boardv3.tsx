@@ -27,12 +27,12 @@ export interface GHQBoardV3Props extends GameClientOptions {
   match?: MatchV3;
 }
 
-// TODO(tyler): spectator mode seems buggy, not clear whos turn it is
 // TODO(tyler): ending game on timeout should be more responsive / obvious
 // TODO(tyler): migrate all APIs to next.js
 // TODO(tyler): remove clerk
 //   - to users table, add a "id_v2" column
 //   - create supabase login page
+//   - need a way to update username too
 //   - add supabase auth middleware to server
 //   - add supabase auth provider to frontend
 //   - when users log in with clerk, check whether the id_v2 column is set, send them to supabase login page

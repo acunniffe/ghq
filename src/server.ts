@@ -625,36 +625,6 @@ async function runServer() {
     throw new Error("Unexpected error");
   }
 
-  server.router.get("/leaderboard", async (ctx) => {
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("id, username, elo, gamesThisMonth, badge")
-      .order("elo", { ascending: false })
-      .limit(10);
-
-    if (error) {
-      console.log({
-        message: "Error fetching users for matches",
-        error,
-      });
-      ctx.throw(400, "Error fetching users");
-    }
-
-    ctx.body = JSON.stringify({ users });
-  });
-
-  server.router.get("/match-summary", async (ctx) => {
-    try {
-      const result = await getMatchSummary(supabase);
-      ctx.body = JSON.stringify(result);
-    } catch (error) {
-      ctx.throw(
-        400,
-        error instanceof Error ? error.message : "Error fetching match summary"
-      );
-    }
-  });
-
   server.router.get("/users", async (ctx) => {
     const { data: users, error } = await supabase
       .from("users")
@@ -683,20 +653,6 @@ async function runServer() {
     const user = await getOrCreateUser(userId);
 
     ctx.body = JSON.stringify({ user });
-  });
-
-  server.router.get("/correspondence/matches", async (ctx) => {
-    const userId = ctx.state.auth.userId;
-    if (!userId) {
-      throw new Error("userId is required");
-    }
-
-    const matches = await listMatches({
-      supabase,
-      userId,
-      isCorrespondence: true,
-    });
-    ctx.body = JSON.stringify({ matches });
   });
 
   server.router.post("/correspondence/challenge", async (ctx) => {
@@ -735,38 +691,6 @@ async function runServer() {
     }
 
     ctx.body = JSON.stringify({ challenge });
-  });
-
-  server.router.get("/correspondence/challenges", async (ctx) => {
-    const userId = ctx.state.auth.userId;
-    if (!userId) {
-      throw new Error("userId is required");
-    }
-
-    const { data: challenges, error } = await supabase
-      .from("correspondence_challenges")
-      .select(
-        `
-      challenger:users!challenger_user_id(id, username, elo),
-      target:users!target_user_id(id, username, elo),
-      rated,
-      fen,
-      created_at
-    `
-      )
-      .or(`challenger_user_id.eq.${userId},target_user_id.eq.${userId}`)
-      .eq("status", "sent")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.log({
-        message: "Error fetching correspondence challenges",
-        error,
-      });
-      ctx.throw(400, "Error fetching challenges");
-    }
-
-    ctx.body = JSON.stringify({ challenges });
   });
 
   server.router.post("/correspondence/accept", async (ctx) => {
@@ -1010,17 +934,6 @@ async function runServer() {
     addUserToOnlineUsers(userId);
 
     ctx.body = JSON.stringify(getUsersOnlineResponse());
-  });
-
-  server.router.get("/users/:userId", async (ctx) => {
-    const userId = ctx.state.auth.userId;
-    if (!userId) {
-      throw new Error("userId is required");
-    }
-
-    const user = await getUserSummary(supabase, ctx.params.userId);
-
-    ctx.body = JSON.stringify({ user });
   });
 }
 
