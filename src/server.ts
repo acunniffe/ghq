@@ -253,54 +253,6 @@ async function runServer() {
     ctx.body = JSON.stringify(matchData);
   });
 
-  server.router.delete("/matches/:matchId", async (ctx) => {
-    const userId = ctx.state.auth.userId;
-    const matchId = ctx.params.matchId;
-
-    // Ensure the calling user is authorized to abort this game
-    const { error: findMatchError } = await supabase
-      .from("active_user_matches")
-      .select("match_id, player_id, credentials")
-      .eq("user_id", userId)
-      .eq("match_id", ctx.params.matchId)
-      .single();
-    if (findMatchError) {
-      ctx.body = JSON.stringify({});
-      return null;
-    }
-
-    const { error } = await supabase
-      .from("active_user_matches")
-      .delete()
-      .eq("match_id", matchId);
-    if (error) {
-      console.log({
-        message: "Error deleting active_user_matches",
-        userId,
-        matchId,
-        error,
-      });
-      ctx.throw(400, "Error deleting active user match");
-      return;
-    }
-
-    supabase
-      .from("matches")
-      .update({ status: "ABORTED" })
-      .eq("id", matchId)
-      .then(({ error }) => {
-        if (error) {
-          console.log({
-            message: "Error updating matches table",
-            matchId,
-            error,
-          });
-        }
-      });
-
-    ctx.body = JSON.stringify({});
-  });
-
   server.run(8000);
 
   interface CreatedMatch {
