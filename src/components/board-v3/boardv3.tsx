@@ -28,7 +28,6 @@ export interface GHQBoardV3Props extends GameClientOptions {
 }
 
 // TODO(tyler): ending game on timeout should be more responsive / obvious
-// TODO(tyler): migrate all APIs to next.js
 // TODO(tyler): remove clerk
 //   - to users table, add a "id_v2" column
 //   - create supabase login page

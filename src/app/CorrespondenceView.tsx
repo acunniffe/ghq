@@ -1,5 +1,4 @@
 import { ghqFetch } from "@/lib/api";
-import { API_URL } from "./live/config";
 import { Loader2, Mail, MailQuestion } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
@@ -91,7 +90,7 @@ export default function CorrespondenceView() {
 
   async function acceptChallenge(challengerUserId: string) {
     await ghqFetch({
-      url: `${API_URL}/correspondence/accept`,
+      url: "/api/correspondence/accept",
       getToken,
       method: "POST",
       body: JSON.stringify({ challengerUserId }),

@@ -3,7 +3,6 @@
 import Button from "./ButtonV2";
 import { useAuth } from "@clerk/nextjs";
 import { ghqFetch } from "@/lib/api";
-import { API_URL } from "./config";
 import { User } from "@/lib/types";
 import {
   Dialog,
@@ -41,7 +40,7 @@ export function PlayDailyButton() {
     }
 
     const { user } = await ghqFetch<{ user: User }>({
-      url: `${API_URL}/correspondence/random-user`,
+      url: `/api/correspondence/random-user`,
       getToken,
       method: "GET",
     });
@@ -53,7 +52,7 @@ export function PlayDailyButton() {
     if (!isSignedIn || !selectedUser) return;
 
     await ghqFetch({
-      url: `${API_URL}/correspondence/challenge`,
+      url: `/api/correspondence/challenge`,
       getToken,
       method: "POST",
       body: JSON.stringify({

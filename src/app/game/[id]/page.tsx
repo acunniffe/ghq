@@ -1,6 +1,5 @@
 "use client";
 
-import { API_URL } from "@/app/live/config";
 import { GHQBoardV3, GHQBoardV3Props } from "@/components/board-v3/boardv3";
 import GameLoader from "@/components/board-v3/GameLoader";
 import { TimeControl } from "@/game/constants";
@@ -26,7 +25,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
     try {
       const data = await ghqFetch<MatchV3Info>({
-        url: `${API_URL}/v3/match/${id}`,
+        url: `/api/v3/match/${id}`,
         getToken: getTokenFn,
       });
       return data;
