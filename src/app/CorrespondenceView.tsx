@@ -1,7 +1,7 @@
 import { ghqFetch } from "@/lib/api";
-import { API_URL } from "./live/config";
 import { Loader2, Mail, MailQuestion } from "lucide-react";
 import { useEffect, useState } from "react";
+import { API_URL } from "./live/config";
 import { useAuth } from "@clerk/nextjs";
 import { PlayFriendDialog } from "./PlayFriendDialog";
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,7 @@ export default function CorrespondenceView() {
 
     setLoading(true);
     ghqFetch<{ matches: MatchModel[] }>({
-      url: "/api/correspondence/matches",
+      url: `${API_URL}/correspondence/matches`,
       getToken,
       method: "GET",
     })
@@ -74,7 +74,7 @@ export default function CorrespondenceView() {
       .finally(() => setLoading(false));
 
     ghqFetch<{ challenges: Challenge[] }>({
-      url: "/api/correspondence/challenges",
+      url: `${API_URL}/correspondence/challenges`,
       getToken,
       method: "GET",
     })
