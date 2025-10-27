@@ -4,6 +4,7 @@ import { Settings } from "./SettingsMenu";
 const DEFAULT_SETTINGS: Settings = {
   autoFlipBoard: false,
   undoWithMouse: false,
+  confirmTurn: true,
 };
 
 function loadSettings(): Settings {

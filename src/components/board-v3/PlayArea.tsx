@@ -78,6 +78,7 @@ export default function PlayArea({
 
   const { animatedBoard, mostRecentMove, replay } = useBoard({
     game,
+    settings,
     userActionState,
   });
 

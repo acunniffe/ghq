@@ -5,6 +5,7 @@ import {
   AllowedMove,
   AnimatedMove,
   Board,
+  hasMoveLimitReached,
   isMoveCapture,
   isSkipMove,
 } from "@/game/engine";
@@ -15,15 +16,18 @@ import {
   playNextTurnSound,
 } from "@/game/audio";
 import { GameClient } from "@/game/engine-v2";
+import { Settings } from "./SettingsMenu";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const ANIMATION_DELAY = 250;
 
 export default function useBoard({
   game,
+  settings,
   userActionState,
 }: {
   game: GameClient;
+  settings: Settings;
   userActionState: UserActionState;
 }) {
   const [animatedBoard, setAnimatedBoard] = useState<Board>(game.getV1Board());
@@ -154,6 +158,21 @@ export default function useBoard({
       }
     }
   }, [game.turn]);
+
+  // If the move limit has been reached and user has confirm disabled, automatically skip the turn.
+  const [isEndingTurn, setIsEndingTurn] = useState(false);
+  useEffect(() => {
+    if (game.isMyTurn() && !settings.confirmTurn && !isEndingTurn) {
+      setIsEndingTurn(true);
+      setTimeout(() => {
+        game.endTurn();
+
+        setTimeout(() => {
+          setIsEndingTurn(false);
+        }, 1000); // NB(tyler): wait 1 second to prevent accidental skips
+      }, 1);
+    }
+  }, [game.needsTurnConfirmation]);
 
   return {
     animatedBoard,

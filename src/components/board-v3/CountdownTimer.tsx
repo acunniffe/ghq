@@ -48,12 +48,12 @@ const CountdownTimer = ({
   const formatTime = (timeInMs: number | null) => {
     if (!timeControl || timeControl.time === 0) return "∞";
     if (timeInMs === null) return "";
-    if (timeInMs <= 0) return "00:00";
+    if (timeInMs <= 0) return "0:00";
 
     const totalSeconds = Math.floor(timeInMs / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+    return `${String(minutes).padStart(1, "0")}:${String(seconds).padStart(
       2,
       "0"
     )}`;
