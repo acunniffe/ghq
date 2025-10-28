@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { ghqFetch } from "@/lib/api";
+import { API_URL } from "@/app/live/config";
 import { Loader2 } from "lucide-react";
 import { UserSummary } from "@/server/user-summary";
 import UserBadgeTag from "./UserBadgeTag";
@@ -24,7 +25,7 @@ export default function UserMiniProfile({
     setLoading(true);
     try {
       const data = await ghqFetch<{ user: UserSummary }>({
-        url: `/api/users/${user.id}`,
+        url: `${API_URL}/users/${user.id}`,
         getToken,
         method: "GET",
       });
