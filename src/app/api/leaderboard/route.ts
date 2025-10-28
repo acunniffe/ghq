@@ -8,14 +8,13 @@ export async function GET() {
 
   const { data: users, error } = await supabase
     .from("users")
-    .select("id, username, elo")
-    .neq("username", "Anonymous")
-    .neq("username", "")
-    .order("username", { ascending: true });
+    .select("id, username, elo, gamesThisMonth, badge")
+    .order("elo", { ascending: false })
+    .limit(10);
 
   if (error) {
     console.log({
-      message: "Error fetching users",
+      message: "Error fetching users for matches",
       error,
     });
     return NextResponse.json(

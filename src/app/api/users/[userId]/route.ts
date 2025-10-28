@@ -1,19 +1,23 @@
 import { getAdminSupabase } from "@/lib/supabase-server";
+import { getUserSummary } from "@/server/user-summary";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { getOrCreateUser } from "@/server/user-management";
 
 export const dynamic = "force-dynamic";
 
-export async function PUT() {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ userId: string }> }
+) {
   const supabase = getAdminSupabase();
-  const { userId } = await auth();
+  const { userId: authUserId } = await auth();
 
-  if (!userId) {
+  if (!authUserId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await getOrCreateUser(supabase, userId);
+  const { userId } = await params;
+  const user = await getUserSummary(supabase, userId);
 
   return NextResponse.json({ user });
 }

@@ -5,7 +5,6 @@ import { getActivePlayersInLast30Days } from "@/server/matches";
 import { getUser } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
-export const runtime = "edge";
 
 export async function GET() {
   const supabase = getAdminSupabase();

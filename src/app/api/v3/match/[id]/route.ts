@@ -4,7 +4,10 @@ import { getV3MatchInfo } from "@/server/game-server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET({ params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { id: gameId } = await params;
   const { userId } = await auth();
 
