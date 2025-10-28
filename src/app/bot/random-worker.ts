@@ -13,7 +13,7 @@ const isWorker =
 let pyodideModule: any;
 if (isWorker) {
   self.importScripts(
-    "https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"
+    "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"
   );
   // @ts-ignore
   pyodideModule = { loadPyodide: self.loadPyodide };

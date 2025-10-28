@@ -461,7 +461,7 @@ export function useEngine(): { engine: GameEngine | null } {
   const [engine, setEngine] = useState<GameEngine | null>(null);
 
   const status = useScript(
-    "https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js",
+    "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js",
     {
       removeOnUnmount: false,
       id: "pyodide",
