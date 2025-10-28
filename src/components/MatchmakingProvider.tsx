@@ -62,10 +62,9 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
 
   const checkMatchmaking = useCallback(async () => {
     try {
-      // NB(tyler): support matchmaking for previous engine rated games
-      const path = rated ? `${API_URL}/matchmaking` : "/api/matchmaking";
+      // NB(tyler): for now, we still use the old API for matchmaking
       const data = await ghqFetch<MatchmakingData>({
-        url: `${path}?mode=${matchmakingMode}&rated=${rated}`,
+        url: `${API_URL}/matchmaking?mode=${matchmakingMode}&rated=${rated}`,
         getToken,
         method: "POST",
       });
@@ -123,7 +122,8 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
 
     const fetchOnlineUsers = () => {
       ghqFetch<UsersOnline>({
-        url: "/api/users/online",
+        // NB(tyler): for now, we still use the old API for online users
+        url: `${API_URL}/users/online`,
         getToken,
         method: "GET",
       })

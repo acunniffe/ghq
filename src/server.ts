@@ -32,7 +32,7 @@ import { getMatchSummary } from "./server/match-summary";
 import { updateUserStats } from "./server/user-stats";
 import { getUserSummary } from "./server/user-summary";
 import { getActivePlayersInLast30Days, listMatches } from "./server/matches";
-import { createNewV3Match } from "./server/game-server";
+import { addGameServerRoutes, createNewV3Match } from "./server/game-server";
 import { loadV2Engine } from "./server/engine";
 
 async function runServer() {
@@ -76,6 +76,12 @@ async function runServer() {
   if (process.env.NODE_ENV !== "development") {
     runMatchLifecycle();
   }
+
+  setInterval(() => {
+    userLifecycle({ supabase });
+  }, 5_000);
+
+  addGameServerRoutes(server.router, v2Engine);
 
   server.router.post("/matchmaking", async (ctx) => {
     const userId = ctx.state.auth.userId;
