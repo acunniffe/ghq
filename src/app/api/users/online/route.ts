@@ -7,8 +7,6 @@ import {
 } from "@/server/user-lifecycle";
 import { getAdminSupabase } from "@/lib/supabase-server";
 
-export const runtime = "edge";
-
 export async function GET() {
   const { userId } = await auth();
 
