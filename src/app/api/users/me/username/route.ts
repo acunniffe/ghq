@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getOrCreateUser } from "@/server/user-management";
 
+export const dynamic = "force-dynamic";
 export const runtime = "edge";
 
 export async function PUT() {

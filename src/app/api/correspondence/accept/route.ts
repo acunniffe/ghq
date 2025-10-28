@@ -5,6 +5,8 @@ import { getOrCreateUser } from "@/server/user-management";
 import { createNewV3Match } from "@/server/game-server";
 import { TIME_CONTROLS } from "@/game/constants";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: NextRequest) {
   const supabase = getAdminSupabase();
   const { userId } = await auth();

@@ -6,6 +6,8 @@ import { getActiveMatch, getOrCreateUser } from "@/server/user-management";
 import { createNewV3Match } from "@/server/game-server";
 import { TIME_CONTROLS } from "@/game/constants";
 
+export const dynamic = "force-dynamic";
+
 const QUEUE_STALE_MS = 5_000;
 const DEFAULT_TIME_CONTROL = "rapid";
 

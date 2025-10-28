@@ -2,6 +2,7 @@ import { getAdminSupabase } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
 import { listMatches } from "@/server/matches";
 
+export const dynamic = "force-dynamic";
 export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
