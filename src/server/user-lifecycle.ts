@@ -1,6 +1,5 @@
 import { OnlineUser, UsersOnline } from "@/lib/types";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { StorageAPI } from "boardgame.io";
 import {
   getUserQueueStatus,
   inGameUsers,
@@ -20,10 +19,8 @@ export function getUsersOnlineResponse(): UsersOnline {
 }
 
 export async function userLifecycle({
-  db,
   supabase,
 }: {
-  db: StorageAPI.Async | StorageAPI.Sync;
   supabase: SupabaseClient;
 }) {
   // Remove stale users from the online users list

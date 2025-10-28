@@ -1,9 +1,8 @@
-import { API_URL } from "@/app/live/config";
 import { GameEngine, PythonBoard, Turn } from "./engine-v2";
 import { allowedMoveFromUci, allowedMoveToUci } from "./notation-uci";
 import { ghqFetch, SendTurnRequest } from "@/lib/api";
-import { nanoid } from "nanoid";
 import { createPGN, pgnToTurns } from "./pgn";
+import { API_URL } from "@/app/live/config";
 
 export type OnTurnPlayedCallback = (turn: Turn) => void;
 
@@ -145,7 +144,6 @@ export class BotMultiplayer implements Multiplayer {
 }
 
 export class OnlineMultiplayer implements Multiplayer {
-  private apiUrl = API_URL;
   private _callbacks: OnTurnPlayedCallback[];
   private abortController?: AbortController;
   private isConnected = false;
@@ -179,7 +177,8 @@ export class OnlineMultiplayer implements Multiplayer {
       const token = await this.getToken();
       this.abortController = new AbortController();
 
-      const response = await fetch(`${this.apiUrl}/v3/match/${this.id}/turns`, {
+      // NB(tyler): for now, we still use the old API for sending turns
+      const response = await fetch(`${API_URL}/v3/match/${this.id}/turns`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "text/event-stream",
@@ -272,7 +271,8 @@ export class OnlineMultiplayer implements Multiplayer {
       credentials: this.credentials,
     };
     const data = await ghqFetch<any>({
-      url: `${this.apiUrl}/v3/match/${this.id}/turns`,
+      // NB(tyler): for now, we still use the old API for sending turns
+      url: `${API_URL}/v3/match/${this.id}/turns`,
       method: "POST",
       body: JSON.stringify(request),
       getToken: this.getToken,

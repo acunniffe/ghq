@@ -11,11 +11,11 @@ import React, {
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ghqFetch } from "@/lib/api";
-import { API_URL } from "@/app/live/config";
 import { TIME_CONTROLS } from "@/game/constants";
 import { playGameReadySound } from "@/game/audio";
 import { UsersOnline } from "@/lib/types";
 import useServerConnectionStatus from "./useServerConnectionStatus";
+import { API_URL } from "@/app/live/config";
 
 interface MatchmakingContextType {
   matchmakingMode: keyof typeof TIME_CONTROLS | null;
@@ -62,6 +62,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
 
   const checkMatchmaking = useCallback(async () => {
     try {
+      // NB(tyler): for now, we still use the old API for matchmaking
       const data = await ghqFetch<MatchmakingData>({
         url: `${API_URL}/matchmaking?mode=${matchmakingMode}&rated=${rated}`,
         getToken,
@@ -106,7 +107,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
 
   const cancelMatchmaking = () => {
     ghqFetch({
-      url: `${API_URL}/matchmaking?mode=${matchmakingMode}`,
+      url: `/api/matchmaking?mode=${matchmakingMode}`,
       getToken,
       method: "DELETE",
     });
@@ -121,6 +122,7 @@ export const MatchmakingProvider: React.FC<{ children: ReactNode }> = ({
 
     const fetchOnlineUsers = () => {
       ghqFetch<UsersOnline>({
+        // NB(tyler): for now, we still use the old API for online users
         url: `${API_URL}/users/online`,
         getToken,
         method: "GET",

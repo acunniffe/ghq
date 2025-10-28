@@ -12,7 +12,6 @@ import {
 import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import { ghqFetch } from "@/lib/api";
-import { API_URL } from "./live/config";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -125,7 +124,7 @@ export function PlayFriendDialog() {
 
     setLoading(true);
     ghqFetch<{ users: User[] }>({
-      url: `${API_URL}/users`,
+      url: "/api/users",
       getToken,
       method: "GET",
     })
@@ -143,7 +142,7 @@ export function PlayFriendDialog() {
     }
 
     await ghqFetch({
-      url: `${API_URL}/correspondence/challenge`,
+      url: "/api/correspondence/challenge",
       getToken,
       method: "POST",
       body: JSON.stringify({ targetUserId: selectedUser.id, rated, fen }),

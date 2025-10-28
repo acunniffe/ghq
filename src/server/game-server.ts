@@ -25,6 +25,7 @@ import { updateUserStats } from "./user-stats";
 import { getUser } from "@/lib/supabase";
 import { calculateElo } from "@/game/elo";
 import { allowedMoveToUci } from "@/game/notation-uci";
+import { getMatchTimeControl, isTurnAuthorized } from "./turn-processing";
 
 interface Listener {
   id: string;
@@ -194,7 +195,7 @@ export function addGameServerRoutes(
       return;
     }
 
-    if (!isTurnAuthorized(userId, turnReq, match)) {
+    if (!(await isTurnAuthorized(userId, turnReq, match))) {
       ctx.throw(401, "Unauthorized");
       return;
     }
@@ -347,7 +348,7 @@ export interface ActiveMatch {
 
 export async function getV3MatchInfo(
   id: string,
-  userId?: string
+  userId?: string | null
 ): Promise<MatchV3Info | null> {
   const match = await fetchMatchV3(id);
   if (!match) {
@@ -411,7 +412,7 @@ async function updateUserElos(match: MatchV3): Promise<void> {
   ]);
 }
 
-function debugPrintGameState(game: GameClient, turn: Turn) {
+export function debugPrintGameState(game: GameClient, turn: Turn) {
   console.log({
     message: "Allowed moves",
     allowedMoves: game
@@ -430,50 +431,7 @@ function debugPrintGameState(game: GameClient, turn: Turn) {
   });
 }
 
-function isTurnAuthorized(
-  authenticatedUserId: string,
-  turnReq: SendTurnRequest,
-  match: MatchV3
-): boolean {
-  const { turn, playerId, credentials } = turnReq;
-  const requiredHashCredentials =
-    playerId === "0"
-      ? match.player0CredentialsHash
-      : match.player1CredentialsHash;
-  const requiredPlayerId =
-    playerId === "0" ? match.player0UserId : match.player1UserId;
-
-  const requiredTurnValidator = playerId === "0" ? isOdd : isEven; // 0 is red (odd numbered turns), 1 is blue (even numbered turns)
-
-  const isAuthorized =
-    authenticatedUserId === requiredPlayerId &&
-    hashCredentials(credentials) === requiredHashCredentials &&
-    // either they're playing the correct order turn or they've resigned
-    (requiredTurnValidator(turn) || turn.playerResigned === playerId);
-
-  if (!isAuthorized) {
-    console.log("Unauthorized turn", {
-      authenticatedUserId,
-      requiredPlayerId,
-      hashCredentials: hashCredentials(credentials),
-      requiredHashCredentials,
-      turn,
-      isTurnValidated: requiredTurnValidator(turn),
-    });
-  }
-
-  return isAuthorized;
-}
-
-function isEven(turn: Turn): boolean {
-  return turn.turn % 2 === 0;
-}
-
-function isOdd(turn: Turn): boolean {
-  return turn.turn % 2 === 1;
-}
-
-async function matchLifecycleV3(engine: GameEngine) {
+export async function matchLifecycleV3(engine: GameEngine) {
   const matches = await listInProgressLiveMatches();
 
   for (const match of matches) {
@@ -489,18 +447,6 @@ function getSupabaseMatchTimeControl(
       time: match.time_control_allowed_time,
       bonus: match.time_control_bonus,
       variant: match.time_control_variant || undefined,
-    };
-  }
-
-  return undefined;
-}
-
-function getMatchTimeControl(match: MatchV3): TimeControl | undefined {
-  if (match.timeControlAllowedTime && match.timeControlBonus) {
-    return {
-      time: match.timeControlAllowedTime,
-      bonus: match.timeControlBonus,
-      variant: match.timeControlVariant || undefined,
     };
   }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { API_URL } from "@/app/live/config";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +31,7 @@ export default function AbortGameModal({
       setSubmitting(true);
       try {
         await ghqFetch<any>({
-          url: `${API_URL}/matches/${matchId}`,
+          url: `/api/matches/${matchId}`,
           method: "DELETE",
           getToken,
         });

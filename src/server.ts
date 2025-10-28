@@ -78,7 +78,7 @@ async function runServer() {
   }
 
   setInterval(() => {
-    userLifecycle({ supabase, db: server.db });
+    userLifecycle({ supabase });
   }, 5_000);
 
   addGameServerRoutes(server.router, v2Engine);

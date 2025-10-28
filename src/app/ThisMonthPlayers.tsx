@@ -1,6 +1,5 @@
 "use client";
 
-import { API_URL } from "./live/config";
 import { ghqFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { StatusIndicator } from "@/components/StatusIndicator";
@@ -29,7 +28,7 @@ export default function Leaderboard() {
     setLoading(true);
 
     ghqFetch<{ summary: MatchSummary[] }>({
-      url: `${API_URL}/match-summary`,
+      url: "/api/match-summary",
       getToken: async () => "", // public api
       method: "GET",
     })
@@ -67,7 +66,10 @@ export default function Leaderboard() {
 
       <div className="flex flex-col">
         {users.map((user: MatchSummary) => (
-          <div key={user.userId} className="rounded grid grid-cols-10 gap-4 items-center">
+          <div
+            key={user.userId}
+            className="rounded grid grid-cols-10 gap-4 items-center"
+          >
             <div className="col-span-7 md:col-span-8 flex flex-row gap-2 items-center">
               <StatusIndicator status={user.status ?? "offline"} />
               <Username

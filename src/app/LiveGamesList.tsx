@@ -1,6 +1,5 @@
 "use client";
 
-import { API_URL } from "./live/config";
 import { ghqFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
@@ -25,7 +24,7 @@ export default function LiveGamesList() {
     const maybeGetToken = isSignedIn ? getToken : async () => "";
 
     ghqFetch<{ matches: MatchModel[] }>({
-      url: `${API_URL}/matches?userId=${filterUserId}`,
+      url: `/api/matches?userId=${filterUserId}`,
       getToken: maybeGetToken,
       method: "GET",
     })
