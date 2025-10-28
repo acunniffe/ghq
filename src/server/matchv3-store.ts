@@ -1,17 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
 import { ActiveMatch, MatchV3, User } from "@/lib/types";
 import {
   matchToSupabaseMatch,
   SupabaseMatch,
   supabaseMatchToMatchV3,
 } from "./supabase";
-
-const supabase = createClient(
-  "https://wjucmtrnmjcaatbtktxo.supabase.co",
-  process.env.SUPABASE_SECRET_KEY!
-);
+import { getAdminSupabase } from "@/lib/supabase-server";
 
 export async function createMatchV3(match: MatchV3): Promise<void> {
+  const supabase = getAdminSupabase();
   const { error } = await supabase
     .from("matches")
     .insert(matchToSupabaseMatch(match));
@@ -21,6 +17,7 @@ export async function createMatchV3(match: MatchV3): Promise<void> {
 }
 
 export async function fetchMatchV3(id: string): Promise<MatchV3 | undefined> {
+  const supabase = getAdminSupabase();
   const { data, error } = await supabase
     .from("matches")
     .select("*")
@@ -41,6 +38,7 @@ export async function updateMatchPGN(
   id: string,
   pgnUpdater: MatchPGNUpdater
 ): Promise<MatchV3> {
+  const supabase = getAdminSupabase();
   const { data: match, error: fetchError } = await supabase
     .from("matches")
     .select("*")
@@ -94,6 +92,7 @@ export async function createActiveMatches({
   player1Credentials,
   isCorrespondence,
 }: CreateActiveMatchesOptions): Promise<void> {
+  const supabase = getAdminSupabase();
   const { error } = await supabase.from("active_user_matches").insert([
     {
       user_id: player0UserId,
@@ -117,6 +116,7 @@ export async function getActiveMatch(
   userId: string,
   matchId: string
 ): Promise<ActiveMatch | undefined> {
+  const supabase = getAdminSupabase();
   const { data, error } = await supabase
     .from("active_user_matches")
     .select("match_id, player_id, credentials")
@@ -145,6 +145,7 @@ export async function getActiveMatch(
 }
 
 export async function deleteActiveMatches(matchId: string) {
+  const supabase = getAdminSupabase();
   const { error } = await supabase
     .from("active_user_matches")
     .delete()
@@ -159,6 +160,7 @@ export async function deleteActiveMatches(matchId: string) {
 }
 
 export function onMatchChange(callback: (newMatch: MatchV3) => void) {
+  const supabase = getAdminSupabase();
   console.log("Listening for match changes!");
   supabase
     .channel("schema-db-changes")
@@ -180,6 +182,7 @@ export async function updatePlayerElo(
   player: User,
   elo: number
 ): Promise<void> {
+  const supabase = getAdminSupabase();
   const { error } = await supabase
     .from("users")
     .update({
@@ -200,6 +203,7 @@ export async function updatePlayerElo(
 }
 
 export async function listInProgressLiveMatches(): Promise<MatchV3[]> {
+  const supabase = getAdminSupabase();
   const { data, error } = await supabase
     .from("matches")
     .select("*")
