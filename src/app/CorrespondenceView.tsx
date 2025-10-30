@@ -9,6 +9,7 @@ import { MatchModel } from "@/lib/types";
 import RatedBadge from "@/components/RatedBadge";
 import Link from "next/link";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { API_URL } from "./live/config";
 
 interface Challenge {
   challenger: {
@@ -89,8 +90,9 @@ export default function CorrespondenceView() {
   }, [challenges]);
 
   async function acceptChallenge(challengerUserId: string) {
+    // NB(tyler): for now, we still use the old API for correspondence acceptance
     await ghqFetch({
-      url: "/api/correspondence/accept",
+      url: `${API_URL}/correspondence/accept`,
       getToken,
       method: "POST",
       body: JSON.stringify({ challengerUserId }),

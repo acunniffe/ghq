@@ -50,7 +50,7 @@ async function runServer() {
     password: process.env.POSTGRES_PASSWORD,
     host: "aws-0-us-east-2.pooler.supabase.com",
     port: 6543,
-    logging: process.env.NODE_ENV !== "production",
+    logging: false,
   });
 
   const server = Server({

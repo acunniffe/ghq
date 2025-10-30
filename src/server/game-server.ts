@@ -40,7 +40,7 @@ const listeners: Record<string, Listener> = {};
 export function sendTurnsToListeners(gameId: string, turns: Turn[]) {
   const listenerIds = gameIdsToListenerIds[gameId];
   if (!listenerIds) {
-    console.error("no listeners found for game", gameId);
+    // console.error("no listeners found for game", gameId);
     return;
   }
   // console.log("sending turns to listeners", listenerIds);
