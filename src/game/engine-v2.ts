@@ -8,6 +8,7 @@ import {
   Board,
   Coordinate,
   ctxPlayerToPlayer,
+  GameoverReason,
   GameoverState,
   getCapturePreference,
   GHQGame,
@@ -518,19 +519,13 @@ export interface PlayerPiece {
   coordinate: Coordinate;
 }
 
-export type GameoverStatus =
-  | "resign"
-  | "timeout"
-  | "hq-capture"
-  | "double-skip";
-
 export interface Turn {
   turn: number;
   moves: AllowedMove[];
   elapsedSecs: number;
 
   // These are kind of a hack, but need to somehow send "end game" information out of band
-  status?: GameoverStatus;
+  status?: GameoverReason;
   winner?: Player;
 }
 
@@ -589,7 +584,7 @@ export class GameClient {
   private listeners: Set<() => void> = new Set();
 
   // Gameover state
-  private gameoverStatus?: GameoverStatus;
+  private gameoverReason?: GameoverReason;
   private gameoverWinner?: Player;
 
   constructor({
@@ -808,11 +803,11 @@ export class GameClient {
       return undefined;
     }
 
-    if (this.gameoverStatus && this.gameoverWinner) {
+    if (this.gameoverReason) {
       return {
-        status: "WIN",
-        winner: this.gameoverWinner,
-        reason: "opponent resigned",
+        status: this.gameoverWinner ? "WIN" : "DRAW",
+        winner: this.gameoverWinner ?? undefined,
+        reason: this.gameoverReason,
       };
     }
 
@@ -825,7 +820,7 @@ export class GameClient {
       return {
         status: "WIN",
         winner: currentPlayer === "RED" ? "BLUE" : "RED", // Opponent wins by time out
-        reason: "on time",
+        reason: "timeout",
       };
     }
 
@@ -845,7 +840,7 @@ export class GameClient {
       return {
         status,
         winner,
-        reason: outcome.termination,
+        reason: outcome.termination as GameoverReason,
       };
     }
 
@@ -915,6 +910,8 @@ export class GameClient {
     if (this.multiplayer) {
       // TODO(tyler): set "isSendingTurn" to true here
       await this.multiplayer.sendTurn(turn);
+    } else {
+      // TODO(tyler): check for gameover...?
     }
 
     this.finishTurn();
@@ -922,7 +919,7 @@ export class GameClient {
 
   pushTurn(turn: Turn) {
     if (turn.status && turn.winner) {
-      this.gameoverStatus = turn.status;
+      this.gameoverReason = turn.status;
       this.gameoverWinner = turn.winner;
     }
 
@@ -1044,7 +1041,7 @@ export class GameClient {
       this.multiplayer.sendTurn(resignationTurn(this.turn, playerResigned));
     } else {
       const turn = resignationTurn(this.turn, playerResigned);
-      this.gameoverStatus = turn.status;
+      this.gameoverReason = turn.status;
       this.gameoverWinner = turn.winner;
       this.ended = true;
       this.notify();
@@ -1226,5 +1223,25 @@ export function gameoverReason(gameover?: GameoverState): string {
   if (!gameover) {
     return "";
   }
-  return (gameover.reason || "").replace("hq", "HQ");
+
+  switch (gameover.reason) {
+    case "resign":
+      return "Opponent resigned";
+    case "timeout":
+      return "Opponent ran out of time";
+    case "hq-capture":
+      return "Captured opponent's HQ";
+    case "double-skip":
+      return "Both players skipped their turn";
+    case "stalemate":
+      return "Stalemate";
+    case "cancelled":
+      return "Game was abandoned";
+    default:
+      return toTitleCase(gameover.reason);
+  }
+}
+
+function toTitleCase(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }

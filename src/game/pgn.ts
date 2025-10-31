@@ -1,4 +1,5 @@
-import { Player, Turn } from "./engine-v2";
+import { GameoverState } from "./engine";
+import { GameoverStatus, Player, Turn } from "./engine-v2";
 import { allowedMoveFromUci, allowedMoveToUci } from "./notation-uci";
 
 export function createPGN(turns: Turn[]): string {
@@ -135,5 +136,18 @@ export function resignationTurn(turn: number, playerResigned: Player): Turn {
     elapsedSecs: 0,
     status: "resign",
     winner: playerResigned === "RED" ? "BLUE" : "RED",
+  };
+}
+
+export function gameEndTurnFromGameover(
+  turn: number,
+  gameover: GameoverState
+): Turn {
+  return {
+    turn,
+    moves: [],
+    elapsedSecs: 0,
+    status: gameover.reason,
+    winner: gameover.winner,
   };
 }

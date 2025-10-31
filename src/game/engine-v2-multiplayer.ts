@@ -135,7 +135,10 @@ export class BotMultiplayer implements Multiplayer {
 
     this.appendGameTurn(this._id, replyTurn);
 
-    this._callbacks.forEach((callback) => callback(replyTurn));
+    // do this in the background
+    setTimeout(() => {
+      this._callbacks.forEach((callback) => callback(replyTurn));
+    }, 1);
   }
 
   onTurnPlayed(callback: OnTurnPlayedCallback): void {

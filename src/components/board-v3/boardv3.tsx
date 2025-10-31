@@ -19,7 +19,7 @@ import { useAuth } from "@clerk/nextjs";
 import GameLoader from "./GameLoader";
 import { MatchV3 } from "@/lib/types";
 import { useUsers } from "./useUsers";
-import { GameoverState } from "@/game/engine";
+import { GameoverReason, GameoverState } from "@/game/engine";
 
 export interface GHQBoardV3Props extends GameClientOptions {
   bot?: boolean;
@@ -28,7 +28,6 @@ export interface GHQBoardV3Props extends GameClientOptions {
 }
 
 // TODO(tyler): spectator mode seems buggy, not clear whos turn it is
-// TODO(tyler): ending game on timeout should be more responsive / obvious
 // TODO(tyler): remove clerk
 //   - to users table, add a "id_v2" column
 //   - create supabase login page
@@ -165,8 +164,8 @@ function getGameover(
   if (match?.status === "ABORTED") {
     return {
       winner: undefined,
-      status: "DRAW",
-      reason: "Game was abandoned",
+      status: "DRAW", // TODO(tyler): technically not a draw or a win, but it's the closest thing we have
+      reason: "cancelled",
     };
   }
 
@@ -181,7 +180,7 @@ function getGameover(
     return {
       winner,
       status: match.status as "WIN" | "DRAW",
-      reason: match.gameoverReason,
+      reason: match.gameoverReason as GameoverReason,
     };
   }
 

@@ -219,10 +219,18 @@ export interface GHQState {
   v2state?: string;
 }
 
+export type GameoverReason =
+  | "resign"
+  | "timeout"
+  | "hq-capture"
+  | "double-skip"
+  | "stalemate"
+  | "cancelled";
+
 export interface GameoverState {
   status: "WIN" | "DRAW";
   winner?: Player;
-  reason: string;
+  reason: GameoverReason;
 }
 
 const Reinforce: Move<GHQState, any> = (
