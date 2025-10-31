@@ -518,12 +518,20 @@ export interface PlayerPiece {
   coordinate: Coordinate;
 }
 
+export type GameoverStatus =
+  | "resign"
+  | "timeout"
+  | "hq-capture"
+  | "double-skip";
+
 export interface Turn {
   turn: number;
   moves: AllowedMove[];
   elapsedSecs: number;
-  // kind of a hack, but need to somehow send a resignation out of band
-  playerResigned?: "0" | "1";
+
+  // These are kind of a hack, but need to somehow send "end game" information out of band
+  status?: GameoverStatus;
+  winner?: Player;
 }
 
 export interface GameClientOptions {
@@ -579,7 +587,10 @@ export class GameClient {
 
   public ended: boolean;
   private listeners: Set<() => void> = new Set();
-  private playerResigned: "0" | "1" | undefined;
+
+  // Gameover state
+  private gameoverStatus?: GameoverStatus;
+  private gameoverWinner?: Player;
 
   constructor({
     engine,
@@ -797,10 +808,10 @@ export class GameClient {
       return undefined;
     }
 
-    if (this.playerResigned) {
+    if (this.gameoverStatus && this.gameoverWinner) {
       return {
         status: "WIN",
-        winner: this.playerResigned === "0" ? "BLUE" : "RED",
+        winner: this.gameoverWinner,
         reason: "opponent resigned",
       };
     }
@@ -901,16 +912,18 @@ export class GameClient {
       Math.round((Date.now() - this.getTurnStartTimeMs()) / 100) / 10;
 
     const turn = this.getTurn();
-    this.finishTurn();
-
     if (this.multiplayer) {
-      return this.multiplayer.sendTurn(turn);
+      // TODO(tyler): set "isSendingTurn" to true here
+      await this.multiplayer.sendTurn(turn);
     }
+
+    this.finishTurn();
   }
 
   pushTurn(turn: Turn) {
-    if (turn.playerResigned) {
-      this.playerResigned = turn.playerResigned;
+    if (turn.status && turn.winner) {
+      this.gameoverStatus = turn.status;
+      this.gameoverWinner = turn.winner;
     }
 
     for (const move of turn.moves) {
@@ -1026,11 +1039,13 @@ export class GameClient {
   }
 
   resign() {
-    const playerResigned = this.currentPlayer() === "RED" ? "0" : "1";
+    const playerResigned = this.currentPlayer();
     if (this.multiplayer) {
       this.multiplayer.sendTurn(resignationTurn(this.turn, playerResigned));
     } else {
-      this.playerResigned = playerResigned;
+      const turn = resignationTurn(this.turn, playerResigned);
+      this.gameoverStatus = turn.status;
+      this.gameoverWinner = turn.winner;
       this.ended = true;
       this.notify();
     }

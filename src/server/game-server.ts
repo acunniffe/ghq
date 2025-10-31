@@ -251,6 +251,9 @@ export function addGameServerRoutes(
 
       const updatedMatch = { ...match };
 
+      // TODO(tyler): then if gameover exists, let's send that as a turn
+      // TODO(tyler): also send gameover in the match lifecycle
+
       // Then check gameover again because there could have been bombardment or something else that ended the game.
       const gameover = game.gameover();
       if (gameover) {
