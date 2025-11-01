@@ -250,9 +250,13 @@ export function addGameServerRoutes(
       // Validate that the turn can be applied onto the game successfully
       game.pushTurn(turn);
 
-      const updatedMatch = { ...match };
+      // TODO(tyler): validate that time is accurate within 1 second of the actual time
 
-      // TODO(tyler): also send gameover in the match lifecycle
+      // TODO(tyler): set a time to check back for game end based on the upcoming player's time left
+
+      turns.push(turn);
+
+      const updatedMatch = { ...match };
 
       // Then check gameover again because there could have been bombardment or something else that ended the game.
       const gameover = game.gameover();
@@ -262,12 +266,6 @@ export function addGameServerRoutes(
         updatedMatch.gameover_reason = gameover.reason;
         turns.push(gameEndTurnFromGameover(turn.turn + 1, gameover));
       }
-
-      // TODO(tyler): validate that time is accurate within 1 second of the actual time
-
-      // TODO(tyler): set a time to check back for game end based on the upcoming player's time left
-
-      turns.push(turn);
       updatedMatch.pgn = createPGN(turns);
 
       // Update the current player turn user id

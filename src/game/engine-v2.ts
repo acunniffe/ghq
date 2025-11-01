@@ -579,6 +579,7 @@ export class GameClient {
 
   // Multiplayer
   private multiplayer?: Multiplayer;
+  public isSendingTurn: boolean;
 
   public ended: boolean;
   private listeners: Set<() => void> = new Set();
@@ -629,6 +630,7 @@ export class GameClient {
     this.lastTurnCaptures = [];
     this.movePieces = [];
     this.ended = false;
+    this.isSendingTurn = false;
     this.setupMultiplayer();
   }
 
@@ -908,8 +910,14 @@ export class GameClient {
 
     const turn = this.getTurn();
     if (this.multiplayer) {
-      // TODO(tyler): set "isSendingTurn" to true here
-      await this.multiplayer.sendTurn(turn);
+      this.isSendingTurn = true;
+      this.notify();
+      try {
+        await this.multiplayer.sendTurn(turn);
+      } finally {
+        this.isSendingTurn = false;
+        this.notify();
+      }
     } else {
       // TODO(tyler): check for gameover...?
     }

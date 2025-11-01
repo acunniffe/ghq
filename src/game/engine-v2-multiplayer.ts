@@ -273,6 +273,7 @@ export class OnlineMultiplayer implements Multiplayer {
       playerId: this.playerId,
       credentials: this.credentials,
     };
+
     const data = await ghqFetch<any>({
       // NB(tyler): for now, we still use the old API for sending turns
       url: `${API_URL}/v3/match/${this.id}/turns`,
