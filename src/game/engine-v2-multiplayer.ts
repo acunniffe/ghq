@@ -274,6 +274,9 @@ export class OnlineMultiplayer implements Multiplayer {
       credentials: this.credentials,
     };
 
+    // Skip processing of our own turns
+    this.processedTurnIndices.add(turn.turn);
+
     const data = await ghqFetch<any>({
       // NB(tyler): for now, we still use the old API for sending turns
       url: `${API_URL}/v3/match/${this.id}/turns`,

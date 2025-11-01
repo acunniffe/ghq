@@ -27,6 +27,7 @@ export interface GHQBoardV3Props extends GameClientOptions {
   match?: MatchV3;
 }
 
+// TODO(tyler): better indication when board is initially fetching/processing turns from server
 // TODO(tyler): spectator mode seems buggy, not clear whos turn it is
 // TODO(tyler): remove clerk
 //   - to users table, add a "id_v2" column
