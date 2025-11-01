@@ -135,7 +135,10 @@ export class BotMultiplayer implements Multiplayer {
 
     this.appendGameTurn(this._id, replyTurn);
 
-    this._callbacks.forEach((callback) => callback(replyTurn));
+    // do this in the background
+    setTimeout(() => {
+      this._callbacks.forEach((callback) => callback(replyTurn));
+    }, 1);
   }
 
   onTurnPlayed(callback: OnTurnPlayedCallback): void {
@@ -270,6 +273,10 @@ export class OnlineMultiplayer implements Multiplayer {
       playerId: this.playerId,
       credentials: this.credentials,
     };
+
+    // Skip processing of our own turns
+    this.processedTurnIndices.add(turn.turn);
+
     const data = await ghqFetch<any>({
       // NB(tyler): for now, we still use the old API for sending turns
       url: `${API_URL}/v3/match/${this.id}/turns`,

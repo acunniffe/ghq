@@ -1,6 +1,6 @@
 import { SendTurnRequest } from "@/lib/api";
 import { MatchV3 } from "@/lib/types";
-import { Turn } from "@/game/engine-v2";
+import { Player, Turn } from "@/game/engine-v2";
 import { createHash } from "crypto";
 
 export function hashCredentials(credentials: string): string {
@@ -43,7 +43,7 @@ export async function isTurnAuthorized(
   const isAuthorized =
     authenticatedUserId === requiredPlayerId &&
     hashCredentials(credentials) === requiredHashCredentials &&
-    (requiredTurnValidator(turn) || turn.playerResigned === playerId);
+    (requiredTurnValidator(turn) || isResignAuthorized(turn, playerId));
 
   if (!isAuthorized) {
     console.log("Unauthorized turn", {
@@ -57,6 +57,12 @@ export async function isTurnAuthorized(
   }
 
   return isAuthorized;
+}
+
+// resign is authorized if the turn is a resignation and the winner is the opposite player.
+function isResignAuthorized(turn: Turn, playerId: string): boolean {
+  const oppositePlayer = playerId === "0" ? "BLUE" : "RED";
+  return turn.status === "resign" && turn.winner === oppositePlayer;
 }
 
 export function getMatchTimeControl(match: MatchV3) {

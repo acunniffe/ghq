@@ -6,7 +6,7 @@ import { Server } from "boardgame.io";
 import { nanoid } from "nanoid";
 import { PassThrough } from "stream";
 import { MatchV3, MatchV3Info, User } from "@/lib/types";
-import { createPGN, pgnToTurns } from "@/game/pgn";
+import { createPGN, gameEndTurnFromGameover, pgnToTurns } from "@/game/pgn";
 import {
   createActiveMatches,
   createMatchV3,
@@ -99,7 +99,7 @@ export function addGameServerRoutes(
 
   const runMatchLifecycle = () => {
     matchLifecycleV3(engine).finally(() => {
-      setTimeout(runMatchLifecycle, 10_000);
+      setTimeout(runMatchLifecycle, 5_000);
     });
   };
 
@@ -236,6 +236,7 @@ export function addGameServerRoutes(
       // Check for gameover due to timeout or something already on the board.
       const gameoverDueToTimeout = game.gameover();
       if (gameoverDueToTimeout) {
+        turns.push(gameEndTurnFromGameover(turn.turn, gameoverDueToTimeout));
         return {
           ...match,
           status: gameoverDueToTimeout.status,
@@ -249,6 +250,12 @@ export function addGameServerRoutes(
       // Validate that the turn can be applied onto the game successfully
       game.pushTurn(turn);
 
+      // TODO(tyler): validate that time is accurate within 1 second of the actual time
+
+      // TODO(tyler): set a time to check back for game end based on the upcoming player's time left
+
+      turns.push(turn);
+
       const updatedMatch = { ...match };
 
       // Then check gameover again because there could have been bombardment or something else that ended the game.
@@ -257,13 +264,8 @@ export function addGameServerRoutes(
         updatedMatch.status = gameover.status;
         updatedMatch.winner_id = getWinnerId(gameover);
         updatedMatch.gameover_reason = gameover.reason;
+        turns.push(gameEndTurnFromGameover(turn.turn + 1, gameover));
       }
-
-      // TODO(tyler): validate that time is accurate within 1 second of the actual time
-
-      // TODO(tyler): set a time to check back for game end based on the upcoming player's time left
-
-      turns.push(turn);
       updatedMatch.pgn = createPGN(turns);
 
       // Update the current player turn user id
@@ -459,7 +461,7 @@ function getGameStartTimeMs(createdAt?: string) {
 
 async function checkAndUpdateMatch(engine: GameEngine, match: MatchV3) {
   const turns = pgnToTurns(match.pgn || "");
-  console.log("checking and updating match", match.id, turns.length);
+  // console.log("checking and updating match", match.id, turns.length);
 
   const timeControl = getMatchTimeControl(match);
 
@@ -499,8 +501,12 @@ async function checkAndUpdateMatch(engine: GameEngine, match: MatchV3) {
     gameover: gameoverDueToTimeout,
   });
   await updateMatchPGN(match.id, (match): SupabaseMatch => {
+    const turns = pgnToTurns(match.pgn || "");
+    turns.push(gameEndTurnFromGameover(turns.length + 1, gameoverDueToTimeout));
+    const pgn = createPGN(turns);
     return {
       ...match,
+      pgn,
       status: gameoverDueToTimeout.status,
       winner_id: getWinnerId(gameoverDueToTimeout),
       gameover_reason: gameoverDueToTimeout.reason,
