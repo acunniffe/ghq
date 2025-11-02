@@ -60,9 +60,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
         getToken
       );
       setMultiplayer(multiplayer);
-      console.log("creating multipler");
       return () => {
-        console.log("Disconnecting multiplayer");
         multiplayer.disconnect();
       };
     }
@@ -91,7 +89,7 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
 
   const gameover = useMemo(() => {
     return getGameover(realGame, opts.match);
-  }, [realGame, opts.match, realGame?.ended]);
+  }, [realGame, opts.match, realGame?.gameover]);
 
   // Hack so we can debug in the console
   if (typeof window !== "undefined") {
@@ -175,5 +173,5 @@ function getGameover(
   }
 
   // Otherwise use the gameover from the game client.
-  return game.gameover();
+  return game.gameover;
 }

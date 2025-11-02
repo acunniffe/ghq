@@ -234,7 +234,7 @@ export function addGameServerRoutes(
       };
 
       // Check for gameover due to timeout or something already on the board.
-      const gameoverDueToTimeout = game.gameover();
+      const gameoverDueToTimeout = game.getGameover();
       if (gameoverDueToTimeout) {
         turns.push(gameEndTurnFromGameover(turn.turn, gameoverDueToTimeout));
         return {
@@ -259,7 +259,7 @@ export function addGameServerRoutes(
       const updatedMatch = { ...match };
 
       // Then check gameover again because there could have been bombardment or something else that ended the game.
-      const gameover = game.gameover();
+      const gameover = game.getGameover();
       if (gameover) {
         updatedMatch.status = gameover.status;
         updatedMatch.winner_id = getWinnerId(gameover);
@@ -491,7 +491,7 @@ async function checkAndUpdateMatch(engine: GameEngine, match: MatchV3) {
   };
 
   // Check for gameover due to timeout or something already on the board.
-  const gameoverDueToTimeout = game.gameover();
+  const gameoverDueToTimeout = game.getGameover();
   if (!gameoverDueToTimeout) {
     return;
   }

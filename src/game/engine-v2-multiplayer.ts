@@ -95,6 +95,10 @@ export class BotMultiplayer implements Multiplayer {
       throw new Error("onTurnPlayed callback not set");
     }
 
+    if (this.board.outcome() !== undefined) {
+      return;
+    }
+
     if (this.board.is_red_turn()) {
       return;
       // return [

@@ -69,7 +69,7 @@ export default function Board({
 
   const handleLeftClick = useCallback(
     ([rowIndex, colIndex]: Coordinate, isMouseDown: boolean) => {
-      if (game.gameover()) {
+      if (game.gameover) {
         return;
       }
 

@@ -42,8 +42,8 @@ export default function GameoverDialog({
     () =>
       gameover?.winner
         ? gameover.winner === "RED"
-          ? redUser?.username
-          : blueUser?.username
+          ? redUser?.username ?? "Red"
+          : blueUser?.username ?? "Blue"
         : undefined,
     [gameover, redUser, blueUser]
   );
@@ -73,7 +73,9 @@ export default function GameoverDialog({
             </div>
 
             <div className="flex flex-col w-full items-center justify-center">
-              <div className="font-bold text-gray-800">{winnerPlayer} won!</div>
+              <div className="font-bold text-gray-800">
+                {winnerPlayer ? `${winnerPlayer} won!` : "It's a draw!"}
+              </div>
               <div className="text-xs text-gray-600">
                 {gameoverReason(gameover)}
               </div>

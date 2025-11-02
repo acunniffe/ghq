@@ -538,8 +538,9 @@ export interface GameClientOptions {
   isReplayMode?: boolean;
   isPassAndPlayMode?: boolean;
   timeControl?: TimeControl;
-  id?: string; // implies isOnline
+  id?: string;
   gameStartTimeMs?: number;
+  bot?: boolean;
 }
 
 export class GameClient {
@@ -550,7 +551,6 @@ export class GameClient {
   public isTutorial: boolean;
   public isReplayMode: boolean;
   public isPassAndPlayMode: boolean;
-  public isOnline: boolean;
   public id?: string;
   public chatMessages: any[]; // TODO(tyler): implement this
 
@@ -581,12 +581,11 @@ export class GameClient {
   private multiplayer?: Multiplayer;
   public isSendingTurn: boolean;
 
-  public ended: boolean;
   private listeners: Set<() => void> = new Set();
 
   // Gameover state
-  private gameoverReason?: GameoverReason;
-  private gameoverWinner?: Player;
+  public gameover?: GameoverState;
+  private shouldCheckGameoverOnEndTurn: boolean;
 
   constructor({
     engine,
@@ -599,6 +598,7 @@ export class GameClient {
     multiplayer,
     playerId,
     gameStartTimeMs,
+    bot,
   }: GameClientOptions) {
     if (!engine) {
       throw new Error("engine is required");
@@ -611,7 +611,6 @@ export class GameClient {
     this.isTutorial = isTutorial ?? false;
     this.isReplayMode = isReplayMode ?? false;
     this.isPassAndPlayMode = isPassAndPlayMode ?? false;
-    this.isOnline = !!id;
     this.id = id;
     this.chatMessages = [];
     this.playerId = playerId;
@@ -629,8 +628,8 @@ export class GameClient {
     this.lastTurnMoves = [];
     this.lastTurnCaptures = [];
     this.movePieces = [];
-    this.ended = false;
     this.isSendingTurn = false;
+    this.shouldCheckGameoverOnEndTurn = bot ?? isPassAndPlayMode ?? false;
     this.setupMultiplayer();
   }
 
@@ -800,17 +799,9 @@ export class GameClient {
     }
   }
 
-  gameover(): GameoverState | undefined {
+  getGameover(): GameoverState | undefined {
     if (this.isReplayMode) {
       return undefined;
-    }
-
-    if (this.gameoverReason) {
-      return {
-        status: this.gameoverWinner ? "WIN" : "DRAW",
-        winner: this.gameoverWinner ?? undefined,
-        reason: this.gameoverReason,
-      };
     }
 
     const currentPlayer = this.currentPlayerTurn();
@@ -918,8 +909,15 @@ export class GameClient {
         this.isSendingTurn = false;
         this.notify();
       }
-    } else {
-      // TODO(tyler): check for gameover...?
+    }
+
+    // In local and bot play, check for gameover on end turn.
+    if (this.shouldCheckGameoverOnEndTurn) {
+      const gameover = this.getGameover();
+      if (gameover) {
+        this.gameover = gameover;
+        this.notify();
+      }
     }
 
     this.finishTurn();
@@ -927,8 +925,11 @@ export class GameClient {
 
   pushTurn(turn: Turn) {
     if (turn.status && turn.winner) {
-      this.gameoverReason = turn.status;
-      this.gameoverWinner = turn.winner;
+      this.gameover = {
+        status: turn.winner ? "WIN" : "DRAW",
+        winner: turn.winner,
+        reason: turn.status,
+      };
     }
 
     for (const move of turn.moves) {
@@ -953,9 +954,6 @@ export class GameClient {
     this.thisTurnMoves = [];
     this.thisTurnCaptures = [];
 
-    if (this.gameover()) {
-      this.ended = true;
-    }
     this.notify();
   }
 
@@ -986,7 +984,10 @@ export class GameClient {
     }
 
     // If the game is over due to timeout and the other player won, then we lost on time, aka we had 0 left.
-    if (this.gameoverReason === "timeout" && this.gameoverWinner !== player) {
+    if (
+      this.gameover?.reason === "timeout" &&
+      this.gameover?.winner !== player
+    ) {
       return 0;
     }
 
@@ -1052,13 +1053,14 @@ export class GameClient {
     const playerResigned = this.currentPlayer();
     if (this.multiplayer) {
       this.multiplayer.sendTurn(resignationTurn(this.turn, playerResigned));
-    } else {
-      const turn = resignationTurn(this.turn, playerResigned);
-      this.gameoverReason = turn.status;
-      this.gameoverWinner = turn.winner;
-      this.ended = true;
-      this.notify();
     }
+
+    this.gameover = {
+      status: "WIN",
+      winner: playerResigned === "RED" ? "BLUE" : "RED",
+      reason: "resign",
+    };
+    this.notify();
   }
 
   reset() {
@@ -1076,7 +1078,6 @@ export class GameClient {
     this.lastTurnMoves = [];
     this.lastTurnCaptures = [];
     this.movePieces = [];
-    this.ended = false;
     this.notify();
   }
 
