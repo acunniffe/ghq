@@ -314,7 +314,7 @@ async function runServer() {
     ctx.body = JSON.stringify({});
   });
 
-  server.run(8000);
+  server.run(Number(process.env.PORT) || 8000);
 
   interface CreatedMatch {
     matchId: string;
