@@ -330,6 +330,16 @@ export const boards: Record<string, TutorialSetupData> = {
     category: "puzzles",
     boardArrows: [],
   },
+  "Capture an infantry": {
+    fen: "qr↓1fiif1/2h↓2r↓1i/6t↓1/1fi5/1i3T↑H↖1/2iR↑R↑1R↑F/2FI1II1/IP3IQ1 IIIF iipr r",
+    category: "puzzles",
+    boardArrows: [],
+  },
+  "Trap the enemy HQ": {
+    fen: "1q1i4/4ii2/2R↖2ii1/2T↖1R↖1Ff/PFR↖3H↖I/I7/8/4IIQ1 IIIIF - r",
+    category: "puzzles",
+    boardArrows: [],
+  },
   "Defend the attack": {
     boardState: {
       board: [
