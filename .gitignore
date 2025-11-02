@@ -14,6 +14,7 @@
 /coverage
 
 .idea/
+__pycache__
 
 # next.js
 /.next/

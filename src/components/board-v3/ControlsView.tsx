@@ -1,4 +1,4 @@
-import { Redo, Repeat, SkipForward, Undo } from "lucide-react";
+import { Loader2, Redo, Repeat, SkipForward, Undo } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Tooltip,
@@ -92,6 +92,16 @@ export default function ControlsView({
     togglePOV,
   });
 
+  const skipContent = game.isSendingTurn ? (
+    <>
+      <Loader2 className="animate-spin" />
+    </>
+  ) : game.needsTurnConfirmation ? (
+    "Confirm"
+  ) : (
+    "Skip"
+  );
+
   return (
     <div className="flex flex-wrap gap-1 m-1 justify-center">
       {game.isReplayMode || game.ended ? (
@@ -128,7 +138,7 @@ export default function ControlsView({
             shortcut="→"
           />
           <ActionButton
-            text={game.needsTurnConfirmation ? "Confirm" : "Skip"}
+            text={skipContent}
             tooltip="Skip or confirm remainder of turn. If both players skip, it's a draw"
             onClick={doSkip}
             disabled={!canSkip}
@@ -160,7 +170,7 @@ function ActionButton({
   className,
   shortcut,
 }: {
-  text: string;
+  text: string | React.ReactNode;
   tooltip: string;
   onClick: () => void;
   disabled: boolean;

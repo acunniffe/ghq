@@ -8,6 +8,7 @@ import {
   Board,
   Coordinate,
   ctxPlayerToPlayer,
+  GameoverReason,
   GameoverState,
   getCapturePreference,
   GHQGame,
@@ -522,8 +523,10 @@ export interface Turn {
   turn: number;
   moves: AllowedMove[];
   elapsedSecs: number;
-  // kind of a hack, but need to somehow send a resignation out of band
-  playerResigned?: "0" | "1";
+
+  // These are kind of a hack, but need to somehow send "end game" information out of band
+  status?: GameoverReason;
+  winner?: Player;
 }
 
 export interface GameClientOptions {
@@ -576,10 +579,14 @@ export class GameClient {
 
   // Multiplayer
   private multiplayer?: Multiplayer;
+  public isSendingTurn: boolean;
 
   public ended: boolean;
   private listeners: Set<() => void> = new Set();
-  private playerResigned: "0" | "1" | undefined;
+
+  // Gameover state
+  private gameoverReason?: GameoverReason;
+  private gameoverWinner?: Player;
 
   constructor({
     engine,
@@ -623,6 +630,7 @@ export class GameClient {
     this.lastTurnCaptures = [];
     this.movePieces = [];
     this.ended = false;
+    this.isSendingTurn = false;
     this.setupMultiplayer();
   }
 
@@ -797,11 +805,11 @@ export class GameClient {
       return undefined;
     }
 
-    if (this.playerResigned) {
+    if (this.gameoverReason) {
       return {
-        status: "WIN",
-        winner: this.playerResigned === "0" ? "BLUE" : "RED",
-        reason: "opponent resigned",
+        status: this.gameoverWinner ? "WIN" : "DRAW",
+        winner: this.gameoverWinner ?? undefined,
+        reason: this.gameoverReason,
       };
     }
 
@@ -814,7 +822,7 @@ export class GameClient {
       return {
         status: "WIN",
         winner: currentPlayer === "RED" ? "BLUE" : "RED", // Opponent wins by time out
-        reason: "on time",
+        reason: "timeout",
       };
     }
 
@@ -834,7 +842,7 @@ export class GameClient {
       return {
         status,
         winner,
-        reason: outcome.termination,
+        reason: outcome.termination as GameoverReason,
       };
     }
 
@@ -901,16 +909,26 @@ export class GameClient {
       Math.round((Date.now() - this.getTurnStartTimeMs()) / 100) / 10;
 
     const turn = this.getTurn();
-    this.finishTurn();
-
     if (this.multiplayer) {
-      return this.multiplayer.sendTurn(turn);
+      this.isSendingTurn = true;
+      this.notify();
+      try {
+        await this.multiplayer.sendTurn(turn);
+      } finally {
+        this.isSendingTurn = false;
+        this.notify();
+      }
+    } else {
+      // TODO(tyler): check for gameover...?
     }
+
+    this.finishTurn();
   }
 
   pushTurn(turn: Turn) {
-    if (turn.playerResigned) {
-      this.playerResigned = turn.playerResigned;
+    if (turn.status && turn.winner) {
+      this.gameoverReason = turn.status;
+      this.gameoverWinner = turn.winner;
     }
 
     for (const move of turn.moves) {
@@ -1026,11 +1044,13 @@ export class GameClient {
   }
 
   resign() {
-    const playerResigned = this.currentPlayer() === "RED" ? "0" : "1";
+    const playerResigned = this.currentPlayer();
     if (this.multiplayer) {
       this.multiplayer.sendTurn(resignationTurn(this.turn, playerResigned));
     } else {
-      this.playerResigned = playerResigned;
+      const turn = resignationTurn(this.turn, playerResigned);
+      this.gameoverReason = turn.status;
+      this.gameoverWinner = turn.winner;
       this.ended = true;
       this.notify();
     }
@@ -1211,5 +1231,25 @@ export function gameoverReason(gameover?: GameoverState): string {
   if (!gameover) {
     return "";
   }
-  return (gameover.reason || "").replace("hq", "HQ");
+
+  switch (gameover.reason) {
+    case "resign":
+      return "Opponent resigned";
+    case "timeout":
+      return "Opponent ran out of time";
+    case "hq-capture":
+      return "Captured opponent's HQ";
+    case "double-skip":
+      return "Both players skipped their turn";
+    case "stalemate":
+      return "Stalemate";
+    case "cancelled":
+      return "Game was abandoned";
+    default:
+      return toTitleCase(gameover.reason);
+  }
+}
+
+function toTitleCase(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }

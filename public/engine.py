@@ -2001,15 +2001,15 @@ class BaseBoard:
 
     def outcome(self) -> Optional[Outcome]:
         if self._is_hq_captured(RED):
-            return Outcome("hq capture", BLUE)
+            return Outcome("hq-capture", BLUE)
         if self._is_hq_captured(BLUE):
-            return Outcome("hq capture", RED)
+            return Outcome("hq-capture", RED)
         if self.turn_moves == 0 and not any(self.generate_legal_moves()):
             if self._is_hq_under_bombardment(self.turn):
-                return Outcome("hq capture", not self.turn)
+                return Outcome("hq-capture", not self.turn)
             return Outcome("stalemate", None)
         if self.did_offer_draw and self.did_accept_draw:
-            return Outcome("double skip", None)
+            return Outcome("double-skip", None)
 
         return None
 
