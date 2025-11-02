@@ -27,8 +27,6 @@ export interface GHQBoardV3Props extends GameClientOptions {
   match?: MatchV3;
 }
 
-// TODO(tyler): spectator mode seems buggy, not clear whos turn it is
-
 export function GHQBoardV3(opts: GHQBoardV3Props) {
   const { engine } = useEngine();
   const { isSignedIn, getToken } = useAuth();

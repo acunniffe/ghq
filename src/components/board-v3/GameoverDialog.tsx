@@ -30,14 +30,23 @@ export default function GameoverDialog({
     (player: Player) => {
       const userId =
         player === "RED" ? match?.player0UserId : match?.player1UserId;
-      const user = users.find((u) => u.id === userId);
-      return user ? <Username user={user} /> : toTitleCase(player);
+      return users.find((u) => u.id === userId);
     },
     [users, match]
   );
 
-  const redPlayer = useMemo(() => getUser("RED"), [getUser]);
-  const bluePlayer = useMemo(() => getUser("BLUE"), [getUser]);
+  const redUser = useMemo(() => getUser("RED"), [getUser]);
+  const blueUser = useMemo(() => getUser("BLUE"), [getUser]);
+
+  const winnerPlayer = useMemo(
+    () =>
+      gameover?.winner
+        ? gameover.winner === "RED"
+          ? redUser?.username
+          : blueUser?.username
+        : undefined,
+    [gameover, redUser, blueUser]
+  );
 
   useEffect(() => {
     setOpen(!!gameover);
@@ -52,23 +61,19 @@ export default function GameoverDialog({
             <div className="flex flex-col sm:grid sm:grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-4">
               <div className="flex justify-center sm:justify-end w-full">
                 <div className="bg-red-500/10 border border-red-500 rounded-lg px-2 py-1">
-                  {redPlayer}
+                  {redUser ? <Username user={redUser} /> : "Red"}
                 </div>
               </div>
               <div className="text-gray-600 text-xs font-medium">vs.</div>
               <div className="flex justify-center sm:justify-start w-full">
                 <div className="bg-blue-500/10 border border-blue-500 rounded-lg px-2 py-1">
-                  {bluePlayer}
+                  {blueUser ? <Username user={blueUser} /> : "Blue"}
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col w-full items-center justify-center">
-              <div className="font-bold text-gray-800">
-                {gameover?.winner
-                  ? `${toTitleCase(gameover.winner)} won!`
-                  : "It's a draw!"}
-              </div>
+              <div className="font-bold text-gray-800">{winnerPlayer} won!</div>
               <div className="text-xs text-gray-600">
                 {gameoverReason(gameover)}
               </div>
