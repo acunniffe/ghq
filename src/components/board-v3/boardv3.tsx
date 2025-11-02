@@ -51,7 +51,8 @@ export function GHQBoardV3(opts: GHQBoardV3Props) {
       opts.credentials !== undefined &&
       opts.id &&
       isSignedIn !== undefined &&
-      opts.playerId
+      opts.playerId &&
+      getToken
     ) {
       const multiplayer = new OnlineMultiplayer(
         opts.id,

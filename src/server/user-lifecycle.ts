@@ -26,7 +26,6 @@ export async function userLifecycle({
   // Remove stale users from the online users list
   for (const [userId, lastActive] of usersOnline.entries()) {
     if (lastActive < Date.now() - ONLINE_USER_STALE_MS) {
-      console.log(`Removing stale user from online users`, userId);
       usersOnline.delete(userId);
     }
   }
