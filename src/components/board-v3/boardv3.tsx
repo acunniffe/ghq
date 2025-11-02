@@ -27,16 +27,7 @@ export interface GHQBoardV3Props extends GameClientOptions {
   match?: MatchV3;
 }
 
-// TODO(tyler): better indication when board is initially fetching/processing turns from server
 // TODO(tyler): spectator mode seems buggy, not clear whos turn it is
-// TODO(tyler): remove clerk
-//   - to users table, add a "id_v2" column
-//   - create supabase login page
-//   - add supabase auth middleware to server
-//   - add supabase auth provider to frontend
-//   - when users log in with clerk, check whether the id_v2 column is set, send them to supabase login page
-//   - create an API that authenticates with both clerk and supabase, and then adds their supabase user as id_v2
-// TODO(tyler): ability to load a game from a PGN
 
 export function GHQBoardV3(opts: GHQBoardV3Props) {
   const { engine } = useEngine();
