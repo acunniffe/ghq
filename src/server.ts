@@ -36,6 +36,13 @@ import { addGameServerRoutes, createNewV3Match } from "./server/game-server";
 import { loadV2Engine } from "./server/engine";
 
 async function runServer() {
+  console.log(
+    JSON.stringify({
+      message: "starting server",
+      env: process.env.NODE_ENV,
+      port: process.env.PORT,
+    })
+  );
   const supabase = createClient(
     "https://wjucmtrnmjcaatbtktxo.supabase.co",
     process.env.SUPABASE_SECRET_KEY!
@@ -115,7 +122,6 @@ async function runServer() {
     const now = Date.now();
     for (const [userId, lastActive] of queue.entries()) {
       if (lastActive < Date.now() - QUEUE_STALE_MS) {
-        console.log(`Removing stale user from ${mode} queue`, userId);
         queue.delete(userId);
       }
     }

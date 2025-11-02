@@ -47,15 +47,18 @@ export async function isTurnAuthorized(
     (requiredTurnValidator(turn) || isResignAuthorized(turn, playerId));
 
   if (!isAuthorized) {
-    console.log("Unauthorized turn", {
-      playerId,
-      turn: turnToString(turn),
-      authenticatedUserId,
-      requiredPlayerId,
-      hashCredentials: hashCredentials(credentials),
-      requiredHashCredentials,
-      isTurnValidated: requiredTurnValidator(turn),
-    });
+    console.log(
+      JSON.stringify({
+        message: "unauthorized turn",
+        playerId,
+        turn: turnToString(turn),
+        authenticatedUserId,
+        requiredPlayerId,
+        hashCredentials: hashCredentials(credentials),
+        requiredHashCredentials,
+        isTurnValidated: requiredTurnValidator(turn),
+      })
+    );
   }
 
   return isAuthorized;
