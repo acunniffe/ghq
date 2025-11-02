@@ -985,6 +985,11 @@ export class GameClient {
       return null;
     }
 
+    // If the game is over due to timeout and the other player won, then we lost on time, aka we had 0 left.
+    if (this.gameoverReason === "timeout" && this.gameoverWinner !== player) {
+      return 0;
+    }
+
     const currentTurnElapsedMs =
       isLive && player === this.currentPlayerTurn()
         ? Date.now() - this.getTurnStartTimeMs()
