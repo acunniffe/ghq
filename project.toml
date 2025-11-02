@@ -1,4 +1,0 @@
-[[build.env]]
-name = "GOOGLE_BUILDABLE"
-value = "package.json"
-
