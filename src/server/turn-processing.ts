@@ -2,6 +2,7 @@ import { SendTurnRequest } from "@/lib/api";
 import { MatchV3 } from "@/lib/types";
 import { Player, Turn } from "@/game/engine-v2";
 import { createHash } from "crypto";
+import { turnToString } from "@/game/pgn";
 
 export function hashCredentials(credentials: string): string {
   return createHash("sha256").update(credentials).digest("hex");
@@ -47,11 +48,12 @@ export async function isTurnAuthorized(
 
   if (!isAuthorized) {
     console.log("Unauthorized turn", {
+      playerId,
+      turn: turnToString(turn),
       authenticatedUserId,
       requiredPlayerId,
       hashCredentials: hashCredentials(credentials),
       requiredHashCredentials,
-      turn,
       isTurnValidated: requiredTurnValidator(turn),
     });
   }
