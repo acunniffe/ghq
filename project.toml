@@ -2,15 +2,3 @@
 name = "GOOGLE_BUILDABLE"
 value = "package.json"
 
-[build]
-builder = "gcr.io/buildpacks/builder:latest"
-
-[[build.buildpacks]]
-id = "google.nodejs.runtime"
-
-[[build.buildpacks]]
-id = "google.nodejs.yarn"
-
-[[build.buildpacks]]
-id = "google.nodejs.npm"
-
