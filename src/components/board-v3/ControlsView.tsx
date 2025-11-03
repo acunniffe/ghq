@@ -98,13 +98,15 @@ export default function ControlsView({
     </>
   ) : game.needsTurnConfirmation ? (
     "Confirm"
+  ) : game.isMyTurn() && game.didOfferDraw() ? (
+    "Accept Draw"
   ) : (
     "Skip"
   );
 
   return (
     <div className="flex flex-wrap gap-1 m-1 justify-center">
-      {game.isReplayMode || game.ended ? (
+      {game.isReplayMode || game.gameover ? (
         <>
           <ActionButton
             text="Previous"

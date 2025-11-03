@@ -6,6 +6,45 @@ import { API_URL } from "@/app/live/config";
 
 export type OnTurnPlayedCallback = (turn: Turn) => void;
 
+class TurnReplicator {
+  private turns: Map<number, Turn> = new Map();
+  private nextExpectedTurn = 1;
+  private callbacks: OnTurnPlayedCallback[] = [];
+
+  addCallback(callback: OnTurnPlayedCallback): void {
+    this.callbacks.push(callback);
+  }
+
+  receiveTurns(incomingTurns: Turn[], skipDelivery = false): void {
+    if (skipDelivery) {
+      for (const turn of incomingTurns) {
+        if (turn.turn === this.nextExpectedTurn) {
+          this.nextExpectedTurn++;
+        }
+      }
+      this.deliverOrderedTurns();
+      return;
+    }
+
+    for (const turn of incomingTurns) {
+      if (!this.turns.has(turn.turn)) {
+        this.turns.set(turn.turn, turn);
+      }
+    }
+
+    this.deliverOrderedTurns();
+  }
+
+  private deliverOrderedTurns(): void {
+    while (this.turns.has(this.nextExpectedTurn)) {
+      const turn = this.turns.get(this.nextExpectedTurn)!;
+      this.callbacks.forEach((callback) => callback(turn));
+      this.turns.delete(this.nextExpectedTurn);
+      this.nextExpectedTurn++;
+    }
+  }
+}
+
 export interface Multiplayer {
   initGame(): Promise<void>;
   sendTurn(turn: Turn): Promise<void>;
@@ -151,14 +190,13 @@ export class BotMultiplayer implements Multiplayer {
 }
 
 export class OnlineMultiplayer implements Multiplayer {
-  private _callbacks: OnTurnPlayedCallback[];
   private abortController?: AbortController;
   private eventSource?: EventSource;
   private isConnected = false;
   private retryCount = 0;
   private maxRetries = 20;
   private baseRetryDelay = 1000;
-  private processedTurnIndices = new Set<number>();
+  private replicator: TurnReplicator;
 
   constructor(
     private id: string,
@@ -166,11 +204,11 @@ export class OnlineMultiplayer implements Multiplayer {
     private playerId: string,
     private getToken: () => Promise<string | null>
   ) {
-    this._callbacks = [];
+    this.replicator = new TurnReplicator();
   }
 
   async initGame(): Promise<void> {
-    await this.streamTurnsSSE();
+    this.streamTurnsSSE();
   }
 
   private async streamTurns(): Promise<void> {
@@ -229,12 +267,7 @@ export class OnlineMultiplayer implements Multiplayer {
               // console.log("Received turns:", parsed);
 
               if (parsed.turns && Array.isArray(parsed.turns)) {
-                for (const turn of parsed.turns) {
-                  if (!this.processedTurnIndices.has(turn.turn)) {
-                    this.processedTurnIndices.add(turn.turn);
-                    this._callbacks.forEach((callback) => callback(turn));
-                  }
-                }
+                this.replicator.receiveTurns(parsed.turns);
               }
             } catch (error) {
               console.error("Error parsing SSE data:", error);
@@ -285,12 +318,7 @@ export class OnlineMultiplayer implements Multiplayer {
         const parsed = JSON.parse(event.data);
 
         if (parsed.turns && Array.isArray(parsed.turns)) {
-          for (const turn of parsed.turns) {
-            if (!this.processedTurnIndices.has(turn.turn)) {
-              this.processedTurnIndices.add(turn.turn);
-              this._callbacks.forEach((callback) => callback(turn));
-            }
-          }
+          this.replicator.receiveTurns(parsed.turns);
         }
       } catch (error) {
         console.error("Error parsing SSE data:", error);
@@ -310,7 +338,6 @@ export class OnlineMultiplayer implements Multiplayer {
     };
 
     const data = await ghqFetch<any>({
-      // NB(tyler): for now, we still use the old API for sending turns
       url: `${API_URL}/v3/match/${this.id}/turns`,
       method: "POST",
       body: JSON.stringify(request),
@@ -321,12 +348,11 @@ export class OnlineMultiplayer implements Multiplayer {
       throw new Error(data.error);
     }
 
-    // Skip processing of our own turns
-    this.processedTurnIndices.add(turn.turn);
+    this.replicator.receiveTurns([turn], true);
   }
 
   onTurnPlayed(callback: OnTurnPlayedCallback): void {
-    this._callbacks.push(callback);
+    this.replicator.addCallback(callback);
   }
 
   disconnect(): void {

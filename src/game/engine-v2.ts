@@ -1035,6 +1035,11 @@ export class GameClient {
     return [...this.lastTurnCaptures, ...this.thisTurnCaptures];
   }
 
+  didOfferDraw(): boolean {
+    const lastTurnMoves = this.getLastTurnMoves();
+    return lastTurnMoves.length === 1 && lastTurnMoves[0].name === "Skip";
+  }
+
   fen(): string {
     return this.board().board_fen();
   }
