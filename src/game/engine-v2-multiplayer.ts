@@ -153,6 +153,7 @@ export class BotMultiplayer implements Multiplayer {
 export class OnlineMultiplayer implements Multiplayer {
   private _callbacks: OnTurnPlayedCallback[];
   private abortController?: AbortController;
+  private eventSource?: EventSource;
   private isConnected = false;
   private retryCount = 0;
   private maxRetries = 20;
@@ -169,7 +170,7 @@ export class OnlineMultiplayer implements Multiplayer {
   }
 
   async initGame(): Promise<void> {
-    await this.streamTurns();
+    await this.streamTurnsSSE();
   }
 
   private async streamTurns(): Promise<void> {
@@ -271,6 +272,36 @@ export class OnlineMultiplayer implements Multiplayer {
     }
   }
 
+  private streamTurnsSSE(): void {
+    const url = `${API_URL}/v3/match/${this.id}/turns`;
+    this.eventSource = new EventSource(url);
+
+    this.eventSource.onopen = () => {
+      this.isConnected = true;
+    };
+
+    this.eventSource.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+
+        if (parsed.turns && Array.isArray(parsed.turns)) {
+          for (const turn of parsed.turns) {
+            if (!this.processedTurnIndices.has(turn.turn)) {
+              this.processedTurnIndices.add(turn.turn);
+              this._callbacks.forEach((callback) => callback(turn));
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing SSE data:", error);
+      }
+    };
+
+    this.eventSource.onerror = () => {
+      this.isConnected = false;
+    };
+  }
+
   async sendTurn(turn: Turn): Promise<void> {
     const request: SendTurnRequest = {
       turn,
@@ -302,6 +333,10 @@ export class OnlineMultiplayer implements Multiplayer {
     if (this.abortController) {
       this.abortController.abort();
       this.abortController = undefined;
+    }
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = undefined;
     }
   }
 }

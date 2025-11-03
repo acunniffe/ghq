@@ -143,7 +143,10 @@ export function addGameServerRoutes(
 
     ctx.body = stream;
 
-    // console.log("adding listener", listenerId);
+    const heartbeatInterval = setInterval(() => {
+      stream.write(": keepalive\n\n");
+    }, 20_000);
+
     listeners[listenerId] = {
       id: listenerId,
       stream,
@@ -157,7 +160,7 @@ export function addGameServerRoutes(
     gameIdsToListenerIds[gameId].add(listenerId);
 
     ctx.req.on("close", () => {
-      // console.log("removing listener", listenerId);
+      clearInterval(heartbeatInterval);
       stream.end();
       delete listeners[listenerId];
       gameIdsToListenerIds[gameId]?.delete(listenerId);
