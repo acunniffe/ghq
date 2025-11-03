@@ -541,6 +541,7 @@ export interface GameClientOptions {
   id?: string;
   gameStartTimeMs?: number;
   bot?: boolean;
+  isOnline?: boolean;
 }
 
 export class GameClient {
@@ -580,6 +581,7 @@ export class GameClient {
   // Multiplayer
   private multiplayer?: Multiplayer;
   public isSendingTurn: boolean;
+  public isOnline: boolean;
 
   private listeners: Set<() => void> = new Set();
 
@@ -599,6 +601,7 @@ export class GameClient {
     playerId,
     gameStartTimeMs,
     bot,
+    isOnline,
   }: GameClientOptions) {
     if (!engine) {
       throw new Error("engine is required");
@@ -630,6 +633,7 @@ export class GameClient {
     this.movePieces = [];
     this.isSendingTurn = false;
     this.shouldCheckGameoverOnEndTurn = bot ?? isPassAndPlayMode ?? false;
+    this.isOnline = isOnline ?? false;
     this.setupMultiplayer();
   }
 

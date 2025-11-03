@@ -94,6 +94,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
       timeControl: getTimeControl(matchInfo),
       gameStartTimeMs: getGameStartTimeMs(matchInfo),
       match: matchInfo.match,
+      isOnline: true,
     };
   }, [matchInfo]);
 
