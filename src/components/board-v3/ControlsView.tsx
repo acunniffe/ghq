@@ -98,7 +98,9 @@ export default function ControlsView({
     </>
   ) : game.needsTurnConfirmation ? (
     "Confirm"
-  ) : game.isMyTurn() && game.didOfferDraw() ? (
+  ) : game.isMyTurn() &&
+    game.didOfferDraw() &&
+    game.getThisTurnMoves().length === 0 ? (
     "Accept Draw"
   ) : (
     "Skip"
