@@ -19,7 +19,8 @@ function getNextFirstTuesday(today: Date): Date {
 
 export function GHQNight() {
   // const today = new Date(2025, 10, 3); // for testing
-  const today = new Date();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const targetDate = getNextFirstTuesday(today);
   const diffTime = targetDate.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
