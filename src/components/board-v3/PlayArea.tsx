@@ -17,6 +17,7 @@ import { useMeasure } from "@uidotdev/usehooks";
 import { squareSizes } from "@/game/constants";
 import { SeekFunc } from "./useSeek";
 import { MatchV3, User } from "@/lib/types";
+import { ReserveFleet } from "@/game/engine";
 
 interface PlayAreaProps {
   className: string;
@@ -101,9 +102,14 @@ export default function PlayArea({
         currentPlayer={currentPlayer}
         currentPlayerTurn={currentPlayerTurn}
         userActionState={userActionState}
-        selectReserve={(kind) =>
+        selectReserve={(kind, isMouseDown) =>
           setUserActionState((userActionState) =>
-            updateReserveClick(userActionState, kind, possibleAllowedMoves)
+            updateReserveClick(
+              userActionState,
+              kind,
+              possibleAllowedMoves,
+              isMouseDown
+            )
           )
         }
         sendChatMessage={(message) =>
@@ -143,9 +149,14 @@ export default function PlayArea({
         currentPlayer={currentPlayer}
         currentPlayerTurn={currentPlayerTurn}
         userActionState={userActionState}
-        selectReserve={(kind) =>
+        selectReserve={(kind, isMouseDown) =>
           setUserActionState((userActionState) =>
-            updateReserveClick(userActionState, kind, possibleAllowedMoves)
+            updateReserveClick(
+              userActionState,
+              kind,
+              possibleAllowedMoves,
+              isMouseDown
+            )
           )
         }
         sendChatMessage={(message) =>

@@ -201,7 +201,8 @@ export function updateHover(
 export function updateReserveClick(
   self: UserActionState,
   kind: keyof ReserveFleet,
-  possibleAllowedMoves: AllowedMove[]
+  possibleAllowedMoves: AllowedMove[],
+  isMouseDown: boolean
 ): UserActionState {
   const candidateMoves =
     possibleAllowedMoves.filter(
@@ -209,6 +210,7 @@ export function updateReserveClick(
     ) ?? [];
   return {
     candidateMoves,
+    isMouseDown,
     selectedReserve: kind,
   };
 }

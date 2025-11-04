@@ -6,7 +6,7 @@ export function ReserveBankV2(props: {
   reserve: ReserveFleet;
   selectable: boolean;
   selectedKind?: keyof ReserveFleet;
-  selectReserve: (kind: keyof ReserveFleet) => void;
+  selectReserve: (kind: keyof ReserveFleet, isMouseDown: boolean) => void;
   squareSize: number;
   hideHQ?: boolean;
 }) {

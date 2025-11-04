@@ -44,7 +44,7 @@ export default function Reserve({
   chatMessages: ChatMessage[];
   userActionState: UserActionState;
   users: User[];
-  selectReserve: (kind: keyof ReserveFleet) => void;
+  selectReserve: (kind: keyof ReserveFleet, isMouseDown: boolean) => void;
   squareSize: number;
 }) {
   const { usersOnline } = useMatchmaking();

@@ -5,7 +5,7 @@ export interface ReserveBankButtonProps<T> {
   player?: Player;
   selectable: boolean;
   value: T;
-  onSelect: (kind: T) => void;
+  onSelect: (kind: T, isMouseDown: boolean) => void;
   selected: boolean;
   squareSize: number;
   count?: number;
@@ -26,7 +26,12 @@ export default function ReserveBankButton<T>({
     <div
       onClick={() => {
         if (selectable) {
-          onSelect(value);
+          onSelect(value, false);
+        }
+      }}
+      onMouseDown={() => {
+        if (selectable) {
+          onSelect(value, true);
         }
       }}
       style={{
