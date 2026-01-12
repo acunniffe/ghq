@@ -161,6 +161,8 @@ export default function PlayArea(
               ? numMovesThisTurn(G)
               : 0
           }
+          currentPlayerTurn={currentPlayerTurn}
+          maxMoves={3}
         />
       </div>
       <Reserve
