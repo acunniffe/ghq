@@ -283,6 +283,21 @@ class SearchResult:
     pv: List[engine.Move]
 
 
+@dataclass
+class TurnCandidate:
+    moves: List[engine.Move]
+    board: engine.BaseBoard
+    priority: float
+    static_score: float = 0.0
+
+
+@dataclass
+class PartialTurn:
+    moves: List[engine.Move]
+    board: engine.BaseBoard
+    priority: float
+
+
 class Searcher:
     def __init__(self, personality: str, time_ms: int, beam_width: int) -> None:
         self.personality = personality
@@ -290,6 +305,16 @@ class Searcher:
         self.beam_width = max(1, beam_width)
         self.nodes = 0
         self.table: Dict[Tuple[str, int], SearchResult] = {}
+        self.transposition_hits = 0
+        self.turn_cache_hits = 0
+        self.exhaustive_within_horizon = True
+        self.rule_filtered_actions = 0
+        self.beam_pruned_actions = 0
+        self.partial_turns_pruned = 0
+        self.complete_turns_generated = 0
+        self.complete_turns_deduplicated = 0
+        self.complete_turns_pruned = 0
+        self.turn_cache: Dict[str, List[TurnCandidate]] = {}
 
     def check_time(self) -> None:
         self.nodes += 1
@@ -308,6 +333,104 @@ class Searcher:
     def static_score(self, board: engine.BaseBoard) -> float:
         return float(evaluation_breakdown(board, self.personality)["total_red"])
 
+    @staticmethod
+    def points_toward_home(color: bool, orientation: Optional[int]) -> bool:
+        if orientation is None:
+            return False
+        if color == engine.RED:
+            return orientation in (engine.ORIENT_SE, engine.ORIENT_S, engine.ORIENT_SW)
+        return orientation in (engine.ORIENT_N, engine.ORIENT_NE, engine.ORIENT_NW)
+
+    @staticmethod
+    def closest_enemy_distance(board: engine.BaseBoard, square: int, color: bool) -> int:
+        enemies = squares(board.occupied_co[not color])
+        return min((chebyshev(square, enemy) for enemy in enemies), default=8)
+
+    def artillery_move_allowed(self, board: engine.BaseBoard, move: engine.Move) -> bool:
+        """Apply the user's provisional artillery-orientation search rules.
+
+        Artillery farther than three squares from its nearest enemy may still
+        relocate, but it keeps its current useful facing rather than creating
+        eight equivalent orientation branches. Pure distant rotations are
+        discarded. Homeward-facing rotations are currently discarded at all
+        distances.
+        """
+        if move.name != "MoveAndOrient" or move.from_square is None or move.to_square is None:
+            return True
+        piece_type = board.piece_type_at(move.from_square)
+        if piece_type not in ARTILLERY_TYPES:
+            return True
+        if self.points_toward_home(board.turn, move.orientation):
+            return False
+
+        distance = self.closest_enemy_distance(board, move.to_square, board.turn)
+        if distance <= 3:
+            return True
+        if move.from_square == move.to_square:
+            return False
+
+        current = board.get_orientation(move.from_square)
+        if current is None or self.points_toward_home(board.turn, current):
+            current = engine.ORIENT_N if board.turn == engine.RED else engine.ORIENT_S
+        return move.orientation == current
+
+    @staticmethod
+    def move_piece_type(board: engine.BaseBoard, move: engine.Move) -> Optional[int]:
+        return move.unit_type if move.name == "Reinforce" else (
+            board.piece_type_at(move.from_square) if move.from_square is not None else None
+        )
+
+    @staticmethod
+    def home_distance(square: int, color: bool) -> int:
+        home_rank = 0 if color == engine.RED else 7
+        return abs(engine.square_rank(square) - home_rank)
+
+    def artillery_target_bonus(self, board: engine.BaseBoard, move: engine.Move) -> float:
+        piece_type = self.move_piece_type(board, move)
+        if piece_type not in ARTILLERY_TYPES or move.name != "MoveAndOrient":
+            return 0.0
+        child = board.copy()
+        child.push(move)
+        targets = child.get_bombarded_squares(board.turn) & child.occupied_co[not board.turn]
+        value = 0.0
+        for square in squares(targets):
+            target_type = child.piece_type_at(square)
+            value += PIECE_VALUES.get(target_type, 0.0)
+        # A two-target windshield-wiper threat is more forcing than two
+        # unrelated quiet improvements.
+        return 250.0 * value + 250.0 * max(0, engine.popcount(targets) - 1)
+
+    def unlocks_airborne_extraction(self, board: engine.BaseBoard, move: engine.Move) -> bool:
+        """Whether this action creates a new homeward move for our paratrooper."""
+        if board.turn_moves >= 2 or move.from_square is None:
+            return False
+        airborne = board.airborne_infantry & board.occupied_co[board.turn]
+        if not airborne or not any(chebyshev(move.from_square, square) == 1 for square in squares(airborne)):
+            return False
+
+        legal_before = list(board.generate_legal_moves())
+        before_by_source: Dict[int, set[str]] = {}
+        for candidate in legal_before:
+            if candidate.from_square is not None and engine.BB_SQUARES[candidate.from_square] & airborne:
+                before_by_source.setdefault(candidate.from_square, set()).add(candidate.uci())
+
+        child = board.copy()
+        child.push(move)
+        if child.turn != board.turn:
+            return False
+        for candidate in child.generate_legal_moves():
+            source = candidate.from_square
+            destination = candidate.to_square
+            if source is None or destination is None:
+                continue
+            if child.piece_type_at(source) != engine.AIRBORNE_INFANTRY:
+                continue
+            if candidate.uci() in before_by_source.get(source, set()):
+                continue
+            if self.home_distance(destination, board.turn) < self.home_distance(source, board.turn):
+                return True
+        return False
+
     def move_priority(self, board: engine.BaseBoard, move: engine.Move) -> float:
         if move.name == "AutoCapture":
             target = board.piece_type_at(move.capture_preference) if move.capture_preference is not None else None
@@ -318,7 +441,7 @@ class Searcher:
         if move.name == "Skip":
             return -10000.0
         priority = 0.0
-        piece_type = move.unit_type if move.name == "Reinforce" else board.piece_type_at(move.from_square)
+        piece_type = self.move_piece_type(board, move)
         infantry_types = (
             engine.INFANTRY,
             engine.ARMORED_INFANTRY,
@@ -344,6 +467,30 @@ class Searcher:
             # Vacating an artillery square can open the lane another infantry
             # needs in order to take an already-engaged paratrooper.
             priority += 4000.0
+        if (
+            piece_type in ARTILLERY_TYPES
+            and move.from_square is not None
+            and move.to_square is not None
+            and engine.BB_SQUARES[move.from_square] & board.get_bombarded_squares(not board.turn)
+            and not (engine.BB_SQUARES[move.to_square] & board.get_bombarded_squares(not board.turn))
+        ):
+            # Saving a gun that will otherwise be automatically captured is a
+            # forcing action, not a generic quiet artillery move.
+            priority += 4600.0
+        if (
+            piece_type == engine.AIRBORNE_INFANTRY
+            and move.from_square is not None
+            and move.to_square is not None
+            and self.home_distance(move.to_square, board.turn) < self.home_distance(move.from_square, board.turn)
+        ):
+            # Preserve extraction moves once a preceding action has made them
+            # legal. This is intentionally comparable with capture ordering.
+            priority += 4700.0
+        if self.unlocks_airborne_extraction(board, move):
+            # Quiet blocker-vacating moves such as g3-f4 must survive long
+            # enough for the next action, h2-g3, to be considered.
+            priority += 4800.0
+        priority += self.artillery_target_bonus(board, move)
         if piece_type == engine.ARMORED_INFANTRY:
             priority += 20.0
         elif piece_type in ARTILLERY_TYPES:
@@ -352,18 +499,262 @@ class Searcher:
             priority += 5.0
         return priority
 
+    def diverse_moves(self, board: engine.BaseBoard) -> List[Tuple[float, engine.Move]]:
+        """Return strategically filtered actions without applying the beam."""
+        legal = list(board.generate_legal_moves())
+        if legal and all(move.name == "AutoCapture" for move in legal):
+            return [(self.move_priority(board, move), move) for move in legal]
+
+        moves = [move for move in legal if self.artillery_move_allowed(board, move)]
+        if len(moves) != len(legal):
+            self.exhaustive_within_horizon = False
+            self.rule_filtered_actions += len(legal) - len(moves)
+
+        scored = [(self.move_priority(board, move), move.uci(), move) for move in moves]
+        scored.sort(key=lambda item: (-item[0], item[1]))
+
+        # Collapse orientation clones before applying the beam. The strongest
+        # facing for each artillery source/destination survives, so a single
+        # gun cannot occupy the entire beam with eight rotations.
+        diverse: List[Tuple[float, engine.Move]] = []
+        seen = set()
+        for priority, _, move in scored:
+            piece_type = self.move_piece_type(board, move)
+            key = (
+                ("artillery", move.from_square, move.to_square)
+                if piece_type in ARTILLERY_TYPES and move.name == "MoveAndOrient"
+                else (move.name, move.from_square, move.to_square, move.unit_type)
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            diverse.append((priority, move))
+
+        if len(diverse) != len(moves):
+            self.exhaustive_within_horizon = False
+            self.rule_filtered_actions += len(moves) - len(diverse)
+        return diverse
+
     def ordered_moves(self, board: engine.BaseBoard) -> List[engine.Move]:
-        moves = list(board.generate_legal_moves())
-        moves.sort(key=lambda move: (-self.move_priority(board, move), move.uci()))
-        if moves and all(move.name == "AutoCapture" for move in moves):
-            return moves
-        selected = moves[: self.beam_width]
-        # Skipping is strategically meaningful: it prevents the bot from
-        # spending a third action on a lateral/no-op move merely because Skip
-        # sorts below every quiet action. Preserve it outside the normal beam.
-        skip = next((move for move in moves if move.name == "Skip"), None)
-        if skip is not None and skip not in selected:
+        diverse_scored = self.diverse_moves(board)
+        diverse = [move for _, move in diverse_scored]
+        if diverse and all(move.name == "AutoCapture" for move in diverse):
+            return diverse
+
+        selected = diverse[: self.beam_width]
+        priority_by_uci = {move.uci(): priority for priority, move in diverse_scored}
+        critical_limit = max(self.beam_width * 2, self.beam_width + 4)
+        for move in diverse:
+            if len(selected) >= critical_limit:
+                break
+            if move not in selected and priority_by_uci.get(move.uci(), 0.0) >= 4000.0:
+                selected.append(move)
+        if len(selected) != len(diverse):
+            self.exhaustive_within_horizon = False
+            self.beam_pruned_actions += len(diverse) - len(selected)
+
+        # Ending early is considered only for the final optional action. This
+        # prevents a permanently retained Skip from beating quiet two-action
+        # setup/extraction combinations after just one move.
+        skip = next((move for move in diverse if move.name == "Skip"), None)
+        if board.turn_moves >= 2 and skip is not None and skip not in selected:
             selected.append(skip)
+        return selected
+
+    @staticmethod
+    def _prefer_partial(candidate: PartialTurn, incumbent: PartialTurn) -> bool:
+        if candidate.priority != incumbent.priority:
+            return candidate.priority > incumbent.priority
+        return tuple(move.uci() for move in candidate.moves) < tuple(move.uci() for move in incumbent.moves)
+
+    @staticmethod
+    def _round_robin_partials(partials: Sequence[PartialTurn], limit: int) -> List[PartialTurn]:
+        """Preserve multiple first actions instead of one prolific branch."""
+        groups: Dict[str, List[PartialTurn]] = {}
+        for partial in partials:
+            first = partial.moves[0].uci() if partial.moves else ""
+            groups.setdefault(first, []).append(partial)
+        for values in groups.values():
+            values.sort(key=lambda item: (-item.priority, tuple(move.uci() for move in item.moves)))
+
+        ordered_groups = sorted(
+            groups.values(),
+            key=lambda values: (-values[0].priority, values[0].moves[0].uci() if values[0].moves else ""),
+        )
+        selected: List[PartialTurn] = []
+        round_index = 0
+        while len(selected) < limit:
+            added = False
+            for values in ordered_groups:
+                if round_index < len(values):
+                    selected.append(values[round_index])
+                    added = True
+                    if len(selected) >= limit:
+                        break
+            if not added:
+                break
+            round_index += 1
+        return selected
+
+    def turn_plan_keys(self, board: engine.BaseBoard, moves: Sequence[engine.Move]) -> List[Tuple[Any, ...]]:
+        """Describe forcing defensive plans independently of action order."""
+        working = board.copy()
+        artillery_escapes: List[Tuple[int, int]] = []
+        airborne_extractions: List[Tuple[int, int]] = []
+        for move in moves:
+            piece_type = self.move_piece_type(working, move)
+            if move.from_square is not None and move.to_square is not None:
+                if (
+                    piece_type in ARTILLERY_TYPES
+                    and engine.BB_SQUARES[move.from_square] & working.get_bombarded_squares(not working.turn)
+                    and not engine.BB_SQUARES[move.to_square] & working.get_bombarded_squares(not working.turn)
+                ):
+                    artillery_escapes.append((move.from_square, move.to_square))
+                if (
+                    piece_type == engine.AIRBORNE_INFANTRY
+                    and self.home_distance(move.to_square, working.turn)
+                    < self.home_distance(move.from_square, working.turn)
+                ):
+                    airborne_extractions.append((move.from_square, move.to_square))
+            working.push(move)
+
+        keys: List[Tuple[Any, ...]] = []
+        keys.extend(("artillery_escape", source, destination) for source, destination in artillery_escapes)
+        keys.extend(("airborne_extraction", source, destination) for source, destination in airborne_extractions)
+        for artillery_escape in artillery_escapes:
+            for airborne_extraction in airborne_extractions:
+                keys.append(("escape_and_extract",) + artillery_escape + airborne_extraction)
+        return keys
+
+    def generate_turn_candidates(self, board: engine.BaseBoard) -> List[TurnCandidate]:
+        """Generate, deduplicate, then prune complete player turns.
+
+        Search no longer truncates to ``beam_width`` after every atomic action.
+        A wider, first-action-diverse frontier is carried until the side changes;
+        only complete resulting positions become minimax branches.
+        """
+        cache_key = board.serialize()
+        cached = self.turn_cache.get(cache_key)
+        if cached is not None:
+            self.turn_cache_hits += 1
+            return cached
+
+        original_turn = board.turn
+        partial_width = max(48, self.beam_width * self.beam_width * 2)
+        evaluation_pool_width = max(96, partial_width * 2)
+        turn_width = max(8, self.beam_width * 2)
+        frontier = [PartialTurn([], board.copy(), 0.0)]
+        completed: List[PartialTurn] = []
+
+        while frontier:
+            expanded: Dict[str, PartialTurn] = {}
+            for partial in frontier:
+                self.check_time()
+                if partial.board.is_game_over() or partial.board.turn != original_turn:
+                    completed.append(partial)
+                    continue
+
+                actions = self.diverse_moves(partial.board)
+                if not actions:
+                    completed.append(partial)
+                    continue
+                forced = all(move.name == "AutoCapture" for _, move in actions)
+                for priority, move in actions:
+                    if move.name == "Skip" and partial.board.turn_moves < 2 and not forced:
+                        continue
+                    child = partial.board.copy()
+                    child.push(move)
+                    candidate = PartialTurn(
+                        partial.moves + [move],
+                        child,
+                        partial.priority + priority,
+                    )
+                    key = child.serialize()
+                    incumbent = expanded.get(key)
+                    if incumbent is not None:
+                        self.complete_turns_deduplicated += 1
+                    if incumbent is None or self._prefer_partial(candidate, incumbent):
+                        expanded[key] = candidate
+
+            next_frontier: List[PartialTurn] = []
+            for partial in expanded.values():
+                if partial.board.is_game_over() or partial.board.turn != original_turn:
+                    completed.append(partial)
+                else:
+                    next_frontier.append(partial)
+
+            if len(next_frontier) > partial_width:
+                self.exhaustive_within_horizon = False
+                self.partial_turns_pruned += len(next_frontier) - partial_width
+                next_frontier = self._round_robin_partials(next_frontier, partial_width)
+            frontier = next_frontier
+
+        self.complete_turns_generated += len(completed)
+        unique: Dict[str, PartialTurn] = {}
+        for partial in completed:
+            key = partial.board.serialize()
+            incumbent = unique.get(key)
+            if incumbent is None or self._prefer_partial(partial, incumbent):
+                unique[key] = partial
+        self.complete_turns_deduplicated += len(completed) - len(unique)
+
+        pool = list(unique.values())
+        if len(pool) > evaluation_pool_width:
+            self.exhaustive_within_horizon = False
+            self.partial_turns_pruned += len(pool) - evaluation_pool_width
+            pool = self._round_robin_partials(pool, evaluation_pool_width)
+
+        candidates = []
+        for partial in pool:
+            terminal = self.terminal_score(partial.board, 0)
+            candidates.append(
+                TurnCandidate(
+                    partial.moves,
+                    partial.board,
+                    partial.priority,
+                    self.static_score(partial.board) if terminal is None else terminal,
+                )
+            )
+        candidates.sort(
+            key=lambda item: (
+                -(item.static_score if original_turn == engine.RED else -item.static_score),
+                len(item.moves) if item.board.is_game_over() else 99,
+                -item.priority,
+                tuple(move.uci() for move in item.moves),
+            )
+        )
+
+        # Static quality selects most branches; high-priority tactical turns
+        # get a separate quota so setup/capture/extraction sequences survive a
+        # temporarily inaccurate evaluator.
+        selected = candidates[:turn_width]
+        tactical = sorted(
+            candidates,
+            key=lambda item: (-item.priority, tuple(move.uci() for move in item.moves)),
+        )
+        for candidate in tactical:
+            if len(selected) >= turn_width + self.beam_width:
+                break
+            if candidate not in selected and candidate.priority >= 4000.0:
+                selected.append(candidate)
+
+        # A superficially brilliant attack can be refuted while a quieter
+        # save-and-extract plan survives. Preserve one representative of each
+        # threatened-artillery destination, paratrooper destination, and their
+        # combination so minimax—not static ordering—decides between them.
+        plan_representatives: Dict[Tuple[Any, ...], TurnCandidate] = {}
+        for candidate in candidates:
+            for plan_key in self.turn_plan_keys(board, candidate.moves):
+                if plan_key not in plan_representatives:
+                    plan_representatives[plan_key] = candidate
+        for candidate in plan_representatives.values():
+            if candidate not in selected:
+                selected.append(candidate)
+
+        if len(selected) != len(candidates):
+            self.exhaustive_within_horizon = False
+            self.complete_turns_pruned += len(candidates) - len(selected)
+        self.turn_cache[cache_key] = selected
         return selected
 
     def alphabeta(self, board: engine.BaseBoard, turns_left: int, alpha: float, beta: float) -> SearchResult:
@@ -372,30 +763,51 @@ class Searcher:
         if terminal is not None:
             return SearchResult(terminal, [])
 
-        moves = self.ordered_moves(board)
-        if not moves:
+        legal = list(board.generate_legal_moves())
+        if not legal:
             return SearchResult(self.static_score(board), [])
-        resolving_automatic = all(move.name == "AutoCapture" for move in moves)
-        if turns_left <= 0 and not resolving_automatic:
+
+        # Forced automatic captures are resolved even at the nominal horizon,
+        # so static evaluation never counts a unit that is already certain to
+        # disappear before another player action.
+        if all(move.name == "AutoCapture" for move in legal):
+            maximizing = board.turn == engine.RED
+            best = SearchResult(-math.inf if maximizing else math.inf, [])
+            for move in legal:
+                child = board.copy()
+                child.push(move)
+                result = self.alphabeta(child, turns_left, alpha, beta)
+                if (maximizing and result.score > best.score) or (not maximizing and result.score < best.score):
+                    best = SearchResult(result.score, [move] + result.pv)
+                if maximizing:
+                    alpha = max(alpha, best.score)
+                else:
+                    beta = min(beta, best.score)
+                if beta <= alpha:
+                    break
+            return best
+
+        if turns_left <= 0:
             return SearchResult(self.static_score(board), [])
 
         key = (board.serialize(), turns_left)
         cached = self.table.get(key)
         if cached is not None:
+            self.transposition_hits += 1
             return SearchResult(cached.score, list(cached.pv))
+
+        turns = self.generate_turn_candidates(board)
+        if not turns:
+            return SearchResult(self.static_score(board), [])
 
         maximizing = board.turn == engine.RED
         best = SearchResult(-math.inf if maximizing else math.inf, [])
         complete = True
-        for move in moves:
-            child = board.copy()
-            previous_turn = child.turn
-            child.push(move)
-            child_depth = turns_left - 1 if child.turn != previous_turn else turns_left
-            result = self.alphabeta(child, child_depth, alpha, beta)
+        for turn in turns:
+            result = self.alphabeta(turn.board, turns_left - 1, alpha, beta)
             candidate = result.score
             if (maximizing and candidate > best.score) or (not maximizing and candidate < best.score):
-                best = SearchResult(candidate, [move] + result.pv)
+                best = SearchResult(candidate, list(turn.moves) + result.pv)
             if maximizing:
                 alpha = max(alpha, best.score)
             else:
@@ -471,7 +883,13 @@ def search(board: engine.BaseBoard, personality: str, time_ms: int, max_depth: i
     root_eval = evaluation_breakdown(board, personality)
     resulting_eval = evaluation_breakdown(resulting_board, personality)
     current_player_score = best.score if board.turn == engine.RED else -best.score
+    exhaustive = (
+        searcher.exhaustive_within_horizon
+        and not timed_out
+        and completed_depth == max(1, max_depth)
+    )
     return {
+        "recommendation_label": "best move" if exhaustive else "best found",
         "input_fen": board.board_fen(),
         "side_to_move": color_name(board.turn),
         "best_turn": {
@@ -488,11 +906,20 @@ def search(board: engine.BaseBoard, personality: str, time_ms: int, max_depth: i
         "search": {
             "completed_depth_in_turns": completed_depth,
             "requested_depth_in_turns": max_depth,
-            "beam_width_per_action": beam_width,
+            "base_complete_turn_width": beam_width,
             "nodes": searcher.nodes,
             "elapsed_ms": round(elapsed_ms, 2),
             "timed_out": timed_out,
             "approximate": True,
+            "exhaustive_within_requested_horizon": exhaustive,
+            "rule_filtered_actions": searcher.rule_filtered_actions,
+            "beam_pruned_actions": searcher.beam_pruned_actions,
+            "partial_turns_pruned": searcher.partial_turns_pruned,
+            "complete_turns_generated": searcher.complete_turns_generated,
+            "complete_turns_deduplicated": searcher.complete_turns_deduplicated,
+            "complete_turns_pruned": searcher.complete_turns_pruned,
+            "turn_cache_hits": searcher.turn_cache_hits,
+            "transposition_hits": searcher.transposition_hits,
         },
         "evaluation": {
             "before": root_eval,
@@ -506,7 +933,12 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--fen", default=engine.STARTING_FEN, help="GHQ FEN (defaults to the starting position)")
     parser.add_argument("--time-ms", type=int, default=2000, help="search budget in milliseconds")
     parser.add_argument("--max-depth", type=int, default=2, help="maximum search depth in complete player turns")
-    parser.add_argument("--beam-width", type=int, default=12, help="maximum candidate actions retained at each node")
+    parser.add_argument(
+        "--beam-width",
+        type=int,
+        default=12,
+        help="base width used for complete-turn candidate generation",
+    )
     parser.add_argument("--personality", choices=sorted(PERSONALITIES), default="balanced")
     parser.add_argument("--compact", action="store_true", help="emit compact JSON")
     return parser.parse_args(argv)
