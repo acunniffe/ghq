@@ -11,6 +11,10 @@ ghq_ai = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = ghq_ai
 SPEC.loader.exec_module(ghq_ai)
 engine = ghq_ai.engine
+PARATROOPER_TRAP_FEN = (
+    "q3i3/1iif2f1/ir↓3r↓2/8/t↓r↓6/2f2R↑1I/3T↑H↑1I1/"
+    "FR↑p1P1Q1 IIIII iiii r"
+)
 
 
 class EvaluationTests(unittest.TestCase):
@@ -36,8 +40,39 @@ class EvaluationTests(unittest.TestCase):
         breakdown = ghq_ai.evaluation_breakdown(board)
         self.assertEqual(breakdown["components"]["open_board_armored_infantry"], 0.0)
 
+    def test_engagement_increases_deployed_paratrooper_risk(self):
+        board = engine.BaseBoard(PARATROOPER_TRAP_FEN)
+        before = ghq_ai.airborne_survival_penalty(board, engine.BLUE)
+        board.push(engine.Move.from_uci("rid1"))
+        after = ghq_ai.airborne_survival_penalty(board, engine.BLUE)
+        self.assertGreater(after, before)
+
 
 class SearchTests(unittest.TestCase):
+    def test_regression_trapped_paratrooper_capture_stays_inside_beam(self):
+        """The c1 paratrooper cannot be valued as a clean armored trade.
+
+        Red can deploy on d1 to engage it, vacate b1 with the artillery,
+        then move the a1 armored infantry to b1 and capture c1.
+        """
+        board = engine.BaseBoard(PARATROOPER_TRAP_FEN)
+        searcher = ghq_ai.Searcher("balanced", time_ms=2000, beam_width=6)
+
+        self.assertIn("rid1", [move.uci() for move in searcher.ordered_moves(board)])
+        for uci in ("rid1", "b1c2↑", "a1b1xc1"):
+            move = engine.Move.from_uci(uci)
+            self.assertIn(move, list(board.generate_legal_moves()))
+            if uci != "rid1":
+                self.assertIn(uci, [candidate.uci() for candidate in searcher.ordered_moves(board)])
+            board.push(move)
+
+        self.assertFalse(board.airborne_infantry & board.occupied_co[engine.BLUE])
+
+    def test_skip_is_preserved_when_beam_is_narrow(self):
+        searcher = ghq_ai.Searcher("balanced", time_ms=1000, beam_width=1)
+        moves = searcher.ordered_moves(engine.BaseBoard())
+        self.assertIn("skip", [move.uci() for move in moves])
+
     def test_search_returns_a_complete_three_action_turn(self):
         board = engine.BaseBoard()
         result = ghq_ai.search(board, "balanced", time_ms=1200, max_depth=1, beam_width=8)

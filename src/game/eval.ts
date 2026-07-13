@@ -46,6 +46,12 @@ export const airborneDeterrenceWeights = {
   stagedReserveMultiplier: 0.25,
 } as const;
 
+export const airborneSurvivalWeights = {
+  perRankFromHome: 0.2,
+  noAdjacentSupport: 1.25,
+  engaged: 2.0,
+} as const;
+
 export const artilleryFormationWeights = {
   adjacentArtilleryPair: 0.35,
   heavyArtilleryInFormationCenter: 1.0,
@@ -73,6 +79,15 @@ export interface AirborneDeterrenceFeature {
   readiness: "ready" | "staged";
   exposedArtillery: Coordinate[];
   bonus: number;
+}
+
+export interface AirborneSurvivalFeature {
+  player: Player;
+  at: Coordinate;
+  ranksFromHome: number;
+  hasAdjacentSupport: boolean;
+  engaged: boolean;
+  penalty: number;
 }
 
 export interface ArtilleryFormationFeature {
@@ -137,6 +152,13 @@ export function calculateEval({
     },
     { RED: 0, BLUE: 0 } as Record<Player, number>
   );
+  const airborneSurvival = airborneSurvivalFeatures(board).reduce(
+    (totals, feature) => {
+      totals[feature.player] += feature.penalty;
+      return totals;
+    },
+    { RED: 0, BLUE: 0 } as Record<Player, number>
+  );
   const artilleryFormation = artilleryFormationFeatures(board).reduce(
     (totals, feature) => {
       totals[feature.player] += feature.bonus;
@@ -155,6 +177,7 @@ export function calculateEval({
   return (
     scores.RED +
     airborneDeterrence.RED -
+    airborneSurvival.RED -
     hangingPenalty.RED +
     artilleryFormation.RED +
     openingDeployment.RED -
@@ -162,8 +185,57 @@ export function calculateEval({
       airborneDeterrence.BLUE +
       artilleryFormation.BLUE +
       openingDeployment.BLUE -
+      airborneSurvival.BLUE -
       hangingPenalty.BLUE)
   );
+}
+
+export function airborneSurvivalFeatures(
+  board: Board
+): AirborneSurvivalFeature[] {
+  const features: AirborneSurvivalFeature[] = [];
+  const infantryTypes = new Set([
+    "INFANTRY",
+    "ARMORED_INFANTRY",
+    "AIRBORNE_INFANTRY",
+  ]);
+
+  for (const player of ["RED", "BLUE"] as const) {
+    const homeRank = player === "RED" ? 7 : 0;
+    for (const { at, piece } of playerPieces(board, player)) {
+      if (piece.type !== "AIRBORNE_INFANTRY" || at[0] === homeRank) continue;
+
+      const adjacent = cardinalNeighbors(at);
+      const hasAdjacentSupport = adjacent.some(([row, column]) => {
+        const neighbor = board[row][column];
+        return neighbor?.player === player && neighbor.type !== "HQ";
+      });
+      const engaged = adjacent.some(([row, column]) => {
+        const neighbor = board[row][column];
+        return (
+          neighbor !== null &&
+          neighbor.player !== player &&
+          infantryTypes.has(neighbor.type)
+        );
+      });
+      const ranksFromHome = Math.abs(at[0] - homeRank);
+      const penalty =
+        ranksFromHome * airborneSurvivalWeights.perRankFromHome +
+        (hasAdjacentSupport ? 0 : airborneSurvivalWeights.noAdjacentSupport) +
+        (engaged ? airborneSurvivalWeights.engaged : 0);
+
+      features.push({
+        player,
+        at,
+        ranksFromHome,
+        hasAdjacentSupport,
+        engaged,
+        penalty,
+      });
+    }
+  }
+
+  return features;
 }
 
 export function artilleryFormationFeatures(
@@ -210,7 +282,9 @@ export function artilleryFormationFeatures(
   return features;
 }
 
-export function openingDeploymentFeatures(board: Board): OpeningDeploymentFeature[] {
+export function openingDeploymentFeatures(
+  board: Board
+): OpeningDeploymentFeature[] {
   const features: OpeningDeploymentFeature[] = [];
 
   for (const player of ["RED", "BLUE"] as const) {
@@ -299,15 +373,9 @@ export function hangingPieceFeatures(board: Board): HangingPieceFeature[] {
     for (const candidate of pieces) {
       // HQ blocks and matters strategically, but is not a supporting unit.
       if (candidate.piece.type === "HQ") continue;
-      // A paratrooper on its own back rank is intentionally held ready to
-      // paradrop; treating that deliberate staging square as "hanging" would
-      // erase the deterrence value modeled below.
-      if (
-        candidate.piece.type === "AIRBORNE_INFANTRY" &&
-        candidate.at[0] === (player === "RED" ? 7 : 0)
-      ) {
-        continue;
-      }
+      // Airborne extraction risk is modeled separately. Applying generic
+      // hanging and rank-extension penalties too would double-count it.
+      if (candidate.piece.type === "AIRBORNE_INFANTRY") continue;
 
       const nearestSupportDistance = nearestSupportingPieceDistance(
         candidate,
@@ -364,7 +432,6 @@ function mostPowerfulRank(
   pieces: PlacedPiece[],
   player: Player
 ): number | null {
-
   const valueByRank = new Map<number, number>();
   for (const { at, piece } of pieces) {
     // HQ is strategically vital but contributes no mobile combat power.
@@ -387,8 +454,8 @@ function mostPowerfulRank(
         ? current
         : best
       : current[0] < best[0]
-        ? current
-        : best;
+      ? current
+      : best;
   })[0];
 }
 
@@ -410,6 +477,21 @@ function chebyshevDistance(
   return Math.max(Math.abs(rowA - rowB), Math.abs(columnA - columnB));
 }
 
+function cardinalNeighbors([row, column]: Coordinate): Coordinate[] {
+  return [
+    [row - 1, column],
+    [row + 1, column],
+    [row, column - 1],
+    [row, column + 1],
+  ].filter(
+    ([neighborRow, neighborColumn]) =>
+      neighborRow >= 0 &&
+      neighborRow < 8 &&
+      neighborColumn >= 0 &&
+      neighborColumn < 8
+  ) as Coordinate[];
+}
+
 function ranksForwardOfAnchor(
   player: Player,
   [row]: Coordinate,
@@ -427,8 +509,7 @@ function airborneReadiness(
   const homeRank = player === "RED" ? 7 : 0;
   if (
     board[homeRank].some(
-      (piece) =>
-        piece?.player === player && piece.type === "AIRBORNE_INFANTRY"
+      (piece) => piece?.player === player && piece.type === "AIRBORNE_INFANTRY"
     )
   ) {
     return "ready";
@@ -485,9 +566,11 @@ function isFormationCenter(
   if (companions.length < 2) return false;
 
   const [row, column] = heavyArtillery.at;
-  const sharesRowCenter = companions.some(({ at }) => at[1] < column) &&
+  const sharesRowCenter =
+    companions.some(({ at }) => at[1] < column) &&
     companions.some(({ at }) => at[1] > column);
-  const sharesColumnCenter = companions.some(({ at }) => at[0] < row) &&
+  const sharesColumnCenter =
+    companions.some(({ at }) => at[0] < row) &&
     companions.some(({ at }) => at[0] > row);
 
   return sharesRowCenter || sharesColumnCenter;

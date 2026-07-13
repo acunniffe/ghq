@@ -69,6 +69,7 @@ BASE_WEIGHTS = {
     "artillery_pressure": 1.0,
     "mobility": 1.0,
     "open_board_armored_infantry": 1.0,
+    "airborne_survival": 1.0,
     "hq_safety": 1.0,
 }
 
@@ -113,8 +114,10 @@ def support_penalty(board: engine.BaseBoard, color: bool) -> float:
         piece_type = board.piece_type_at(square)
         if piece_type is None:
             continue
-        # A staged airborne unit is a threat in reserve-like form, not a hanging unit.
-        if piece_type == engine.AIRBORNE_INFANTRY and engine.square_rank(square) == (0 if color == engine.RED else 7):
+        # Airborne survival is modeled separately. Applying generic support
+        # and overextension penalties as well would double-count its risk and
+        # can perversely value leaving it trapped over actually capturing it.
+        if piece_type == engine.AIRBORNE_INFANTRY:
             continue
         neighbours = [other for other in friendly if other != square]
         nearest = min((chebyshev(square, other) for other in neighbours), default=8)
@@ -126,8 +129,39 @@ def support_penalty(board: engine.BaseBoard, color: bool) -> float:
     return penalty
 
 
+def airborne_survival_penalty(board: engine.BaseBoard, color: bool) -> float:
+    """Penalize committed paratroopers that are deep, unsupported, or engaged.
+
+    A staged paratrooper on its home rank is deliberately held as a threat and
+    receives no penalty. Once deployed, its nominal material value is only
+    real if it has a plausible extraction route. Engagement is especially
+    dangerous because the opponent can often use the other two actions of the
+    turn to clear a capture lane and take it.
+    """
+    penalty = 0.0
+    home_rank = 0 if color == engine.RED else 7
+    friendly_support = board.occupied_co[color] & ~board.hq
+    enemy_infantry = board.occupied_co[not color] & (
+        board.infantry | board.armored_infantry | board.airborne_infantry
+    )
+    for square in squares(board.airborne_infantry & board.occupied_co[color]):
+        rank = engine.square_rank(square)
+        if rank == home_rank:
+            continue
+        distance_home = abs(rank - home_rank)
+        adjacent = engine.BB_ADJACENT_SQUARES[square]
+        penalty += 0.20 * distance_home
+        if not adjacent & friendly_support:
+            penalty += 1.25
+        if adjacent & enemy_infantry:
+            # Engagement is a major warning, but not itself a capture. Search
+            # must still prove the remaining setup actions that take the unit.
+            penalty += 2.0
+    return penalty
+
+
 def overextension_penalty(board: engine.BaseBoard, color: bool) -> float:
-    units = squares(board.occupied_co[color] & ~board.hq)
+    units = squares(board.occupied_co[color] & ~board.hq & ~board.airborne_infantry)
     if not units:
         return 0.0
     rank_power = [0.0] * 8
@@ -216,6 +250,8 @@ def evaluation_breakdown(board: engine.BaseBoard, personality: str = "balanced")
         "artillery_pressure": artillery_pressure(board, engine.RED) - artillery_pressure(board, engine.BLUE),
         "mobility": 0.30 * (action_mobility(board, engine.RED) - action_mobility(board, engine.BLUE)),
         "open_board_armored_infantry": 0.0,
+        "airborne_survival": airborne_survival_penalty(board, engine.BLUE)
+        - airborne_survival_penalty(board, engine.RED),
         "hq_safety": hq_safety(board, engine.RED) - hq_safety(board, engine.BLUE),
     }
     if surviving_units <= 18:
@@ -283,6 +319,31 @@ class Searcher:
             return -10000.0
         priority = 0.0
         piece_type = move.unit_type if move.name == "Reinforce" else board.piece_type_at(move.from_square)
+        infantry_types = (
+            engine.INFANTRY,
+            engine.ARMORED_INFANTRY,
+            engine.AIRBORNE_INFANTRY,
+        )
+        enemy_airborne = board.airborne_infantry & board.occupied_co[not board.turn]
+        if (
+            piece_type in infantry_types
+            and move.to_square is not None
+            and engine.BB_ADJACENT_SQUARES[move.to_square] & enemy_airborne
+        ):
+            # Quiet moves and reinforcements that engage an enemy paratrooper
+            # are tactical setup moves. Keep them inside the beam so a later
+            # action in the same turn can complete the capture.
+            priority += 4500.0
+        if (
+            piece_type in ARTILLERY_TYPES
+            and move.from_square is not None
+            and move.to_square is not None
+            and move.from_square != move.to_square
+            and engine.BB_ADJACENT_SQUARES[move.from_square] & enemy_airborne
+        ):
+            # Vacating an artillery square can open the lane another infantry
+            # needs in order to take an already-engaged paratrooper.
+            priority += 4000.0
         if piece_type == engine.ARMORED_INFANTRY:
             priority += 20.0
         elif piece_type in ARTILLERY_TYPES:
@@ -296,7 +357,14 @@ class Searcher:
         moves.sort(key=lambda move: (-self.move_priority(board, move), move.uci()))
         if moves and all(move.name == "AutoCapture" for move in moves):
             return moves
-        return moves[: self.beam_width]
+        selected = moves[: self.beam_width]
+        # Skipping is strategically meaningful: it prevents the bot from
+        # spending a third action on a lateral/no-op move merely because Skip
+        # sorts below every quiet action. Preserve it outside the normal beam.
+        skip = next((move for move in moves if move.name == "Skip"), None)
+        if skip is not None and skip not in selected:
+            selected.append(skip)
+        return selected
 
     def alphabeta(self, board: engine.BaseBoard, turns_left: int, alpha: float, beta: float) -> SearchResult:
         self.check_time()

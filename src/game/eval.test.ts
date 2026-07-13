@@ -2,6 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 import { Board } from "./engine";
 import {
   airborneDeterrenceFeatures,
+  airborneSurvivalFeatures,
   artilleryFormationFeatures,
   calculateEval,
   hangingPieceFeatures,
@@ -10,7 +11,9 @@ import {
 import { Blue, Red } from "./tests/test-boards";
 
 const emptyBoard = (): Board =>
-  Array.from({ length: 8 }, () => Array.from({ length: 8 }, () => null)) as Board;
+  Array.from({ length: 8 }, () =>
+    Array.from({ length: 8 }, () => null)
+  ) as Board;
 
 describe("hanging-piece evaluation", () => {
   it("penalizes a lone advanced piece relative to an equally-valued supported one", () => {
@@ -139,5 +142,35 @@ describe("airborne deterrence", () => {
     expect(airborneDeterrenceFeatures(doubleTarget)[0].bonus).toBeGreaterThan(
       airborneDeterrenceFeatures(singleTarget)[0].bonus
     );
+  });
+});
+
+describe("airborne survival", () => {
+  it("penalizes an engaged paratrooper stranded far from home", () => {
+    const board = emptyBoard();
+    board[0][0] = Blue.HQ;
+    board[7][6] = Red.HQ;
+    board[7][2] = Blue.AIRBORNE;
+    board[7][3] = Red.INFANTRY;
+
+    expect(airborneSurvivalFeatures(board)).toEqual([
+      expect.objectContaining({
+        player: "BLUE",
+        at: [7, 2],
+        ranksFromHome: 7,
+        hasAdjacentSupport: false,
+        engaged: true,
+        penalty: 4.65,
+      }),
+    ]);
+  });
+
+  it("does not penalize a paratrooper held ready on its home rank", () => {
+    const board = emptyBoard();
+    board[0][0] = Blue.HQ;
+    board[0][2] = Blue.AIRBORNE;
+    board[7][6] = Red.HQ;
+
+    expect(airborneSurvivalFeatures(board)).toEqual([]);
   });
 });
